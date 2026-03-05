@@ -128,9 +128,24 @@ function Card({ children, sx = {}, hover = true, dim = false }) {
     }}>{children}</div>;
 }
 
+// ── MOBILE HOOK ───────────────────────────────────────────────────────────────
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const check = () => setM(window.innerWidth < bp);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [bp]);
+  return m;
+}
+
 // ── NAV ──────────────────────────────────────────────────────────────────────
+const NAV_LINKS = [["How It Works", "how"], ["Browse Members", "browse"], ["Proof Lab", "prooflab"], ["Dashboard", "dashboard"], ["Add Asset", "asset"]];
 function Nav({ page, setPage }) {
   const [sc, setSc] = useState(false);
+  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
   useEffect(() => {
     const el = document.querySelector("#scroller");
     if (!el) return;
@@ -138,21 +153,51 @@ function Nav({ page, setPage }) {
     el.addEventListener("scroll", h);
     return () => el.removeEventListener("scroll", h);
   }, []);
+  const navTo = id => { setPage(id); setOpen(false); };
   return (
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: sc ? "rgba(255,248,240,0.95)" : "transparent", backdropFilter: sc ? "blur(12px)" : "none", borderBottom: sc ? `1px solid ${T.orangeP}` : "1px solid transparent", transition: "all 0.3s", padding: "0 32px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setPage("home")}>
-          <span style={{ fontSize: 26 }}>⭐</span>
-          <span style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, letterSpacing: "-0.02em" }}>five<span style={{ color: T.orange }}>starz</span></span>
+    <>
+      <nav style={{ position: "sticky", top: 0, zIndex: 200, background: sc ? "rgba(255,248,240,0.95)" : "transparent", backdropFilter: sc ? "blur(12px)" : "none", borderBottom: sc ? `1px solid ${T.orangeP}` : "1px solid transparent", transition: "all 0.3s", padding: isMobile ? "0 16px" : "0 32px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => navTo("home")}>
+            <span style={{ fontSize: 24 }}>⭐</span>
+            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 21, fontWeight: 800, color: T.brown, letterSpacing: "-0.02em" }}>five<span style={{ color: T.orange }}>starz</span></span>
+          </div>
+          {isMobile ? (
+            <button onClick={() => setOpen(o => !o)} aria-label="Menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, display: "flex", flexDirection: "column", gap: 5, alignItems: "center", justifyContent: "center", borderRadius: 8 }}>
+              <span style={{ display: "block", width: 22, height: 2.5, background: open ? T.orange : T.brown, borderRadius: 2, transition: "all 0.22s", transform: open ? "rotate(45deg) translate(5px,5px)" : "none" }} />
+              <span style={{ display: "block", width: 22, height: 2.5, background: open ? T.orange : T.brown, borderRadius: 2, transition: "all 0.22s", opacity: open ? 0 : 1 }} />
+              <span style={{ display: "block", width: 22, height: 2.5, background: open ? T.orange : T.brown, borderRadius: 2, transition: "all 0.22s", transform: open ? "rotate(-45deg) translate(5px,-5px)" : "none" }} />
+            </button>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {NAV_LINKS.map(([lbl, id]) => (
+                <button key={id} onClick={() => navTo(id)} style={{ background: page === id ? T.orangeP : "transparent", color: page === id ? T.orange : T.brownM, border: "none", cursor: "pointer", padding: "8px 14px", borderRadius: 10, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, fontSize: 14, transition: "all 0.15s" }}>{lbl}</button>
+              ))}
+              <Btn onClick={() => navTo("dashboard")} sz="sm" sx={{ marginLeft: 6 }}>My Dashboard →</Btn>
+            </div>
+          )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {[["How It Works", "how"], ["Browse Members", "browse"], ["Proof Lab", "prooflab"], ["Dashboard", "dashboard"], ["Add Asset", "asset"]].map(([lbl, id]) => (
-            <button key={id} onClick={() => setPage(id)} style={{ background: page === id ? T.orangeP : "transparent", color: page === id ? T.orange : T.brownM, border: "none", cursor: "pointer", padding: "8px 14px", borderRadius: 10, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, fontSize: 14, transition: "all 0.15s" }}>{lbl}</button>
-          ))}
-          <Btn onClick={() => setPage("dashboard")} sz="sm" sx={{ marginLeft: 6 }}>My Dashboard →</Btn>
-        </div>
-      </div>
-    </nav>
+      </nav>
+      {isMobile && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(61,43,31,0.45)", zIndex: 298, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 0.25s", backdropFilter: "blur(3px)" }} />
+          <div style={{ position: "fixed", top: 0, right: 0, width: "78vw", maxWidth: 300, height: "100vh", background: "#fff", zIndex: 299, transform: open ? "translateX(0)" : "translateX(100%)", transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)", boxShadow: "-8px 0 40px rgba(61,43,31,0.2)", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "18px 22px 14px", borderBottom: `1.5px solid ${T.orangeP}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 800, color: T.brown }}>five<span style={{ color: T.orange }}>starz</span></span>
+              <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: T.brownL, lineHeight: 1, padding: 4 }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+              {NAV_LINKS.map(([lbl, id]) => (
+                <button key={id} onClick={() => navTo(id)} style={{ display: "block", width: "100%", textAlign: "left", padding: "15px 24px", background: page === id ? T.orangeP : "transparent", color: page === id ? T.orange : T.brown, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 16, border: "none", borderLeft: page === id ? `4px solid ${T.orange}` : "4px solid transparent", cursor: "pointer", transition: "all 0.15s", boxSizing: "border-box" }}>{lbl}</button>
+              ))}
+            </div>
+            <div style={{ padding: "18px 22px", borderTop: `1.5px solid ${T.orangeP}`, flexShrink: 0 }}>
+              <Btn onClick={() => navTo("dashboard")} sx={{ width: "100%", justifyContent: "center" }}>My Dashboard →</Btn>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -782,31 +827,31 @@ function HowPage({ setShowBeta }) {
   );
 }
 
-function RateFeedbackWidget({match}){
-  const[rating,setRating]=useState(match.myFbRating||0);
-  const[hover,setHover]=useState(0);
-  const[saved,setSaved]=useState(match.myFbRating!=null);
-  const save=n=>{setRating(n);setSaved(true);};
-  if(saved&&rating>0){
-    return(
-      <div style={{display:"flex",alignItems:"center",gap:5}}>
-        <Stars n={rating} size={13}/>
-        <span style={{fontSize:11,color:T.brownL,fontFamily:"'DM Sans',sans-serif"}}>Feedback rated</span>
+function RateFeedbackWidget({ match }) {
+  const [rating, setRating] = useState(match.myFbRating || 0);
+  const [hover, setHover] = useState(0);
+  const [saved, setSaved] = useState(match.myFbRating != null);
+  const save = n => { setRating(n); setSaved(true); };
+  if (saved && rating > 0) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <Stars n={rating} size={13} />
+        <span style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Feedback rated</span>
       </div>
     );
   }
-  return(
+  return (
     <div>
-      <div style={{fontSize:10,fontWeight:700,color:T.brownL,fontFamily:"'DM Sans',sans-serif",marginBottom:4,letterSpacing:"0.04em",textTransform:"uppercase"}}>Rate their feedback</div>
-      <div style={{display:"flex",gap:3,alignItems:"center"}}>
-        {[1,2,3,4,5].map(n=>(
+      <div style={{ fontSize: 10, fontWeight: 700, color: T.brownL, fontFamily: "'DM Sans',sans-serif", marginBottom: 4, letterSpacing: "0.04em", textTransform: "uppercase" }}>Rate their feedback</div>
+      <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+        {[1, 2, 3, 4, 5].map(n => (
           <svg key={n} width={18} height={18} viewBox="0 0 20 20"
-            fill={(hover||rating)>=n?T.gold:"#E2D9D0"}
-            style={{cursor:"pointer",transition:"transform 0.1s",transform:(hover||rating)>=n?"scale(1.2)":"scale(1)"}}
-            onMouseEnter={()=>setHover(n)}
-            onMouseLeave={()=>setHover(0)}
-            onClick={()=>save(n)}>
-            <path d="M10 1l2.39 4.84 5.34.78-3.86 3.76.91 5.32L10 13.27l-4.78 2.51.91-5.32L2.27 6.62l5.34-.78z"/>
+            fill={(hover || rating) >= n ? T.gold : "#E2D9D0"}
+            style={{ cursor: "pointer", transition: "transform 0.1s", transform: (hover || rating) >= n ? "scale(1.2)" : "scale(1)" }}
+            onMouseEnter={() => setHover(n)}
+            onMouseLeave={() => setHover(0)}
+            onClick={() => save(n)}>
+            <path d="M10 1l2.39 4.84 5.34.78-3.86 3.76.91 5.32L10 13.27l-4.78 2.51.91-5.32L2.27 6.62l5.34-.78z" />
           </svg>
         ))}
       </div>
