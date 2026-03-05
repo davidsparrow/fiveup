@@ -255,10 +255,10 @@ function HomePage({ setPage, setShowBeta }) {
         </div>
       </section>
 
-      <section style={{ padding: "80px 32px", background: "#fff" }}>
+      <section style={{ padding: isMobile ? "56px 16px" : "80px 32px", background: "#fff", overflow: "hidden" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}><Pill color={T.teal}>The Process</Pill><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>How FiveStarz works</h2></div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(4,1fr)", gap: isMobile ? 16 : 24 }}>
             {HOW_STEPS.map((s, i) => <Card key={i} sx={{ padding: 28, textAlign: "center" }}><div style={{ fontSize: 11, fontWeight: 800, color: T.orangeL, letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif", marginBottom: 10 }}>{s.n}</div><div style={{ fontSize: 36, marginBottom: 12 }}>{s.icon}</div><div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 700, color: T.brown, marginBottom: 10 }}>{s.title}</div><div style={{ fontSize: 14, color: T.slate, lineHeight: 1.6, fontFamily: "'DM Sans',sans-serif" }}>{s.desc}</div></Card>)}
           </div>
           <div style={{ textAlign: "center", marginTop: 32 }}><Btn v="ghost" onClick={() => setPage("how")}>Full Rules & Guidelines →</Btn></div>
