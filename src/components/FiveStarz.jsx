@@ -267,9 +267,9 @@ function HomePage({ setPage, setShowBeta }) {
       <section style={{ padding: "80px 32px", background: `linear-gradient(160deg,${T.cream} 0%,${T.warm} 100%)` }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}><Pill color={T.orange}>Simple Pricing</Pill><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>Start free, grow together</h2></div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 24 }}>
             {PLANS.map((p, i) => (
-              <div key={i} style={{ background: "#fff", borderRadius: 24, border: `2px solid ${p.badge ? p.color : "#F0E8E0"}`, padding: 36, position: "relative", boxShadow: p.badge ? `0 8px 40px ${p.color}22` : "0 2px 10px rgba(0,0,0,0.05)", transform: p.badge ? "scale(1.03)" : "scale(1)" }}>
+              <div key={i} style={{ background: "#fff", borderRadius: 24, border: `2px solid ${p.badge ? p.color : "#F0E8E0"}`, padding: 36, position: "relative", boxShadow: p.badge ? `0 8px 40px ${p.color}22` : "0 2px 10px rgba(0,0,0,0.05)", transform: (!isMobile && p.badge) ? "scale(1.03)" : "scale(1)" }}>
                 {p.badge && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: p.color, color: "#fff", padding: "4px 18px", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}>{p.badge}</div>}
                 <div style={{ fontSize: 13, fontWeight: 800, color: p.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>{p.name}</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 24 }}><span style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 900, color: T.brown }}>{p.price}</span><span style={{ fontSize: 14, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{p.sub}</span></div>
