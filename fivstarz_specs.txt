@@ -1,0 +1,135 @@
+Help me design a new sass application hosted on next.js, called fivestarz. This application is for any online entrepreneur who wants more reviews. While, most review platforms focus on pestering your customers until they finally relent and leave a review. This application is completely different.
+This application allows members like a club to review each other’s stuff, ethically, legally and profitably. The way it works as we match up two people to provide feedback to each other’s service or thing they each leave personal feedback for the other person within our app and then they can decide whether or not to push that to a real review online to the platform of their choice. Each party is not obligated to leave a positive review. The person who receives the feedback cannot post that as a review online - they can ask the person who provided the feedback to do it and that other person can choose from the Channels shown by the person who is asking. We need to closely track who left reviews for who to ever allow those same two people to review each other again. In addition, Paid users can set their degrees of Personal separation from 1 to 3. If 1 then they will never review the sane Person OR any one who reviewed or was reviewed BY that sane person. Make sense? The default setting is 1.
+Our app provides a simple form for uploading screenshots, descriptions and links to assets each person wants Reviewed. Paid users can build multiple assets to collect reviews on all of them at the same time (within plan limits), each asset must have a unique URL and unique review profile listings.
+Any asset in our system can have multiple review CHANNELS to allow the other person to choose a channel to leave review on, or they can have just 1 channel - typically Google Business Profile, Yelp profile, Trip Advisor Listing Amazon, or Shopify page.
+Feedback can be be of anything including: One person gives the other a free 30 minute business growth consultation, so the person getting the free consult can provide Feedback to the consultant and the consultant can provide feedback to user about their overall impressions about that persons business.
+Paid members are also allowed to gather Reviews for their client’s. If it makes sense ethically - example would be they have a Plumber as a client and that Plumber posts a video to their Google Business Profile about “how to avoid clogged sinks” - the other person watches the video and can leave Feedback about it and if they leaned anything. Then the paid user can decide whether to ask that other person to post the feedback as a real review to the client’s review channel of choice.
+Free members get 4 matches / month. Paid members get 12.
+Our application has a how-to page with steps and rules to providing feedback to others and the things that will get you kicked out of the club: Leaving positive feedback in all then negative reviews online, being mean or disrespectful to other members, trying to game the system by creating multiple diff accounts. We want our platform to be friendly, welcoming and productive with happy users.
+Theme should be warm and friendly like mailchimp. Our target market is solopreneuers and founders trying to build up their online social proof. Ask any questions
+
+Show more
+8:08 PM
+
+
+
+
+
+Reading frontend design skill
+
+Reading frontend design skill
+
+This is a really well-thought-out concept! Before I design the full application, I have a few questions to make sure I nail the details:
+A few quick questions to make sure I design this perfectly for you:
+A few quick questions to make sure I design this right for you!
+
+
+
+
+
+Q: What should the matching process look like? How do members get paired? A: Great question…free members get 4 automated matches per month, random profiles, but avoid duplicate matches. Paid members get 6 automated matches, and can browse to find 6 more. If they browse and match with Free user who already has used all 4 matches that month - they have to wait until next month to START the feedback process so it does not count against either users total reviews this month.
+Q: For the feedback form inside the app — what format? (Select all that apply) A: Star rating (1–5), Video/audio upload, Written text review, Structured categories (e.g. quality, value, communication), Allow all of the above, allow the person Collecting Feedback to choose which types of Feedback they way. But even if all types chosen, it’s totally up the person Leaving Feedback to use whichever ones they want - as long as they use at least 1. Paid user can require stars + 1 other required, so if they only allow stars and text description both would be required.
+Q: What pages should I design for this mockup/prototype? (Select all that apply) A: Landing / marketing homepage, How-it-works / rules page, Member dashboard, Asset setup flow, Do not require login or supabase backend for the MVP, allow users to experience a premium app not an afterthought demo, they can immediately browse their dashboard and see their past matches and which feedback was posted as reviews to which channel. Please add a ‘beta access’ signup button and form to home page. Use Resend react-email to send all form responses to ‘spasta+fivestarz@gmail.com’ sent from ‘noreply@bendersaas.ai’
+
+Show more
+8:18 PM
+
+
+
+
+
+Check available skills
+
+Check available skills
+
+This is going to be a rich build. Let me plan it out and execute it properly — a full multi-page Next.js app with mock data, warm Mailchimp-like vibes, and a premium feel throughout.
+Set up Next.js project
+
+Set up Next.js project
+
+No internet access — I'll build this as a comprehensive single-file React artifact that fully simulates the Next.js app experience. Let me build the complete multi-page app.
+Created a file, read a file
+
+Created a file, read a file
+
+Here's your full FiveStarz prototype — 4 fully interactive pages with a warm, premium feel. Here's what's built:
+🏠 Landing Page — Hero with a live match card preview, how-it-works teaser, 3-tier pricing (Sprout/Bloom/Flourish), beta CTA section, and a working beta access form modal (pre-wired for Resend to spasta+fivestarz@gmail.com from noreply@bendersaas.ai — just plug in your API key when deploying).
+📊 Dashboard — Three tabs: Matches (with status badges: New Match, Feedback Due, Awaiting Post, Review Posted), Assets (with stats per asset), and Review History (with star ratings and channel info). Feedback modal and Request-to-Post modal both work in-app.
+📖 How It Works — Full step-by-step guide, matching system explainer for free vs paid, degrees-of-separation breakdown (1°/2°/3°), the do/don't rules, and the ethical/legal compliance callout.
+📦 Asset Setup Flow — 4-step wizard: Asset Info (name, URL, type, client toggle, screenshots upload zone), Review Channels (all platforms), Feedback Settings (all types + Bloom-only require options), and a confirmation summary.
+A few things to note for the real Next.js build:
+	•	Swap the Resend mock in the beta modal with an actual /api/beta-signup route using resend.emails.send()
+	•	The match tracking / degrees-of-separation logic will need a graph query in your DB (Supabase is a great fit)
+	•	The browse-member flow for paid users is a natural next screen to build out
+
+Fivestarz
+Code · JSX 
+Download
+
+
+
+
+
+Can you note A little more matching logic, maybe in the how-it-wirks area or in README under Feature Roadmap section: Free plan - allow duplicate match between 2 people but only when both users have different review channels from last match that can be used and FORCE the use of diff channels in this case (ie BLOCK the use of the same channels this time - block the same channels from BOTH sides). Free members are never matched THIS WAY with Paid Members UNLESS the Paid user allows it in their prefs. Paid users can turn this type of semi-duplicate matching OFF.
+And…Paid users are allowed to collect Reviews on their Feedback skills and value delivered. Ie, their asset is their own Consulting & Business Advisory Skills instead of a ‘thing’ that can be uploaded or visited.
+Please create the Browse Member flow screen, provide rich filters in sub-header above list that corresponded to the Asset Creation form choices(type or class of asset to review) and User Prefs (type of review, channels to use, time/frame),, grey out members who’ve been matched in the past but still clearly indicate the date & review channel if one used in the end. (Mock data perfect). Allow selecting a match the showing alert, “This member is out of credits this month. Save match for next month? Save Cancel buttons. Please show pill badges for Paid members in their list details.
+
+Show more
+8:50 PM
+
+
+
+
+
+Viewed 2 files
+
+Viewed 2 files
+
+Good — I have the full picture. Now let me build the updated version with the Browse Members screen, enhanced matching logic docs, and all the new features.
+Read the rest of the file structure
+
+Read the rest of the file structure
+
+Now I have a full picture. Let me build the complete updated version:
+Created 2 files, ran a command
+
+Created 2 files, ran a command
+
+
+
+Claude's response could not be fully generated
+Retry
+
+
+
+
+
+Can you note A little more matching logic, maybe in the how-it-wirks area or in README under Feature Roadmap section: Free plan - allow duplicate match between 2 people but only when both users have different review channels from last match that can be used and FORCE the use of diff channels in this case (ie BLOCK the use of the same channels this time - block the same channels from BOTH sides). Free members are never matched THIS WAY with Paid Members UNLESS the Paid user allows it in their prefs. Paid users can turn this type of semi-duplicate matching OFF.
+And...Paid users are allowed to collect Reviews on their Feedback skills and value delivered. Ie, their asset is their own Consulting & Business Advisory Skills instead of a ‘thing’ that can be uploaded or visited.
+Please create the Browse Member flow screen, provide rich filters in sub-header above list that corresponded to the Asset Creation form choices(type or class of asset to review) and User Prefs (type of review, channels to use, time/frame),, grey out members who’ve been matched in the past but still clearly indicate the date & review channel if one used in the end. (Mock data perfect). Allow selecting a match the showing alert, “This member is out of credits this month. Save match for next month? Save Cancel buttons. Please show pill badges for Paid members in their list details.
+
+Show more
+9:14 PM
+
+
+
+
+
+The file got cut off during creation. Let me rebuild it properly, splitting into a clean complete file:
+Ran 9 commands
+
+Ran 9 commands
+
+Good — all references are clean. The file is 1,067 lines of valid JSX. Let me present it.
+Presented file
+
+Presented file
+
+Here's everything that's been added in this update:
+Browse Members screen — full page with a dark gradient sub-header containing six filter controls: Search (by name or asset), Asset Type, Review Channel, Feedback Format, Plan, and Credits. Filters are wired live and a "Clear" button appears when any are active.
+Member cards feature a colored status strip along the top edge (green = fresh, gold = re-match eligible, grey = previously matched, red = out of credits), ⚡ Bloom / 🌱 Sprout plan pill badges, star rating, bio quote, per-asset channel tags with any blocked channels shown as strikethrough + 🚫 for semi-duplicate members, a credits dot-bar, and contextual CTA buttons that change based on state.
+Out-of-credits alert — clicking a no-credits member triggers the exact modal you described: "This member is out of credits this month." with Save / Cancel buttons. A confirmation follows.
+Request Match modal — lets you pick your asset and their asset, with semi-duplicate warnings and blocked channels shown inline.
+How It Works → Matching Logic tab now has a dedicated ⚡ callout box with four numbered rules covering the full semi-duplicate logic: channel availability check, bilateral channel blocking with no exceptions, Free↔Free default restriction, and the Paid member opt-in/opt-out toggle.
+How It Works → Advisory Skills tab is a full section explaining the asset type with four use-case examples (consultation, strategy session, audit, coaching).
+How It Works → Feature Roadmap tab is a proper phased README covering Live, In Development, Planned Q3, and Under Consideration — semi-duplicate matching and Advisory Skills are both documented there with full descriptions.
