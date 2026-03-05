@@ -215,6 +215,7 @@ const PLANS = [
 ];
 
 function HomePage({ setPage, setShowBeta }) {
+  const isMobile = useIsMobile();
   return (
     <div>
       <section style={{ minHeight: "88vh", display: "flex", alignItems: "center", background: `radial-gradient(ellipse at 70% 40%, ${T.orangeP} 0%, ${T.cream} 55%, ${T.tealP} 100%)`, padding: "80px 32px 60px", position: "relative", overflow: "hidden" }}>
