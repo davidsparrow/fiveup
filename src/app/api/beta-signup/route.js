@@ -1,20 +1,19 @@
 import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req) {
-    try {
-        const { name, email, business, url, goal } = await req.json();
+  try {
+    const { name, email, business, url, goal } = await req.json();
 
-        if (!name || !email) {
-            return Response.json({ error: "Name and email are required." }, { status: 400 });
-        }
+    if (!name || !email) {
+      return Response.json({ error: "Name and email are required." }, { status: 400 });
+    }
 
-        await resend.emails.send({
-            from: "FiveStarz <noreply@bendersaas.ai>",
-            to: ["spasta+fivestarz@gmail.com"],
-            subject: `New FiveStarz Beta Request — ${name}`,
-            html: `
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+
+      from: "FiveStarz <noreply@bendersaas.ai>",
+      to: ["spasta+fivestarz@gmail.com"],
+      subject: `New FiveStarz Beta Request — ${name}`,
+      html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #3D2B1F;">
           <div style="background: #3D2B1F; padding: 28px 32px; border-radius: 16px 16px 0 0;">
             <span style="font-size: 24px;">⭐</span>
@@ -37,11 +36,11 @@ export async function POST(req) {
           </div>
         </div>
       `,
-        });
+    });
 
-        return Response.json({ ok: true });
-    } catch (err) {
-        console.error("Resend error:", err);
-        return Response.json({ error: "Failed to send email." }, { status: 500 });
-    }
+    return Response.json({ ok: true });
+  } catch (err) {
+    console.error("Resend error:", err);
+    return Response.json({ error: "Failed to send email." }, { status: 500 });
+  }
 }
