@@ -1,13 +1,13 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "FiveStarz — Real reviews, earned together.",
+  title: "FiveStarz — Hone pitches, Prove products, GROW.",
   description:
-    "A members-only club where founders and solopreneurs exchange honest, ethical feedback — and decide together whether to share it as a real review.",
+    "A members-only club where founders and solopreneurs hone pitches, prove products, consult each other, and gather real stars. GROW together.",
   openGraph: {
-    title: "FiveStarz — Real reviews, earned together.",
+    title: "FiveStarz — Hone pitches, Prove products, GROW.",
     description:
-      "A members-only club where founders and solopreneurs exchange honest, ethical feedback.",
+      "Exchange honest, ethical feedback and decide together whether to share it as a real review.",
     type: "website",
   },
 };
