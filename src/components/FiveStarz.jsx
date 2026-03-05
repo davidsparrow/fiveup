@@ -625,22 +625,23 @@ const RULES = [
 
 function HowPage({ setShowBeta }) {
   const [tab, setTab] = useState("steps");
+  const isMobile = useIsMobile();
   const tabs = [["steps", "Steps"], ["matching", "Matching Logic"], ["advisory", "Advisory Skills"], ["rules", "Rules"], ["roadmap", "Feature Roadmap"]];
   return (
     <div style={{ background: T.cream }}>
-      <section style={{ padding: "60px 32px 0", background: `linear-gradient(135deg,${T.warm} 0%,${T.cream} 100%)`, textAlign: "center" }}>
+      <section style={{ padding: isMobile ? "44px 16px 0" : "60px 32px 0", background: `linear-gradient(135deg,${T.warm} 0%,${T.cream} 100%)`, textAlign: "center" }}>
         <div style={{ maxWidth: 700, margin: "0 auto", paddingBottom: 32 }}>
           <Pill color={T.teal}>Member Guidelines</Pill>
           <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 52, fontWeight: 900, color: T.brown, margin: "16px 0 20px", letterSpacing: "-0.03em" }}>The FiveStarz Way</h1>
           <p style={{ fontSize: 18, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65 }}>Built on trust, ethical exchange, and genuine community.</p>
         </div>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", gap: 4, justifyContent: "center" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", gap: 4, justifyContent: isMobile ? "flex-start" : "center", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 4 }}>
           {tabs.map(([id, lbl]) => <button key={id} onClick={() => setTab(id)} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, borderRadius: "10px 10px 0 0", background: tab === id ? "#fff" : "transparent", color: tab === id ? T.brown : T.brownL, transition: "all 0.2s" }}>{lbl}</button>)}
         </div>
       </section>
 
       <div style={{ background: "#fff" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 32px" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "32px 16px" : "48px 32px" }}>
 
           {tab === "steps" && (
             <div>
@@ -658,7 +659,7 @@ function HowPage({ setShowBeta }) {
             <div>
               <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Matching System Logic</h2>
               <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 32 }}>How FiveStarz pairs members — including the semi-duplicate matching rules.</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 28 }}>
                 {[
                   { plan: "Free Members (Sprout)", color: T.teal, icon: "🌱", pts: ["4 auto-matches / month, randomly assigned", "Category-aware pairing preferred", "Never re-matched unless semi-duplicate eligible (see below)", "Default 1° separation — no reviewing anyone in the direct review network of a prior match"] },
                   { plan: "Paid Members (Bloom / Flourish)", color: T.orange, icon: "🌸", pts: ["6 auto + 6 browse matches per month", "Browse by asset type, channel, feedback format, plan, and credit availability", "Set separation 1–3° in Account Preferences", "If browsing to a Free member at their limit, match queues to next month — no credits lost for either party", "Can disable semi-duplicate matching in preferences", "Can choose whether to allow semi-duplicate matches with Free members"] }
@@ -693,7 +694,7 @@ function HowPage({ setShowBeta }) {
               </div>
 
               <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, marginBottom: 16 }}>🔗 Degrees of Separation (Paid Only)</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
                 {[["1°", "Default", "Never matched with someone you've reviewed, or anyone directly in their review network."], ["2°", "Extended", "Extends exclusion two hops out. Great for niche markets where communities overlap."], ["3°", "Max Privacy", "Highly distinct review network. Ideal when everyone in your space knows everyone."]].map(([deg, lbl, desc]) => (
                   <div key={deg} style={{ background: T.cream, borderRadius: 14, padding: 18 }}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 900, color: T.orange, marginBottom: 4 }}>{deg}</div><div style={{ fontWeight: 700, fontSize: 14, color: T.brown, fontFamily: "'DM Sans',sans-serif", marginBottom: 6 }}>{lbl}</div><div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55 }}>{desc}</div></div>
                 ))}
