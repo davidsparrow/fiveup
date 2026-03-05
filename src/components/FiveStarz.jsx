@@ -146,7 +146,7 @@ function Nav({ page, setPage }) {
           <span style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, letterSpacing: "-0.02em" }}>five<span style={{ color: T.orange }}>starz</span></span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {[["How It Works", "how"], ["Browse Members", "browse"], ["Dashboard", "dashboard"], ["Add Asset", "asset"]].map(([lbl, id]) => (
+          {[["How It Works", "how"], ["Browse Members", "browse"], ["Proof Lab", "prooflab"], ["Dashboard", "dashboard"], ["Add Asset", "asset"]].map(([lbl, id]) => (
             <button key={id} onClick={() => setPage(id)} style={{ background: page === id ? T.orangeP : "transparent", color: page === id ? T.orange : T.brownM, border: "none", cursor: "pointer", padding: "8px 14px", borderRadius: 10, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, fontSize: 14, transition: "all 0.15s" }}>{lbl}</button>
           ))}
           <Btn onClick={() => setPage("dashboard")} sz="sm" sx={{ marginLeft: 6 }}>My Dashboard →</Btn>
@@ -178,7 +178,7 @@ function HomePage({ setPage, setShowBeta }) {
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", width: "100%" }}>
           <div>
             <Pill color={T.teal}>✦ Invite-Only Beta Now Open</Pill>
-            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: "clamp(42px,5vw,68px)", lineHeight: 1.08, color: T.brown, margin: "20px 0 24px", fontWeight: 900, letterSpacing: "-0.03em" }}>Real reviews,<br /><span style={{ color: T.orange }}>earned together.</span></h1>
+            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: "clamp(36px,4.5vw,62px)", lineHeight: 1.1, color: T.brown, margin: "20px 0 24px", fontWeight: 900, letterSpacing: "-0.03em" }}>Hone pitches. Prove products.<br />Consult founders. Gather stars.<br /><span style={{ color: T.orange }}>GROW.</span></h1>
             <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 19, color: T.slate, lineHeight: 1.65, maxWidth: 480, marginBottom: 36 }}>A members-only club where founders and solopreneurs exchange <strong>honest, ethical feedback</strong> — and decide together whether to share it as a real review.</p>
             <div style={{ display: "flex", gap: 12 }}>
               <Btn onClick={() => setShowBeta(true)} sz="lg">✦ Request Beta Access</Btn>
@@ -1083,6 +1083,164 @@ function AssetPage() {
   );
 }
 
+// \u2500\u2500 PROOF LAB \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+const PROOF_LISTINGS = [
+  { id:1, seller:"Tariq Osman", avatar:"TO", color:"#7C3AED", category:"Copywriting", title:"Sales Page Copywriting", desc:"Full sales page copy \u2014 hook, story, offer, CTA. Conversion-focused for SaaS or services.", retail:"$1,200", members:"$149", unit:"per page", badge:"\ud83d\udd25 Hot Deal" },
+  { id:2, seller:"Lena Fischer", avatar:"LF", color:"#1A9E8F", category:"UX Design", title:"UX Audit + Report", desc:"I'll audit your product or site and deliver a prioritised, annotated report with quick wins and deep fixes.", retail:"$800", members:"$89", unit:"per audit", badge:"\u2b50 Top Rated" },
+  { id:3, seller:"Chloe Benton", avatar:"CB", color:"#A0644A", category:"Branding", title:"Logo + Brand Identity Kit", desc:"Primary logo, alternate marks, color palette, typography guide, and usage doc. Figma source files included.", retail:"$650", members:"$97", unit:"per project", badge:"\ud83c\udfa8 Creative Pick" },
+  { id:4, seller:"Ravi Sharma", avatar:"RS", color:"#6B4226", category:"SEO", title:"SEO Keyword Strategy", desc:"30-day deep-dive: competitor analysis, keyword map, content calendar, and quick-win recommendations.", retail:"$500", members:"$59", unit:"per month", badge:"\ud83d\udcc8 Results-Driven" },
+  { id:5, seller:"Simone Adler", avatar:"SA", color:"#FF6B35", category:"Pitch Coaching", title:"Pitch Deck Coaching Session", desc:"60-min 1:1 session. We'll sharpen your narrative, financials slide, and investor Q&A prep.", retail:"$350", members:"$49", unit:"per session", badge:"\ud83d\ude80 Founder Fave" },
+  { id:6, seller:"Marcus Webb", avatar:"MW", color:"#4A5568", category:"Photography", title:"Brand Photography Package", desc:"Half-day shoot \u2014 headshots, lifestyle, product. 40+ edited images in web + print resolution.", retail:"$750", members:"$199", unit:"per shoot", badge:"" },
+  { id:7, seller:"Devon Park", avatar:"DP", color:"#F4A832", category:"Video Production", title:"Founder Story Video (60 sec)", desc:"Script, shoot, edit. Vertical + horizontal cuts. Perfect for LinkedIn, homepage hero, or IG.", retail:"$900", members:"$125", unit:"per video", badge:"\ud83c\udfa6 Fan Favorite" },
+  { id:8, seller:"Kofi Mensah", avatar:"KM", color:"#38A169", category:"Automation", title:"AI Workflow Automation Setup", desc:"I'll build 3 custom n8n or Make.com workflows to automate your CRM, email, or onboarding flows.", retail:"$600", members:"$75", unit:"per build", badge:"\ud83e\udd16 AI-Powered" },
+  { id:9, seller:"Tariq Osman", avatar:"TO", color:"#7C3AED", category:"Email Marketing", title:"Email Welcome Sequence (5 emails)", desc:"Research-backed, 5-email onboarding sequence. Copywriting + strategy included.", retail:"$800", members:"$99", unit:"per sequence", badge:"\u2709\ufe0f Inbox Gold" },
+  { id:10, seller:"Ravi Sharma", avatar:"RS", color:"#6B4226", category:"Google Ads", title:"Google Ads Management", desc:"Full campaign setup or audit + 30 days of active management. Ad copy, bidding, weekly reports.", retail:"$500", members:"$150", unit:"per month", badge:"\ud83d\udcca Data-Driven" },
+  { id:11, seller:"Lena Fischer", avatar:"LF", color:"#1A9E8F", category:"Web Design", title:"Landing Page Design", desc:"High-converting Figma design for your next product launch, waitlist, or lead gen campaign.", retail:"$550", members:"$79", unit:"per page", badge:"" },
+  { id:12, seller:"Chloe Benton", avatar:"CB", color:"#A0644A", category:"LinkedIn Ads", title:"LinkedIn Ad Creative Package", desc:"5 ad creatives (static + carousel) with hooks for your ICP. Designed for lead gen campaigns.", retail:"$400", members:"$59", unit:"per package", badge:"\ud83d\udcbc B2B Specialist" },
+  { id:13, seller:"Devon Park", avatar:"DP", color:"#F4A832", category:"Video Shorts", title:"Video Shorts Repurposing (10 clips)", desc:"Send me your long-form video. I extract 10 high-impact shorts with captions for TikTok, Reels, Shorts.", retail:"$300", members:"$49", unit:"per 10 clips", badge:"\u2702\ufe0f Viral-Ready" },
+  { id:14, seller:"Marcus Webb", avatar:"MW", color:"#4A5568", category:"Photography", title:"Product Photography (10 shots)", desc:"Clean white backdrop or lifestyle context. Up to 10 hero shots, retouched, web-optimized.", retail:"$400", members:"$89", unit:"per shoot", badge:"" },
+  { id:15, seller:"Kofi Mensah", avatar:"KM", color:"#38A169", category:"Notion / Tools", title:"Custom Notion Dashboard Build", desc:"Fully custom Notion workspace for your team \u2014 CRM, tasks, SOPs, content calendar.", retail:"$250", members:"$39", unit:"per dashboard", badge:"\ud83d\uddc2\ufe0f Productivity" },
+  { id:16, seller:"Simone Adler", avatar:"SA", color:"#FF6B35", category:"Branding", title:"Brand Voice & Messaging Guide", desc:"Tone of voice, key messages, audience personas, and power phrases. 20-page Notion doc delivered.", retail:"$450", members:"$65", unit:"per guide", badge:"\ud83c\udfaf Strategy" },
+  { id:17, seller:"Tariq Osman", avatar:"TO", color:"#7C3AED", category:"Copywriting", title:"30-Day LinkedIn Content Plan", desc:"30 posts planned and written for your personal brand. Hooks, stories, CTAs \u2014 ready to schedule.", retail:"$600", members:"$79", unit:"per month", badge:"\ud83d\udd25 Hot Deal" },
+  { id:18, seller:"Ravi Sharma", avatar:"RS", color:"#6B4226", category:"SEO", title:"Blog Content (4 posts/month)", desc:"4 SEO-optimised posts per month. Keyword research, outline, writing, internal links, meta copy.", retail:"$400", members:"$120", unit:"per month / 3-mo min", badge:"\u270d\ufe0f Long-form" },
+  { id:19, seller:"Lena Fischer", avatar:"LF", color:"#1A9E8F", category:"UX Design", title:"Funnel Design + Wireframes", desc:"Full wireframe kit for your marketing funnel: landing page, upsell, thank-you, email opt-in.", retail:"$700", members:"$99", unit:"per funnel", badge:"" },
+  { id:20, seller:"Chloe Benton", avatar:"CB", color:"#A0644A", category:"Facebook Ads", title:"Facebook/Instagram Ad Campaign", desc:"Campaign strategy, 6 ad creatives, copy for 3 audiences, A/B test framework. Pixel setup included.", retail:"$650", members:"$199", unit:"per month / 2-mo min", badge:"\ud83d\udce3 Paid Social" },
+  { id:21, seller:"Devon Park", avatar:"DP", color:"#F4A832", category:"Video Production", title:"Explainer Video Animation (60 sec)", desc:"Script + motion design. Ideal for product demos, onboarding, or pitching investors.", retail:"$1,100", members:"$175", unit:"per video", badge:"\ud83c\udfa6 Fan Favorite" },
+  { id:22, seller:"Kofi Mensah", avatar:"KM", color:"#38A169", category:"Automation", title:"AI Chatbot Setup (Website)", desc:"Custom GPT-powered chatbot trained on your docs. Deployed to your site same week.", retail:"$500", members:"$89", unit:"per build", badge:"\ud83e\udd16 AI-Powered" },
+];
+const PROOF_CATS=["All","Copywriting","UX Design","Branding","SEO","Pitch Coaching","Photography","Video Production","Video Shorts","LinkedIn Ads","Facebook Ads","Google Ads","Web Design","Automation","Email Marketing","Notion / Tools"];
+
+function ProofLabPage(){
+  const[cat,setCat]=useState("All");
+  const[reqModal,setReqModal]=useState(null);
+  const shown=cat==="All"?PROOF_LISTINGS:PROOF_LISTINGS.filter(l=>l.category===cat);
+  return(
+    <div style={{background:T.cream,minHeight:"100vh"}}>
+      <div style={{background:`linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`,padding:"40px 32px 0"}}>
+        <div style={{maxWidth:1100,margin:"0 auto"}}>
+          <div style={{marginBottom:24}}>
+            <Pill color={T.gold}>\ud83e\uddea Members-Only Deals</Pill>
+            <h1 style={{fontFamily:"'Fraunces',serif",fontSize:36,fontWeight:900,color:"#fff",margin:"12px 0 8px",letterSpacing:"-0.02em"}}>The Proof Lab</h1>
+            <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:16,color:"#C4A68A",margin:0,maxWidth:560}}>Members offer exclusive deals on their best services \u2014 marketing, design, video, AI, ads, and more. Lock in founder-only pricing.</p>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",paddingBottom:20}}>
+            {PROOF_CATS.map(c=><button key={c} onClick={()=>setCat(c)} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,background:cat===c?T.gold:"rgba(255,255,255,0.12)",color:cat===c?T.brown:"#fff",transition:"all 0.15s"}}>{c}</button>)}
+          </div>
+        </div>
+      </div>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"28px 32px 60px"}}>
+        <div style={{fontSize:13,color:T.brownL,fontFamily:"'DM Sans',sans-serif",fontWeight:600,marginBottom:20}}>{shown.length} listing{shown.length!==1?"s":""}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:20}}>
+          {shown.map(l=>(
+            <div key={l.id} style={{background:"#fff",borderRadius:20,border:"1.5px solid #F0E8E0",overflow:"hidden",display:"flex",flexDirection:"column",transition:"all 0.22s",boxShadow:"0 2px 10px rgba(61,43,31,0.06)"}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 10px 32px rgba(61,43,31,0.12)";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 2px 10px rgba(61,43,31,0.06)";}}>
+              <div style={{height:4,background:l.color}}/>
+              <div style={{padding:"20px 20px 18px",display:"flex",flexDirection:"column",flex:1}}>
+                <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:14}}>
+                  <Av txt={l.avatar} color={l.color} size={34}/>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,color:T.brown}}>{l.seller}</div>
+                    <div style={{fontSize:11,color:T.brownL,fontFamily:"'DM Sans',sans-serif"}}>{l.category}</div>
+                  </div>
+                  {l.badge&&<span style={{marginLeft:"auto",fontSize:11,fontWeight:700,fontFamily:"'DM Sans',sans-serif",color:l.color,background:l.color+"18",padding:"3px 9px",borderRadius:12}}>{l.badge}</span>}
+                </div>
+                <div style={{fontFamily:"'Fraunces',serif",fontSize:17,fontWeight:700,color:T.brown,marginBottom:8,lineHeight:1.25}}>{l.title}</div>
+                <div style={{fontSize:13,color:T.slate,fontFamily:"'DM Sans',sans-serif",lineHeight:1.6,marginBottom:16,flex:1}}>{l.desc}</div>
+                <div style={{background:T.cream,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                    <div>
+                      <div style={{fontSize:10,fontWeight:700,color:T.brownL,textTransform:"uppercase",letterSpacing:"0.05em",fontFamily:"'DM Sans',sans-serif"}}>Retail</div>
+                      <div style={{fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,color:T.brownL,textDecoration:"line-through"}}>{l.retail}</div>
+                    </div>
+                    <div style={{fontSize:20,color:"#DDD4C8"}}>\u2192</div>
+                    <div>
+                      <div style={{fontSize:10,fontWeight:700,color:T.teal,textTransform:"uppercase",letterSpacing:"0.05em",fontFamily:"'DM Sans',sans-serif"}}>Members Pay</div>
+                      <div style={{fontFamily:"'Fraunces',serif",fontWeight:900,fontSize:22,color:T.orange}}>{l.members}</div>
+                    </div>
+                    <div style={{marginLeft:"auto",fontSize:10,color:T.brownL,fontFamily:"'DM Sans',sans-serif",textAlign:"right",lineHeight:1.4}}>{l.unit}</div>
+                  </div>
+                </div>
+                <Btn onClick={()=>setReqModal(l)} sx={{width:"100%",justifyContent:"center"}}>Request This Deal \u2192</Btn>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {reqModal&&<ProofLabRequestModal listing={reqModal} onClose={()=>setReqModal(null)}/>}
+    </div>
+  );
+}
+
+function ProofLabRequestModal({listing,onClose}){
+  const[email,setEmail]=useState("");
+  const[note,setNote]=useState("");
+  const[timeframe,setTimeframe]=useState(1);
+  const[sent,setSent]=useState(false);
+  const[loading,setLoading]=useState(false);
+  const[error,setError]=useState("");
+  const TF=["ASAP","Soon","No Rush"];
+  const send=async()=>{
+    if(!email)return;
+    setLoading(true);setError("");
+    try{
+      const res=await fetch("/api/beta-signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        name:`Proof Lab: ${listing.title}`,email,business:listing.seller,url:listing.category,
+        goal:`Timeframe: ${TF[timeframe]}\n\nNote: ${note||"(none)"}`,
+      })});
+      if(!res.ok)throw new Error();
+      setSent(true);
+    }catch{setError("Something went wrong \u2014 please try again.");}
+    finally{setLoading(false);}
+  };
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(61,43,31,0.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:"#fff",borderRadius:28,padding:"36px 40px",maxWidth:460,width:"100%",boxShadow:"0 24px 80px rgba(61,43,31,0.3)",position:"relative"}}>
+        <button onClick={onClose} style={{position:"absolute",top:16,right:18,background:"none",border:"none",cursor:"pointer",fontSize:22,color:T.brownL}}>\xd7</button>
+        {!sent?(
+          <>
+            <div style={{marginBottom:22}}>
+              <div style={{fontSize:12,fontWeight:700,color:T.teal,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4,fontFamily:"'DM Sans',sans-serif"}}>Request Deal</div>
+              <div style={{fontFamily:"'Fraunces',serif",fontSize:21,fontWeight:800,color:T.brown,lineHeight:1.2,marginBottom:4}}>{listing.title}</div>
+              <div style={{fontSize:12,color:T.brownL,fontFamily:"'DM Sans',sans-serif"}}>by {listing.seller} \xb7 <span style={{color:T.orange,fontWeight:700}}>{listing.members}</span> {listing.unit}</div>
+            </div>
+            <div style={{marginBottom:16}}>
+              <label style={{display:"block",fontSize:13,fontWeight:700,color:T.brown,marginBottom:6,fontFamily:"'DM Sans',sans-serif"}}>Your Best Email *</label>
+              <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"
+                style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1.5px solid #E8DDD5",fontSize:14,fontFamily:"'DM Sans',sans-serif",color:T.brown,background:T.cream,boxSizing:"border-box"}}/>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{display:"block",fontSize:13,fontWeight:700,color:T.brown,marginBottom:6,fontFamily:"'DM Sans',sans-serif"}}>Note <span style={{fontWeight:400,color:T.brownL}}>(optional)</span></label>
+              <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Anything the member should know..."
+                style={{width:"100%",minHeight:72,padding:"10px 14px",borderRadius:10,border:"1.5px solid #E8DDD5",fontSize:14,fontFamily:"'DM Sans',sans-serif",color:T.brown,background:T.cream,resize:"vertical",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{marginBottom:24}}>
+              <label style={{display:"block",fontSize:13,fontWeight:700,color:T.brown,marginBottom:10,fontFamily:"'DM Sans',sans-serif"}}>Timeframe</label>
+              <div style={{padding:"14px 16px",background:T.cream,borderRadius:12}}>
+                <input type="range" min={0} max={2} step={1} value={timeframe} onChange={e=>setTimeframe(Number(e.target.value))} style={{width:"100%",accentColor:T.orange,cursor:"pointer"}}/>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                  {TF.map((lbl,i)=><span key={lbl} style={{fontSize:12,fontWeight:timeframe===i?800:500,color:timeframe===i?T.orange:T.brownL,fontFamily:"'DM Sans',sans-serif",transition:"all 0.15s"}}>{lbl}</span>)}
+                </div>
+              </div>
+            </div>
+            {error&&<div style={{padding:"10px 14px",background:"#FFF0F0",borderRadius:10,fontSize:13,color:T.red,fontFamily:"'DM Sans',sans-serif",marginBottom:12}}>{error}</div>}
+            <Btn onClick={send} sx={{width:"100%",justifyContent:"center"}} disabled={!email||loading}>{loading?"Sending...":"Send Request \u2192"}</Btn>
+          </>
+        ):(
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:52,marginBottom:16}}>\u2705</div>
+            <h2 style={{fontFamily:"'Fraunces',serif",fontSize:26,fontWeight:800,color:T.brown,margin:"0 0 12px"}}>Request Sent!</h2>
+            <p style={{fontSize:15,color:T.slate,fontFamily:"'DM Sans',sans-serif",lineHeight:1.65,marginBottom:24}}>
+              <strong>{listing.seller}</strong> will reach out to <strong>{email}</strong> with next steps.
+            </p>
+            <Btn onClick={onClose}>Done</Btn>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── FOOTER ───────────────────────────────────────────────────────────────────
 function Footer({ setPage }) {
   return (
@@ -1091,10 +1249,10 @@ function Footer({ setPage }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><span style={{ fontSize: 22 }}>⭐</span><span style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color: "#fff" }}>five<span style={{ color: T.orange }}>starz</span></span></div>
-            <div style={{ fontSize: 14, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", maxWidth: 260, lineHeight: 1.6 }}>Real reviews, earned together. Built for founders who play the long game.</div>
+            <div style={{ fontSize: 14, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", maxWidth: 260, lineHeight: 1.6 }}>Hone pitches. Prove products. Consult founders. Gather stars. GROW.</div>
           </div>
           <div style={{ display: "flex", gap: 48 }}>
-            {[{ label: "Product", links: [["How It Works", "how"], ["Browse Members", "browse"], ["Dashboard", "dashboard"], ["Add Asset", "asset"]] }, { label: "Company", links: [["About", ""], ["Blog", ""], ["Contact", ""], ["Privacy", ""]] }].map(({ label, links }) => (
+            {[{ label: "Product", links: [["How It Works", "how"], ["Browse Members", "browse"], ["Proof Lab", "prooflab"], ["Dashboard", "dashboard"], ["Add Asset", "asset"]] }, { label: "Company", links: [["About", ""], ["Affiliates", ""], ["Contact", ""], ["Privacy", ""]] }].map(({ label, links }) => (
               <div key={label}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: T.gold, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14, fontFamily: "'DM Sans',sans-serif" }}>{label}</div>
                 {links.map(([lbl, id]) => <div key={lbl} style={{ fontSize: 14, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", marginBottom: 10, cursor: "pointer" }} onClick={() => id && setPage(id)}>{lbl}</div>)}
@@ -1134,6 +1292,7 @@ export default function App() {
         {page === "browse" && <BrowsePage setPage={setPage} />}
         {page === "dashboard" && <Dashboard setPage={setPage} />}
         {page === "asset" && <AssetPage />}
+        {page === "prooflab" && <ProofLabPage />}
         <Footer setPage={setPage} />
       </div>
       <BetaModal show={showBeta} onClose={() => setShowBeta(false)} />
