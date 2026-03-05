@@ -442,7 +442,7 @@ function BrowsePage({ setPage }) {
               <Card key={m.id} dim={dimmed} sx={{ padding: 0, overflow: "hidden", border: `2px solid ${dimmed ? "#E8E0D8" : barColor + "55"}` }}>
                 {/* Status strip */}
                 <div style={{ height: 4, background: barColor }} />
-                <div style={{ padding: "20px 22px" }}>
+                <div style={{ padding: "20px 22px", overflow: "hidden" }}>
                   {/* Header */}
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 12 }}>
                     <Av txt={m.avatar} color={dimmed ? "#B0A0A0" : m.color} size={48} />
@@ -454,7 +454,7 @@ function BrowsePage({ setPage }) {
                         {semiOk && <Pill color={T.gold} bg={T.gold + "28"} sx={{ fontSize: 10 }}>⚡ Re-match OK</Pill>}
                       </div>
                       <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>📍 {m.loc} · Member since {m.since}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
                         <Stars n={Math.round(m.rating)} size={12} />
                         <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{m.rating} feedback quality · {m.exchanges} exchanges</span>
                         <span style={{ fontSize: 10, fontWeight: 700, background: T.gold + "22", color: T.gold, padding: "1px 8px", borderRadius: 10, fontFamily: "'DM Sans',sans-serif", letterSpacing: "0.04em" }}>⭐ INTERNAL RATING</span>
@@ -910,7 +910,7 @@ function Dashboard({ setPage }) {
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}><span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 16, color: T.brown }}>{m.person}</span><Pill color={s.color} bg={s.bg}>{s.label}</Pill></div>
                         <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}><strong>{m.asset}</strong> · {m.type} · Due {m.due}</div>
-                        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>{m.channels.map(ch => <Pill key={ch} color={T.brownL} bg={T.cream}>{ch}</Pill>)}</div>
+                        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>{m.channels.map(ch => <Pill key={ch} color={T.brownL} bg={T.cream}>{ch}</Pill>)}</div>
                       </div>
                       <div style={{ display: "flex", gap: 8, flexShrink: 0, flexDirection: "column", alignItems: "flex-end" }}>
                         {m.status === "feedback_pending" && <Btn sz="sm" onClick={() => setFbModal(m)}>Leave Feedback</Btn>}
