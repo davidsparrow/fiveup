@@ -318,7 +318,7 @@ function BetaModal({ show, onClose }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: "#fff", borderRadius: 28, padding: "40px 44px", maxWidth: 500, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative", animation: "popIn 0.25s ease" }}>
         <style>{`@keyframes popIn{from{opacity:0;transform:scale(0.93) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}`}</style>
-        <button onClick={onClose} style={{ position: "absolute", top: 18, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
+        <button onClick={onClose} style={{ position: "absolute", top: 21, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {step === "form" ? (
           <>
             <div style={{ textAlign: "center", marginBottom: 28 }}><div style={{ fontSize: 36, marginBottom: 8 }}>⭐</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 800, color: T.brown, margin: "0 0 8px" }}>Request Beta Access</h2><p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>First 500 members · Free Bloom for 90 days</p></div>
@@ -866,6 +866,8 @@ function Dashboard({ setPage }) {
   const [tab, setTab] = useState("matches");
   const [fbModal, setFbModal] = useState(null);
   const [postModal, setPostModal] = useState(null);
+  const isMobile = useIsMobile();
+  const hideHeaderIdentityText = useIsMobile(1024);
   const sc = {
     feedback_pending: { label: "Feedback Due", color: T.orange, bg: T.orangeP },
     awaiting_post: { label: "Awaiting Post", color: T.teal, bg: T.tealP },
@@ -874,54 +876,56 @@ function Dashboard({ setPage }) {
   };
   return (
     <div style={{ background: T.cream, minHeight: "100vh" }}>
-      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: "40px 32px 0" }}>
+      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: isMobile ? "24px 16px 0" : "40px 32px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
-            <div style={{ display: "flex", gap: 16, alignItems: "center" }}><Av txt={ME.avatar} color={T.orange} size={52} /><div><div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#C4A68A", fontWeight: 600, marginBottom: 4 }}>Welcome back,</div><div style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: "#fff" }}>{ME.name}</div></div></div>
-            <div style={{ textAlign: "right" }}><PlanPill plan={ME.plan} planName={ME.planName} /><div style={{ marginTop: 10, display: "flex", gap: 20 }}>{[["4/12", "Matches"], ["2/6", "Browse"], [`${ME.degrees}°`, "Separation"]].map(([v, l]) => <div key={l} style={{ textAlign: "center" }}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color: "#fff" }}>{v}</div><div style={{ fontSize: 11, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif" }}>{l}</div></div>)}</div></div>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 18 : 24, marginBottom: isMobile ? 20 : 32 }}>
+            <div style={{ display: "flex", gap: hideHeaderIdentityText ? 0 : (isMobile ? 12 : 16), alignItems: "center", minWidth: 0 }}><Av txt={ME.avatar} color={T.orange} size={isMobile ? 46 : 52} />{!hideHeaderIdentityText && <div style={{ minWidth: 0 }}><div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#C4A68A", fontWeight: 600, marginBottom: 4 }}>Welcome back,</div><div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#fff", lineHeight: 1.15 }}>{ME.name}</div></div>}</div>
+            <div style={{ textAlign: isMobile ? "left" : "right", width: isMobile ? "100%" : "auto" }}><PlanPill plan={ME.plan} planName={ME.planName} /><div style={{ marginTop: 10, display: "flex", gap: isMobile ? 8 : 20, justifyContent: isMobile ? "space-between" : "flex-start", flexWrap: isMobile ? "wrap" : "nowrap" }}>{[["4/12", "Matches"], ["2/6", "Browse"], [`${ME.degrees}°`, "Separation"]].map(([v, l]) => <div key={l} style={{ textAlign: "center", flex: isMobile ? 1 : "0 0 auto", minWidth: 0 }}><div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 18 : 20, fontWeight: 800, color: "#fff" }}>{v}</div><div style={{ fontSize: isMobile ? 10 : 11, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif" }}>{l}</div></div>)}</div></div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: isMobile ? 8 : 16 }}>
             {[["📦", "Assets", ME.assets.length], ["✅", "Posted", 14], ["✍️", "Pending", 2], ["🤝", "Matches", "4/12"]].map(([ic, lbl, val]) => (
-              <div key={lbl} style={{ background: "rgba(255,255,255,0.1)", borderRadius: "14px 14px 0 0", padding: "16px 20px", backdropFilter: "blur(8px)" }}>
-                <div style={{ fontSize: 20, marginBottom: 6 }}>{ic}</div>
-                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: "#fff" }}>{val}</div>
-                <div style={{ fontSize: 12, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif" }}>{lbl}</div>
+              <div key={lbl} style={{ background: "rgba(255,255,255,0.1)", borderRadius: "14px 14px 0 0", padding: isMobile ? "12px 8px" : "16px 20px", backdropFilter: "blur(8px)", minWidth: 0, textAlign: isMobile ? "center" : "left" }}>
+                <div style={{ fontSize: isMobile ? 18 : 20, marginBottom: 6 }}>{ic}</div>
+                <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 18 : 24, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{val}</div>
+                <div style={{ fontSize: isMobile ? 10 : 12, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif" }}>{lbl}</div>
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 4, marginTop: 16 }}>
+          <div style={{ display: "flex", gap: 4, marginTop: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
             {[["matches", "🤝 Matches"], ["assets", "📦 Assets"], ["history", "📜 History"]].map(([id, lbl]) => (
-              <button key={id} onClick={() => setTab(id)} style={{ padding: "12px 24px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, borderRadius: "10px 10px 0 0", background: tab === id ? T.cream : "transparent", color: tab === id ? T.brown : "#C4A68A", transition: "all 0.2s" }}>{lbl}</button>
+              <button key={id} onClick={() => setTab(id)} style={{ padding: isMobile ? "10px 14px" : "12px 24px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: isMobile ? 13 : 14, borderRadius: "10px 10px 0 0", background: tab === id ? T.cream : "transparent", color: tab === id ? T.brown : "#C4A68A", transition: "all 0.2s", flex: isMobile ? "1 1 0" : "0 0 auto" }}>{lbl}</button>
             ))}
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 32px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "20px 16px" : "28px 32px" }}>
         {tab === "matches" && (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>Your Matches</h3><Btn sz="sm" v="teal" onClick={() => setPage("browse")}>+ Browse Members</Btn></div>
+            <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 12 : 16, marginBottom: 20 }}><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>Your Matches</h3><Btn sz="sm" v="teal" onClick={() => setPage("browse")} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>+ Browse Members</Btn></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {MATCHES.map(m => {
                 const s = sc[m.status]; return (
-                  <Card key={m.id} sx={{ padding: "20px 24px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                      <Av txt={m.person.split(" ").map(n => n[0]).join("")} color={m.color} size={44} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}><span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 16, color: T.brown }}>{m.person}</span><Pill color={s.color} bg={s.bg}>{s.label}</Pill></div>
-                        <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}><strong>{m.asset}</strong> · {m.type} · Due {m.due}</div>
-                        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>{m.channels.map(ch => <Pill key={ch} color={T.brownL} bg={T.cream}>{ch}</Pill>)}</div>
+                  <Card key={m.id} sx={{ padding: isMobile ? "16px" : "20px 24px" }}>
+                    <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 12 : 16, flexDirection: isMobile ? "column" : "row" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, minWidth: 0 }}>
+                        <Av txt={m.person.split(" ").map(n => n[0]).join("")} color={m.color} size={44} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 6 : 10, marginBottom: 4 }}><span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 16, color: T.brown }}>{m.person}</span><Pill color={s.color} bg={s.bg}>{s.label}</Pill></div>
+                          <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.45 }}><strong>{m.asset}</strong> · {m.type} · Due {m.due}</div>
+                          <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>{m.channels.map(ch => <Pill key={ch} color={T.brownL} bg={T.cream}>{ch}</Pill>)}</div>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", gap: 8, flexShrink: 0, flexDirection: "column", alignItems: "flex-end" }}>
-                        {m.status === "feedback_pending" && <Btn sz="sm" onClick={() => setFbModal(m)}>Leave Feedback</Btn>}
-                        {m.status === "awaiting_post" && <Btn sz="sm" v="teal" onClick={() => setPostModal(m)}>Request Post</Btn>}
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0, flexDirection: "column", alignItems: isMobile ? "stretch" : "flex-end", width: isMobile ? "100%" : "auto" }}>
+                        {m.status === "feedback_pending" && <Btn sz="sm" onClick={() => setFbModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Leave Feedback</Btn>}
+                        {m.status === "awaiting_post" && <Btn sz="sm" v="teal" onClick={() => setPostModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Request Post</Btn>}
                         {m.status === "posted" && (
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "stretch" : "flex-end", gap: 6, width: isMobile ? "100%" : "auto" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>✓ {m.postedCh}</div>
                             <RateFeedbackWidget match={m} />
                           </div>
                         )}
-                        {m.status === "matched" && <Btn sz="sm" v="gold">Accept Match</Btn>}
+                        {m.status === "matched" && <Btn sz="sm" v="gold" sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Accept Match</Btn>}
                       </div>
                     </div>
                   </Card>
@@ -933,8 +937,8 @@ function Dashboard({ setPage }) {
 
         {tab === "assets" && (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>My Assets</h3><Btn sz="sm" onClick={() => setPage("asset")}>+ Add Asset</Btn></div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, minWidth: 0 }}><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0, minWidth: 0 }}>My Assets</h3><Btn sz="sm" onClick={() => setPage("asset")} sx={{ marginLeft: "auto", flexShrink: 0 }}>+ Add Asset</Btn></div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
               {ME.assets.map(a => (
                 <Card key={a.id} sx={{ padding: 28 }}>
                   <div style={{ display: "flex", gap: 14, marginBottom: 18 }}>
@@ -964,15 +968,15 @@ function Dashboard({ setPage }) {
               { person: "Priya Nair", asset: "Brand Strategy Session", ch: "Google Business Profile", date: "Feb 20", stars: 5, snippet: "Priya completely transformed how I think about positioning. Incredibly thoughtful." },
               { person: "Derek Walsh", asset: "Email Marketing Course", ch: "Trustpilot", date: "Feb 12", stars: 4, snippet: "Solid frameworks and actionable templates. A few sections felt a bit rushed." }
               ].map((r, i) => (
-                <Card key={i} sx={{ padding: "18px 24px" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-                    <Av txt={r.person.split(" ").map(n => n[0]).join("")} color={[T.gold, T.brown, T.teal][i]} size={40} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div><span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, color: T.brown }}>{r.person}</span><span style={{ color: T.brownL, fontSize: 13, fontFamily: "'DM Sans',sans-serif" }}> · {r.asset}</span></div>
+                <Card key={i} sx={{ padding: isMobile ? "16px" : "18px 24px" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: isMobile ? 10 : 14 }}>
+                    <Av txt={r.person.split(" ").map(n => n[0]).join("")} color={[T.gold, T.brown, T.teal][i]} size={isMobile ? 36 : 40} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "flex-start", gap: isMobile ? 4 : 12 }}>
+                        <div style={{ minWidth: 0 }}><span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, color: T.brown }}>{r.person}</span><span style={{ color: T.brownL, fontSize: 13, fontFamily: "'DM Sans',sans-serif", display: isMobile ? "block" : "inline" }}>{isMobile ? r.asset : ` · ${r.asset}`}</span></div>
                         <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{r.date}</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "6px 0 8px" }}><Stars n={r.stars} size={14} /><Pill color={T.green} bg={T.greenP}>✓ {r.ch}</Pill></div>
+                      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 6 : 10, margin: "6px 0 8px" }}><Stars n={r.stars} size={14} /><Pill color={T.green} bg={T.greenP}>✓ {r.ch}</Pill></div>
                       <div style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, fontStyle: "italic" }}>"{r.snippet}"</div>
                     </div>
                   </div>

@@ -71,7 +71,39 @@ select
   public.pair_respects_separation_preferences(sp.source_user_id, sp.target_user_id) as respects_preferences
 from sample_pair sp;
 
--- 6) Refresh one user's separation cache and inspect row count.
+-- 6) Seeded-path assertions (returns rows when graph_matching_seed.sql has been loaded).
+with seeded_pairs as (
+  select *
+  from (values
+    ('Avery -> Blake',  '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000102'::uuid, 1::integer, false),
+    ('Avery -> Casey',  '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000103'::uuid, 2::integer, false),
+    ('Avery -> Devon',  '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000104'::uuid, 3::integer, true),
+    ('Avery -> Flynn',  '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000106'::uuid, 4::integer, true),
+    ('Avery -> Gray',   '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000107'::uuid, 5::integer, true),
+    ('Avery -> Harper', '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000108'::uuid, 6::integer, true),
+    ('Avery -> Ember',  '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000105'::uuid, null::integer, true),
+    ('Avery -> Isla',   '00000000-0000-0000-0000-000000000101'::uuid, '00000000-0000-0000-0000-000000000109'::uuid, null::integer, true)
+  ) as t(test_name, source_user_id, target_user_id, expected_shortest_path_degree, expected_respects_preferences)
+)
+select
+  sp.test_name,
+  sp.expected_shortest_path_degree,
+  actual.shortest_path_degree as actual_shortest_path_degree,
+  sp.expected_shortest_path_degree is not distinct from actual.shortest_path_degree as shortest_path_matches_expected,
+  sp.expected_respects_preferences,
+  actual.respects_preferences as actual_respects_preferences,
+  sp.expected_respects_preferences = actual.respects_preferences as respects_matches_expected
+from seeded_pairs sp
+join public.user_profiles src on src.user_id = sp.source_user_id
+join public.user_profiles dst on dst.user_id = sp.target_user_id
+cross join lateral (
+  select
+    public.member_shortest_path_degree(sp.source_user_id, sp.target_user_id, 8) as shortest_path_degree,
+    public.pair_respects_separation_preferences(sp.source_user_id, sp.target_user_id) as respects_preferences
+) actual
+order by sp.test_name;
+
+-- 7) Refresh one user's separation cache and inspect row count.
 with sample_source as (
   select mme.user_low_id as source_user_id
   from public.member_match_edges mme
@@ -80,7 +112,7 @@ with sample_source as (
 ), refreshed as (
   select
     ss.source_user_id,
-    public.refresh_member_separation_cache_for_user(ss.source_user_id, 4) as refreshed_cache_rows
+    public.refresh_member_separation_cache_for_user(ss.source_user_id, 6) as refreshed_cache_rows
   from sample_source ss
 )
 select
@@ -94,7 +126,7 @@ left join public.member_separation_cache c
   on c.source_user_id = r.source_user_id
 group by r.source_user_id, r.refreshed_cache_rows;
 
--- 7) Direct neighbors cached from the sampled source should have degree 1.
+-- 8) Direct neighbors cached from the sampled source should have degree 1.
 with sample_source as (
   select mme.user_low_id as source_user_id
   from public.member_match_edges mme
@@ -126,4 +158,4 @@ rollback;
 
 -- Note:
 -- `create_match(...)` and `eligible_match_candidates(...)` depend on `auth.uid()`.
--- Test those through your app or an authenticated RPC call, not the plain SQL editor.
+-- See graph_matching_rpc_smoke_test.sql for authenticated SQL-editor coverage.
