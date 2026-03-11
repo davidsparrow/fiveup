@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 
 const T = {
@@ -244,7 +245,7 @@ function HomePage({ setPage, setShowBeta }) {
                 <Pill color={T.orange}>New Match</Pill>
               </div>
               <div style={{ display: "flex", gap: 16, padding: "16px 0", borderTop: `1.5px dashed ${T.orangeP}`, borderBottom: `1.5px dashed ${T.orangeP}`, marginBottom: 20 }}>
-                <div style={{ flex: 1, background: T.cream, borderRadius: 14, padding: 14 }}><div style={{ fontSize: 11, fontWeight: 700, color: T.brownL, marginBottom: 6, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>You're reviewing</div><div style={{ fontSize: 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Alex's UX Studio</div><div style={{ fontSize: 12, color: T.slate, marginTop: 4 }}>alexdesign.co</div></div>
+                <div style={{ flex: 1, background: T.cream, borderRadius: 14, padding: 14 }}><div style={{ fontSize: 11, fontWeight: 700, color: T.brownL, marginBottom: 6, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>You&rsquo;re reviewing</div><div style={{ fontSize: 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Alex&rsquo;s UX Studio</div><div style={{ fontSize: 12, color: T.slate, marginTop: 4 }}>alexdesign.co</div></div>
                 <div style={{ display: "flex", alignItems: "center", fontSize: 20 }}>⇄</div>
                 <div style={{ flex: 1, background: T.tealP, borderRadius: 14, padding: 14 }}><div style={{ fontSize: 11, fontWeight: 700, color: T.teal, marginBottom: 6, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>Alex reviews</div><div style={{ fontSize: 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Your Consulting</div><div style={{ fontSize: 12, color: T.slate, marginTop: 4 }}>revflow.co</div></div>
               </div>
@@ -308,7 +309,7 @@ function BetaModal({ show, onClose }) {
       const res = await fetch("/api/beta-signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       if (!res.ok) throw new Error("send failed");
       setStep("success");
-    } catch (e) {
+    } catch {
       setError("Something went wrong — please try again.");
     } finally {
       setLoading(false);
@@ -329,7 +330,7 @@ function BetaModal({ show, onClose }) {
             <Btn onClick={submit} sx={{ width: "100%", justifyContent: "center", marginTop: 8 }} disabled={loading}>{loading ? "Sending..." : "✦ Request My Spot →"}</Btn>
           </>
         ) : (
-          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>You're on the list!</h2><p style={{ fontSize: 15, color: T.slate, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: 28 }}>Thanks, <strong>{form.name || "friend"}</strong>! Confirmation sent to <strong>{form.email || "your inbox"}</strong>.</p><Btn onClick={onClose}>Back to FiveStarz</Btn></div>
+          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>You&rsquo;re on the list!</h2><p style={{ fontSize: 15, color: T.slate, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: 28 }}>Thanks, <strong>{form.name || "friend"}</strong>! Confirmation sent to <strong>{form.email || "your inbox"}</strong>.</p><Btn onClick={onClose}>Back to FiveStarz</Btn></div>
         )}
       </div>
     </div>
@@ -337,7 +338,7 @@ function BetaModal({ show, onClose }) {
 }
 
 // ── BROWSE MEMBERS ───────────────────────────────────────────────────────────
-function BrowsePage({ setPage }) {
+function BrowsePage() {
   const [filters, setFilters] = useState({ assetType: "All Types", channel: "Any Channel", format: "Any Format", plan: "All Plans", credits: "Any Credits", search: "" });
   const [outModal, setOutModal] = useState(null);
   const [savedModal, setSavedModal] = useState(null);
@@ -361,7 +362,7 @@ function BrowsePage({ setPage }) {
     setMatchModal(m);
   };
 
-  const selStyle = (active, base = "#E8DDD5") => ({
+  const selStyle = active => ({
     padding: "8px 12px", borderRadius: 10, border: "none",
     background: active ? T.orange : "rgba(255,255,255,0.12)",
     color: "#fff", fontSize: 13, fontFamily: "'DM Sans',sans-serif",
@@ -462,7 +463,7 @@ function BrowsePage({ setPage }) {
                     </div>
                   </div>
 
-                  <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, marginBottom: 14, fontStyle: "italic" }}>"{m.bio}"</p>
+                  <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, marginBottom: 14, fontStyle: "italic" }}>&ldquo;{m.bio}&rdquo;</p>
 
                   {/* Assets */}
                   <div style={{ marginBottom: 12 }}>
@@ -557,7 +558,7 @@ function BrowsePage({ setPage }) {
           <div style={{ background: "#fff", borderRadius: 24, padding: "36px 40px", maxWidth: 380, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", textAlign: "center" }}>
             <div style={{ fontSize: 48, marginBottom: 14 }}>✅</div>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Match Saved!</h2>
-            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We'll kick off your match with <strong>{savedModal.name}</strong> on the 1st of next month. No credits deducted from either of you this month.</p>
+            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We&rsquo;ll kick off your match with <strong>{savedModal.name}</strong> on the 1st of next month. No credits deducted from either of you this month.</p>
             <Btn onClick={() => setSavedModal(null)} sx={{ width: "100%", justifyContent: "center" }}>Got It</Btn>
           </div>
         </div>
@@ -580,7 +581,7 @@ function RequestMatchModal({ member, onClose }) {
         {!sent ? (
           <>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, marginBottom: 6 }}>Request Match with {member.name}</h2>
-            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 20 }}>Choose which assets you'll each review in this exchange.</p>
+            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 20 }}>Choose which assets you&rsquo;ll each review in this exchange.</p>
             {semi && <div style={{ padding: "12px 16px", background: T.goldL + "44", borderRadius: 12, border: `1.5px solid ${T.gold}55`, marginBottom: 18, fontSize: 13, fontFamily: "'DM Sans',sans-serif", color: T.brownM }}>⚡ <strong>Semi-duplicate match.</strong> You must use different review channels this round. Blocked channels are struck through below.</div>}
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, fontFamily: "'DM Sans',sans-serif" }}>Which of YOUR assets to review?</div>
@@ -591,7 +592,7 @@ function RequestMatchModal({ member, onClose }) {
               ))}
             </div>
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, fontFamily: "'DM Sans',sans-serif" }}>Which of {member.name.split(" ")[0]}'s assets to review?</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, fontFamily: "'DM Sans',sans-serif" }}>Which of {member.name.split(" ")[0]}&rsquo;s assets to review?</div>
               {member.assets.map((a, i) => (
                 <div key={i} onClick={() => setTheirAsset(i)} style={{ padding: "12px 16px", borderRadius: 12, marginBottom: 8, border: `2px solid ${theirAsset === i ? T.teal : "#E8DDD5"}`, background: theirAsset === i ? T.tealP : "#fff", cursor: "pointer", transition: "all 0.15s" }}>
                   <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown, marginBottom: 6 }}>{a.name}</div>
@@ -604,7 +605,7 @@ function RequestMatchModal({ member, onClose }) {
             <Btn onClick={() => myAsset !== null && theirAsset !== null && setSent(true)} sx={{ width: "100%", justifyContent: "center" }} disabled={myAsset === null || theirAsset === null}>Send Match Request →</Btn>
           </>
         ) : (
-          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 52, marginBottom: 16 }}>🤝</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Match Request Sent!</h2><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We've notified <strong>{member.name}</strong>. Once they accept, you'll both get instructions to experience each other's work. 1 browse credit used.</p><Btn onClick={onClose}>Done</Btn></div>
+          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 52, marginBottom: 16 }}>🤝</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Match Request Sent!</h2><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We&rsquo;ve notified <strong>{member.name}</strong>. Once they accept, you&rsquo;ll both get instructions to experience each other&rsquo;s work. 1 browse credit used.</p><Btn onClick={onClose}>Done</Btn></div>
         )}
       </div>
     </div>
@@ -677,7 +678,7 @@ function HowPage({ setShowBeta }) {
                   <span style={{ fontSize: 32, flexShrink: 0 }}>⚡</span>
                   <div>
                     <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, marginBottom: 12 }}>Semi-Duplicate Matching — Full Rules</h3>
-                    <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 16 }}>Under specific conditions, two members who've matched before can be re-matched — but only when the system can guarantee they'll exchange on entirely different review channels than their last match.</p>
+                    <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 16 }}>Under specific conditions, two members who&rsquo;ve matched before can be re-matched — but only when the system can guarantee they&rsquo;ll exchange on entirely different review channels than their last match.</p>
                     {[
                       { n: 1, title: "Channel availability check", desc: "The system compares both members' available channels against the channels used in their prior match. A semi-duplicate match is only created if both members have at least one unused channel available." },
                       { n: 2, title: "Blocked channels — both sides, no exceptions", desc: "Previously used channels are automatically blocked for both parties this round. Neither member can choose them, regardless of preference. This forces genuine channel diversification and prevents gaming." },
@@ -707,7 +708,7 @@ function HowPage({ setShowBeta }) {
               <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Advisory & Consulting Skills as Assets</h2>
               <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 28 }}>Paid members can collect reviews not just on things — but on <em>themselves as professionals</em>. Your knowledge, insight, and expertise are reviewable assets.</p>
               <div style={{ padding: "24px 28px", background: T.purpleP, border: `2px solid ${T.purple}33`, borderRadius: 20, marginBottom: 28 }}>
-                <div style={{ display: "flex", gap: 14 }}><span style={{ fontSize: 36, flexShrink: 0 }}>🧠</span><div><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color: T.purple, marginBottom: 8 }}>What counts as an Advisory Skills asset?</h3><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65 }}>Any offering where <em>you</em> are the product. Your strategic thinking, coaching, auditing, or consulting — reviewed by a peer who's genuinely engaged with it.</p></div></div>
+                <div style={{ display: "flex", gap: 14 }}><span style={{ fontSize: 36, flexShrink: 0 }}>🧠</span><div><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color: T.purple, marginBottom: 8 }}>What counts as an Advisory Skills asset?</h3><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65 }}>Any offering where <em>you</em> are the product. Your strategic thinking, coaching, auditing, or consulting — reviewed by a peer who&rsquo;s genuinely engaged with it.</p></div></div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
                 {[["💬", "Free 30-Min Consultation", "You give a genuine business growth consultation. The other member reviews your thinking, delivery, and value. You review their business context and goals in return."], ["🎯", "Strategy Session", "A paid or complimentary strategy session. The member reviews the clarity and value of your strategic guidance — and can post it as a review on LinkedIn or Google."], ["🛠️", "Done-For-You Audit", "You audit their site, funnel, or pitch deck. They review the quality and actionability of your findings. A perfect Advisory Skills use case."], ["🎓", "Coaching / Mentoring", "A coaching call or mentorship session. The member's honest feedback builds your advisory reputation — stars, written review, structured categories, or video testimonial."]].map(([icon, title, desc]) => (
@@ -741,7 +742,7 @@ function HowPage({ setShowBeta }) {
           {tab === "roadmap" && (
             <div>
               <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Feature Roadmap</h2>
-              <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 32 }}>We build FiveStarz with our beta members. Here's what's live, in progress, and planned.</p>
+              <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 32 }}>We build FiveStarz with our beta members. Here&rsquo;s what&rsquo;s live, in progress, and planned.</p>
               {[
                 {
                   phase: "✅ Live in Beta", color: T.green, bg: T.greenP, items: [
@@ -806,7 +807,7 @@ function HowPage({ setShowBeta }) {
             <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: T.gold, textTransform: "uppercase", letterSpacing: "0.1em" }}>Unadvertised Member Bonus</span>
           </div>
           <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: "clamp(28px,4vw,46px)", fontWeight: 900, color: "#fff", margin: "0 0 20px", lineHeight: 1.12, letterSpacing: "-0.02em" }}>
-            The highest-rated members get paid<br /><span style={{ color: T.gold }}>to shape tomorrow's products.</span>
+            The highest-rated members get paid<br /><span style={{ color: T.gold }}>to shape tomorrow&rsquo;s products.</span>
           </h2>
           <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 17, color: "#C4A68A", lineHeight: 1.7, maxWidth: 620, marginBottom: 32 }}>
             Members build an internal star rating based on the quality of their feedback — not just reviews they collect, but reviews they <em style={{ color: "#FDD07A" }}>give</em>. Top-rated members earn exclusive invitations to participate in <strong style={{ color: "#fff" }}>paid virtual focus groups</strong> for new products coming to market. Real input. Real money.
@@ -977,7 +978,7 @@ function Dashboard({ setPage }) {
                         <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{r.date}</span>
                       </div>
                       <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 6 : 10, margin: "6px 0 8px" }}><Stars n={r.stars} size={14} /><Pill color={T.green} bg={T.greenP}>✓ {r.ch}</Pill></div>
-                      <div style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, fontStyle: "italic" }}>"{r.snippet}"</div>
+                      <div style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, fontStyle: "italic" }}>&ldquo;{r.snippet}&rdquo;</div>
                     </div>
                   </div>
                 </Card>
@@ -1041,7 +1042,7 @@ function PostModal({ match, onClose }) {
             <Btn v="teal" onClick={() => sel && setSent(true)} sx={{ width: "100%", justifyContent: "center", marginTop: 12, opacity: sel ? 1 : 0.5 }}>Send Request</Btn>
           </>
         ) : (
-          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 52, marginBottom: 16 }}>📨</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Request Sent!</h2><p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}><strong>{match.person}</strong> has been notified. If they post to <strong>{sel}</strong>, you'll get a confirmation here.</p><Btn onClick={onClose}>Done</Btn></div>
+          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 52, marginBottom: 16 }}>📨</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Request Sent!</h2><p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}><strong>{match.person}</strong> has been notified. If they post to <strong>{sel}</strong>, you&rsquo;ll get a confirmation here.</p><Btn onClick={onClose}>Done</Btn></div>
         )}
       </div>
     </div>
@@ -1116,7 +1117,7 @@ function AssetPage() {
                 </div>
                 {a.type.includes("Advisory") && <div style={{ marginTop: 12, padding: "14px 16px", background: T.purpleP, borderRadius: 12, fontSize: 13, color: T.purple, fontFamily: "'DM Sans',sans-serif" }}><strong>Advisory Skills</strong> — Paid feature. Your expertise is the asset. Peers experience your session and review your skills and value delivered.</div>}
               </div>
-              {a.forClient && <div style={{ marginBottom: 20, padding: 16, background: T.tealP, borderRadius: 14 }}><label style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.teal, marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Client's Business Name</label><input value={a.clientName} onChange={e => setA(p => ({ ...p, clientName: e.target.value }))} placeholder="e.g. Dave's Plumbing Co." style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${T.teal}44`, fontSize: 14, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: "#fff", outline: "none", boxSizing: "border-box" }} /></div>}
+              {a.forClient && <div style={{ marginBottom: 20, padding: 16, background: T.tealP, borderRadius: 14 }}><label style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.teal, marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Client&rsquo;s Business Name</label><input value={a.clientName} onChange={e => setA(p => ({ ...p, clientName: e.target.value }))} placeholder="e.g. Dave's Plumbing Co." style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${T.teal}44`, fontSize: 14, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: "#fff", outline: "none", boxSizing: "border-box" }} /></div>}
               <div style={{ marginBottom: 28 }}><label style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Description</label><textarea value={a.desc} onChange={e => setA(p => ({ ...p, desc: e.target.value }))} placeholder="What should reviewers experience? Include a link, what to try, how to book a session..." style={{ width: "100%", minHeight: 90, padding: "12px 14px", borderRadius: 12, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: T.cream, resize: "vertical", outline: "none", boxSizing: "border-box" }} /></div>
 
               {/* ── Screenshot Upload Zone ── */}
@@ -1137,7 +1138,7 @@ function AssetPage() {
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
                     {a.screenshots.map((s, i) => (
                       <div key={i} style={{ position: "relative", width: 80, height: 80, borderRadius: 10, overflow: "hidden", border: `1.5px solid ${T.orangeP}`, flexShrink: 0 }}>
-                        <img src={s.src} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <Image src={s.src} alt={s.name} fill unoptimized sizes="80px" style={{ objectFit: "cover" }} />
                         <button onClick={e => { e.stopPropagation(); removeScreenshot(i); }} style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: "50%", background: "rgba(61,43,31,0.75)", border: "none", cursor: "pointer", color: "#fff", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>×</button>
                       </div>
                     ))}
@@ -1188,7 +1189,7 @@ function AssetPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ padding: "14px 18px", background: T.tealP, borderRadius: 12, fontSize: 14, color: T.teal, fontFamily: "'DM Sans',sans-serif", marginBottom: 24 }}>🔍 We'll verify your URL before activating. Usually takes a few minutes.</div>
+              <div style={{ padding: "14px 18px", background: T.tealP, borderRadius: 12, fontSize: 14, color: T.teal, fontFamily: "'DM Sans',sans-serif", marginBottom: 24 }}>🔍 We&rsquo;ll verify your URL before activating. Usually takes a few minutes.</div>
               <div style={{ display: "flex", gap: 12 }}><Btn v="ghost" onClick={() => setStep(3)}>← Back</Btn><Btn v="teal" onClick={() => setDone(true)} sx={{ flex: 1, justifyContent: "center" }}>✦ Create Asset & Start Matching</Btn></div>
             </div>
           )}
@@ -1406,7 +1407,7 @@ export default function App() {
         <Nav page={page} setPage={setPage} />
         {page === "home" && <HomePage setPage={setPage} setShowBeta={setShowBeta} />}
         {page === "how" && <HowPage setShowBeta={setShowBeta} />}
-        {page === "browse" && <BrowsePage setPage={setPage} />}
+        {page === "browse" && <BrowsePage />}
         {page === "dashboard" && <Dashboard setPage={setPage} />}
         {page === "asset" && <AssetPage />}
         {page === "prooflab" && <ProofLabPage />}

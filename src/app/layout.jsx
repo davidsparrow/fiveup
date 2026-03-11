@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-page-custom-font */
 import "./globals.css";
 
 export const metadata = {
