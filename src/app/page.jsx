@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import FiveStarz from "@/components/FiveStarz";
 import { createClient } from "@/lib/supabase/server";
+import PageShell from "@/components/fivestarz/PageShell";
+import HomePageContent from "@/components/fivestarz/HomePage";
 
 export default async function Home() {
     const supabase = await createClient();
@@ -39,7 +40,9 @@ export default async function Home() {
                     </div>
                 </div>
             </div>
-            <FiveStarz />
+            <PageShell>
+                <HomePageContent />
+            </PageShell>
         </>
     );
 }
