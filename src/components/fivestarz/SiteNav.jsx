@@ -27,7 +27,8 @@ export default function SiteNav() {
   }, []);
 
   useEffect(() => {
-    setOpen(false);
+    const t = setTimeout(() => setOpen(false), 0);
+    return () => clearTimeout(t);
   }, [pathname]);
 
   return (
