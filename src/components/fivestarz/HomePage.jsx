@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { HOW_STEPS, PLANS } from "@/lib/fivestarz/mock-data";
@@ -15,20 +16,16 @@ export default function HomePageContent() {
 
   return (
     <div>
-      <section style={{ minHeight: "88vh", display: "flex", alignItems: "center", background: `radial-gradient(ellipse at 70% 40%, ${T.orangeP} 0%, ${T.cream} 55%, ${T.tealP} 100%)`, padding: "80px 32px 60px", position: "relative", overflow: "hidden" }}>
+      <section style={{ minHeight: "88vh", display: "flex", alignItems: "center", background: `radial-gradient(ellipse at 70% 40%, ${T.orangeP} 0%, ${T.cream} 55%, ${T.tealP} 100%)`, padding: isMobile ? "60px 20px 48px" : "80px 32px 60px", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: -80, right: -60, width: 400, height: 400, borderRadius: "50%", background: T.gold + "18", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: -100, left: -80, width: 500, height: 500, borderRadius: "50%", background: T.teal + "12", pointerEvents: "none" }} />
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", width: "100%" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 36 : 60, alignItems: "center", width: "100%" }}>
           <div>
             <Pill color={T.teal}>✦ Invite-Only Beta Now Open</Pill>
-            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: "clamp(36px,4.5vw,62px)", lineHeight: 1.1, color: T.brown, margin: "20px 0 24px", fontWeight: 900, letterSpacing: "-0.03em" }}>Hone pitches. Prove products.<br />Consult founders. Gather stars.<br /><span style={{ color: T.orange }}>GROW.</span></h1>
-            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 19, color: T.slate, lineHeight: 1.65, maxWidth: 480, marginBottom: 36 }}>A members-only club where founders and solopreneurs exchange <strong>honest, ethical feedback</strong> — and decide together whether to share it as a real review.</p>
-            <div style={{ display: "flex", gap: 12 }}>
-              <Btn onClick={openBeta} sz="lg">✦ Request Beta Access</Btn>
-              <Btn v="ghost" sz="lg" onClick={() => router.push("/how-it-works")}>See How It Works →</Btn>
-            </div>
-            <div style={{ marginTop: 40, display: "flex", gap: 28 }}>
-              {[["500+", "Beta Members"], ["4.9★", "Avg Score"], ["2,100+", "Reviews Posted"]].map(([n, l]) => (
+            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? "clamp(32px,8vw,48px)" : "clamp(36px,4.5vw,62px)", lineHeight: 1.1, color: T.brown, margin: "20px 0 24px", fontWeight: 900, letterSpacing: "-0.03em" }}>Hone pitches. Prove products.<br />Gather stars.<br /><span style={{ color: T.orange }}>GROW.</span></h1>
+            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 16 : 19, color: T.slate, lineHeight: 1.65, maxWidth: 480, marginBottom: 0 }}>Exchange valuable feedback with other founders, find powerful wholesale services, <Link href="/how-it-works" style={{ color: T.orange, textDecoration: "underline", fontWeight: 600 }}>gather stars</Link>, beef up your reputation.</p>
+            <div style={{ marginTop: 32, display: "flex", gap: 20, flexWrap: "wrap" }}>
+              {[["500", "Beta Seats"], ["90", "Days Free Access"], ["0", "When you don't join."]].map(([n, l]) => (
                 <div key={l}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown }}>{n}</div><div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{l}</div></div>
               ))}
             </div>
@@ -38,14 +35,14 @@ export default function HomePageContent() {
             <Card sx={{ padding: 28, position: "relative" }} hover={false}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <div><div style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 700, color: T.brown }}>New Match!</div><div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Jordan, meet Alex →</div></div>
-                <Pill color={T.orange}>New Match</Pill>
+                <Pill color={T.orange}>Auto-matched</Pill>
               </div>
               <div style={{ display: "flex", gap: 16, padding: "16px 0", borderTop: `1.5px dashed ${T.orangeP}`, borderBottom: `1.5px dashed ${T.orangeP}`, marginBottom: 20 }}>
                 <div style={{ flex: 1, background: T.cream, borderRadius: 14, padding: 14 }}><div style={{ fontSize: 11, fontWeight: 700, color: T.brownL, marginBottom: 6, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>You&rsquo;re reviewing</div><div style={{ fontSize: 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Alex&rsquo;s UX Studio</div><div style={{ fontSize: 12, color: T.slate, marginTop: 4 }}>alexdesign.co</div></div>
                 <div style={{ display: "flex", alignItems: "center", fontSize: 20 }}>⇄</div>
                 <div style={{ flex: 1, background: T.tealP, borderRadius: 14, padding: 14 }}><div style={{ fontSize: 11, fontWeight: 700, color: T.teal, marginBottom: 6, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>Alex reviews</div><div style={{ fontSize: 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Your Consulting</div><div style={{ fontSize: 12, color: T.slate, marginTop: 4 }}>revflow.co</div></div>
               </div>
-              <div style={{ display: "flex", gap: 10 }}><Btn sz="sm" sx={{ flex: 1, justifyContent: "center" }}>Accept Match</Btn><Btn sz="sm" v="ghost" sx={{ flex: 1, justifyContent: "center" }}>View Profile</Btn></div>
+              <div style={{ display: "flex", gap: 10 }}><Btn sz="sm" sx={{ flex: 1, justifyContent: "center" }}>Accept</Btn><Btn sz="sm" v="ghost" sx={{ flex: 1, justifyContent: "center" }}>Profile</Btn></div>
               <div style={{ marginTop: 16, padding: "10px 14px", background: T.greenP, borderRadius: 10, fontSize: 12, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>✓ No prior connection · Separation: 2°</div>
             </Card>
           </div>
