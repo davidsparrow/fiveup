@@ -12,22 +12,28 @@ export default function HowPage() {
   const [tab, setTab] = useState("steps");
   const isMobile = useIsMobile();
   const { openBeta } = useBetaModal();
-  const tabs = [["steps", "Steps"], ["matching", "Matching Logic"], ["advisory", "Advisory Skills"], ["rules", "Rules"], ["roadmap", "Feature Roadmap"]];
+  const tabs = [["steps", "📋 Steps"], ["matching", "🤝 Matching Logic"], ["advisory", "🧠 Advisory Skills"], ["rules", "⚖️ Rules"], ["roadmap", "🗺️ Feature Roadmap"]];
 
   return (
     <div style={{ background: T.cream }}>
-      <section style={{ padding: isMobile ? "44px 16px 0" : "60px 32px 0", background: `linear-gradient(135deg,${T.warm} 0%,${T.cream} 100%)`, textAlign: "center" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto", paddingBottom: 32 }}>
-          <Pill color={T.teal}>Member Guidelines</Pill>
-          <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 52, fontWeight: 900, color: T.brown, margin: "16px 0 20px", letterSpacing: "-0.03em" }}>The FiveStarz Way</h1>
-          <p style={{ fontSize: 18, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65 }}>Built on trust, ethical exchange, and genuine community.</p>
-        </div>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", gap: 4, justifyContent: isMobile ? "flex-start" : "center", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 4 }}>
-          {tabs.map(([id, lbl]) => <button key={id} onClick={() => setTab(id)} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, borderRadius: "10px 10px 0 0", background: tab === id ? "#fff" : "transparent", color: tab === id ? T.brown : T.brownL, transition: "all 0.2s" }}>{lbl}</button>)}
+      <section style={{ padding: isMobile ? "24px 16px 0" : "40px 32px 0", background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)` }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", paddingBottom: isMobile ? 20 : 32 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", padding: "5px 16px", borderRadius: 20, marginBottom: 16 }}>
+              <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "#C4A68A", textTransform: "uppercase", letterSpacing: "0.1em" }}>Member Guidelines</span>
+            </div>
+            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 36 : 52, fontWeight: 900, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.03em" }}>The FiveStarz Way</h1>
+            <p style={{ fontSize: 17, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: 0 }}>Built on trust, ethical exchange, and genuine community.</p>
+          </div>
+          <div style={{ display: "flex", gap: 4, marginTop: 20, overflowX: "auto", WebkitOverflowScrolling: "touch", justifyContent: isMobile ? "flex-start" : "center", flexWrap: isMobile ? "nowrap" : "wrap" }}>
+            {tabs.map(([id, lbl]) => (
+              <button key={id} onClick={() => setTab(id)} style={{ padding: isMobile ? "10px 14px" : "12px 22px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: isMobile ? 12 : 13, borderRadius: "10px 10px 0 0", background: tab === id ? T.cream : "transparent", color: tab === id ? T.brown : "#C4A68A", transition: "all 0.2s", whiteSpace: "nowrap", flexShrink: 0 }}>{lbl}</button>
+            ))}
+          </div>
         </div>
       </section>
 
-      <div style={{ background: "#fff" }}>
+      <div style={{ background: T.cream }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "32px 16px" : "48px 32px" }}>
           {tab === "steps" && (
             <div>
