@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ME, MATCHES, HISTORY_ITEMS } from "@/lib/fivestarz/mock-data";
+import { ME, ME_PROFILE, ME_PROOF_LISTINGS, MATCHES, HISTORY_ITEMS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
@@ -82,7 +82,7 @@ export default function DashboardPage() {
             ))}
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-            {[["matches", "🤝 Matches"], ["assets", "📦 Assets"], ["history", "📜 History"]].map(([id, lbl]) => (
+            {[["matches", "🤝 Matches"], ["assets", "📦 Assets"], ["history", "📜 History"], ["profile", "👤 Profile"], ["prooflab", "🧪 Proof Lab"]].map(([id, lbl]) => (
               <button key={id} onClick={() => setTab(id)} style={{ padding: isMobile ? "10px 14px" : "12px 24px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: isMobile ? 13 : 14, borderRadius: "10px 10px 0 0", background: tab === id ? T.cream : "transparent", color: tab === id ? T.brown : "#C4A68A", transition: "all 0.2s", flex: isMobile ? "1 1 0" : "0 0 auto" }}>{lbl}</button>
             ))}
           </div>
@@ -185,6 +185,77 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* ── Profile Tab ── */}
+        {tab === "profile" && (
+          <div>
+            {/* Header card */}
+            <Card sx={{ padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <div style={{ display: "flex", gap: isMobile ? 14 : 20, alignItems: "flex-start", flexDirection: isMobile ? "column" : "row" }}>
+                <Av txt={ME.avatar} color={T.orange} size={isMobile ? 64 : 80} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: T.brown }}>{ME.name}</div>
+                      <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, color: T.brownM, fontWeight: 600, marginTop: 2 }}>{ME_PROFILE.title}</div>
+                    </div>
+                    <Btn sz="sm" v="ghost">Edit Profile</Btn>
+                  </div>
+                  <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: "12px 0 14px" }}>{ME_PROFILE.bio}</p>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    {[["📍", ME_PROFILE.location], ["🌐", ME_PROFILE.website], ["💼", ME_PROFILE.linkedin]].map(([icon, val]) => (
+                      <span key={val} style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", gap: 5 }}>{icon} {val}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* ProofSignals stats */}
+            <Card sx={{ padding: isMobile ? 18 : 24, marginBottom: 20 }}>
+              <div style={{ fontFamily: "'Fraunces',serif", fontSize: 16, fontWeight: 700, color: T.brown, marginBottom: 16 }}>ProofSignals Member Indicators</div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(5,1fr)", gap: isMobile ? 12 : 16 }}>
+                {[
+                  ["Plan", ME.planName, T.orange],
+                  ["⭐ Avg Rating", ME_PROFILE.rating, T.gold],
+                  ["Exchanges", ME_PROFILE.exchanges, T.teal],
+                  ["Separation", `${ME.degrees}°`, T.purple],
+                  ["Member Since", ME_PROFILE.memberSince, T.brownL],
+                ].map(([label, value, color]) => (
+                  <div key={label} style={{ background: T.cream, borderRadius: 12, padding: "12px 14px", textAlign: "center" }}>
+                    <div style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color }}>{value}</div>
+                    <div style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif", marginTop: 3 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Review channel presence */}
+            <Card sx={{ padding: isMobile ? 18 : 24 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 16, fontWeight: 700, color: T.brown }}>Online Review Channel Presence</div>
+                <Btn sz="sm" v="ghost">+ Add Channel</Btn>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3,1fr)", gap: 12 }}>
+                {ME_PROFILE.channels.map(ch => (
+                  <div key={ch.name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${ch.active ? T.green + "55" : "#E8DDD5"}`, background: ch.active ? T.greenP : T.cream }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: ch.active ? T.green : "#CCC4BC", flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, color: T.brown, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ch.name}</div>
+                      <div style={{ fontSize: 11, color: ch.active ? T.green : T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{ch.active ? "Active" : "Not yet active"}</div>
+                    </div>
+                    {ch.active && <Btn sz="sm" v="ghost" sx={{ padding: "3px 10px", fontSize: 11, flexShrink: 0 }}>View</Btn>}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* ── Proof Lab Listings Tab ── */}
+        {tab === "prooflab" && (
+          <ProofLabListingsTab isMobile={isMobile} />
+        )}
       </div>
 
       {fbModal && <FeedbackModal match={fbModal} onClose={() => setFbModal(null)} />}
@@ -193,6 +264,70 @@ export default function DashboardPage() {
   );
 }
 
+
+function ProofLabListingsTab({ isMobile }) {
+  const [addMsg, setAddMsg] = useState(false);
+  const activeCnt = ME_PROOF_LISTINGS.filter(l => l.active).length;
+  const planLimit = 3; // Bloom tier
+  const atLimit = activeCnt >= planLimit;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>My Proof Lab Listings</h3>
+        <div style={{ position: "relative" }}>
+          <Btn sz="sm" v={atLimit ? "ghost" : "teal"}
+            onClick={() => atLimit && setAddMsg(v => !v)}
+            onMouseEnter={() => atLimit && setAddMsg(true)}
+            onMouseLeave={() => setAddMsg(false)}>
+            + Add New Listing
+          </Btn>
+          {addMsg && (
+            <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", width: 260, background: T.brown, color: "#fff", borderRadius: 12, padding: "12px 16px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, zIndex: 10, boxShadow: "0 8px 24px rgba(61,43,31,0.25)" }}>
+              <strong>Bloom Tier: {activeCnt} of {planLimit} Listings Active.</strong><br />De-activate one to add or activate a different one.
+              <div style={{ position: "absolute", top: -6, right: 20, width: 12, height: 12, background: T.brown, transform: "rotate(45deg)", borderRadius: 2 }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {ME_PROOF_LISTINGS.map(l => (
+          <Card key={l.id} sx={{ padding: 0, overflow: "hidden", border: `2px solid ${l.active ? T.green + "55" : "#E8DDD5"}` }}>
+            <div style={{ height: 4, background: l.active ? T.green : "#C8BFB5" }} />
+            <div style={{ padding: isMobile ? "16px" : "18px 22px", display: "flex", alignItems: "flex-start", gap: 16, flexDirection: isMobile ? "column" : "row" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: T.brown }}>{l.title}</span>
+                  {l.active
+                    ? <Pill color={T.green} bg={T.greenP}>● Active</Pill>
+                    : <Pill color={T.brownL} bg={T.cream}>Inactive</Pill>}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.teal, fontFamily: "'DM Sans',sans-serif", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>{l.category}</div>
+                <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, margin: "0 0 10px" }}>{l.desc}</p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 900, color: T.orange }}>{l.members}</span>
+                  <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textDecoration: "line-through" }}>{l.retail}</span>
+                  <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.unit}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexShrink: 0, alignSelf: isMobile ? "stretch" : "center" }}>
+                <Btn sz="sm" v="ghost" sx={isMobile ? { flex: 1, justifyContent: "center" } : {}}>Edit</Btn>
+                <Btn sz="sm" v={l.active ? "ghost" : "teal"} sx={isMobile ? { flex: 1, justifyContent: "center" } : {}}>
+                  {l.active ? "De-activate" : "Activate"}
+                </Btn>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 20, padding: "14px 18px", background: T.tealP, borderRadius: 12, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>
+        🧪 Bloom Tier: {activeCnt} of {planLimit} listings active · <a href="/proof-lab" style={{ color: T.teal, fontWeight: 700 }}>View your listings in the Proof Lab →</a>
+      </div>
+    </div>
+  );
+}
 
 function FeedbackModal({ match, onClose }) {
   const isMobile = useIsMobile();
