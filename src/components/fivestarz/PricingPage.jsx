@@ -5,7 +5,7 @@ import { useState } from "react";
 import { PLANS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Btn, Card, Pill } from "@/components/fivestarz/ui";
+import { Btn, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
 import { useBetaModal } from "@/components/fivestarz/PageShell";
 
 const FEATURE_TABLE = [
@@ -75,7 +75,7 @@ export default function PricingPage() {
                 <div style={{ borderTop: "1.5px solid #F0E8E0", paddingTop: 20, marginBottom: 24 }}>
                   {p.features.map((f, j) => (
                     <div key={j} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>
-                      <span style={{ color: p.color, flexShrink: 0 }}>✓</span>{f}
+                      <span style={{ color: p.color, flexShrink: 0 }}>✓</span><FeatureText text={f} />
                     </div>
                   ))}
                 </div>

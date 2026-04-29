@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { HOW_STEPS, PLANS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Btn, Card, Pill } from "@/components/fivestarz/ui";
+import { Btn, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
 import { useBetaModal } from "@/components/fivestarz/PageShell";
 
 export default function HomePageContent() {
@@ -115,7 +115,7 @@ export default function HomePageContent() {
                 <div style={{ borderTop: "1.5px solid #F0E8E0", paddingTop: isMobile ? 14 : 20, marginBottom: isMobile ? 16 : 24 }}>
                   {p.features.map((f, j) => (
                     <div key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 9, fontSize: isMobile ? 13 : 14, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>
-                      <span style={{ color: p.color, flexShrink: 0 }}>✓</span>{f}
+                      <span style={{ color: p.color, flexShrink: 0 }}>✓</span><FeatureText text={f} />
                     </div>
                   ))}
                 </div>
