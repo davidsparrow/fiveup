@@ -17,6 +17,30 @@ export const ME = {
   ],
 };
 
+export const ME_PROFILE = {
+  title: "Founder & Growth Consultant",
+  bio: "I help B2B SaaS founders grow through smarter positioning, better messaging, and conversion-focused content. Ex-agency. Fully indie since 2022.",
+  location: "Austin, TX",
+  website: "revflow.co",
+  linkedin: "linkedin.com/in/jordanrivera",
+  memberSince: "Oct 2024",
+  rating: 4.8,
+  exchanges: 14,
+  channels: [
+    { name: "Google Business Profile", active: true, url: "g.co/revflow" },
+    { name: "Clutch.co", active: true, url: "clutch.co/profile/revflow" },
+    { name: "LinkedIn", active: true, url: "linkedin.com/company/revflow" },
+    { name: "Trustpilot", active: false, url: "" },
+    { name: "Yelp", active: false, url: "" },
+  ],
+};
+
+export const ME_PROOF_LISTINGS = [
+  { id: 1, title: "Revenue Growth Strategy Session", category: "Advisory / Consulting", desc: "60-min 1:1. Cover growth bottlenecks, positioning, and a 90-day action plan you can execute immediately.", retail: "$350", members: "$49", unit: "per session", active: true },
+  { id: 2, title: "RevFlow Consulting Audit", category: "Service / Consulting", desc: "Full business and marketing audit. I identify revenue leaks and deliver a prioritised action report within 5 days.", retail: "$800", members: "$99", unit: "per audit", active: true },
+  { id: 3, title: "30-Day SaaS Content Plan", category: "Content / Copywriting", desc: "30 pieces — planned, briefed, and outlined. Hooks, angles, and a full distribution strategy included.", retail: "$500", members: "$65", unit: "per month", active: true },
+];
+
 export const MATCHES = [
   { id: 1, person: "Alex Chen", avatar: "AC", asset: "UX Design Studio", type: "Service / Consulting", status: "feedback_pending", due: "Mar 8", channels: ["Google Business Profile"], color: "#FF6B35" },
   { id: 2, person: "Maya Patel", avatar: "MP", asset: "E-com Growth Newsletter", type: "Content / Podcast / Video", status: "awaiting_post", due: "Mar 5", channels: ["Substack", "LinkedIn"], color: "#1A9E8F" },
@@ -43,16 +67,17 @@ export const PLAN_OPTS = ["All Plans", "Paid Only", "Free Only"];
 export const CREDIT_OPTS = ["Any Credits", "Has Credits Now"];
 
 export const HOW_STEPS = [
-  { n: "01", icon: "🤝", title: "Get Matched", desc: "Paired with another member whose work you'll genuinely experience. Free: 4 auto-matches/month. Paid: 6 auto + 6 browse." },
-  { n: "02", icon: "👀", title: "Experience Their Work", desc: "Interact with their asset — service, product, content, consultation, or advisory session. Give it a real try." },
-  { n: "03", icon: "✍️", title: "Give Honest Feedback", desc: "Submit your feedback privately inside ProofSignals using any format: written, structured categories, or video/audio. This is the core of what we do." },
-  { n: "04", icon: "🌐", title: "Optionally Share Publicly", desc: "Optionally request a real online review — the choice is 100% that of the other person. Never expect one, never pressure one." },
+  { n: "01", icon: "🏗️", title: "Setup Your Profile & Assets", desc: "Create your profile and add the asset(s) you want feedback on. Assets can be private — for matched feedback only — or publicly browsable and available for Paid-member match-requests." },
+  { n: "02", icon: "🤝", title: "Get Matched", desc: "Paired with another member whose work you'll genuinely experience. Free: 4 auto-matches/month. Paid: 6 auto + 6 browse." },
+  { n: "03", icon: "👀", title: "Experience Their Work", desc: "Interact with their asset — service, product, content, consultation, or advisory session. Give it a real try." },
+  { n: "04", icon: "✍️", title: "Give Honest Feedback", desc: "Submit your feedback privately inside ProofSignals using any format: written, structured categories, or video/audio. This is the core of what we do." },
+  { n: "05", icon: "🌐", title: "Optionally Share Publicly", desc: "Optionally request a real online review — the choice is 100% that of the other person. Never expect one, never pressure one." },
 ];
 
 export const PLANS = [
-  { name: "Sprout", price: "Free", sub: "forever", color: "#1A9E8F", features: ["4 auto-matches / month", "1 asset", "1 review channel per asset", "Text + star feedback", "Default 1° separation"] },
-  { name: "Bloom", price: "$29", sub: "/ month", color: "#FF6B35", badge: "Most Popular", features: ["6 auto + 6 browse matches", "Up to 5 assets", "Multiple channels per asset", "All feedback formats incl. Advisory Skills", "Set 1–3 degrees of separation", "Manage client assets", "Require specific feedback types", "Control semi-duplicate match settings"] },
-  { name: "Flourish", price: "$79", sub: "/ month", color: "#F4A832", features: ["Everything in Bloom", "Unlimited assets", "Priority matching", "White-label feedback forms", "Team seats (3 users)", "Dedicated support"] },
+  { name: "Sprout", price: "Free", sub: "forever", color: "#1A9E8F", features: ["4 auto-matches / month", "1 asset", "1 review channel per asset", "Text + star feedback", "Default 1° separation", "1 Proof Lab Marketplace Listing"] },
+  { name: "Bloom", price: "$29", sub: "/ month", color: "#FF6B35", badge: "Most Popular", features: ["6 auto + 6 browse matches", "Up to 5 assets", "Multiple channels per asset", "All feedback formats incl. Advisory Skills", "Set 1–3 degrees of separation", "3 Proof Lab Listings", "Require specific feedback types", "Control semi-duplicate match settings"] },
+  { name: "Flourish", price: "$79", sub: "/ month", color: "#F4A832", features: ["Everything in Bloom", "Unlimited assets", "Priority matching", "Manage client assets", "White-label feedback forms", "Team seats (3 users)", "Dedicated support"] },
 ];
 
 export const RULES = [

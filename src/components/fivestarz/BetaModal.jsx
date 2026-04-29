@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 
 import { T } from "@/lib/fivestarz/theme";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 import { Btn } from "./ui";
 
 const INITIAL_FORM = { name: "", email: "", business: "", url: "", goal: "" };
 
 export default function BetaModal({ show, onClose }) {
+  const isMobile = useIsMobile();
   const [step, setStep] = useState("form");
   const [form, setForm] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
@@ -46,7 +48,7 @@ export default function BetaModal({ show, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "#fff", borderRadius: 28, padding: "40px 44px", maxWidth: 500, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative", animation: "popIn 0.25s ease" }}>
+      <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "28px 20px" : "40px 44px", maxWidth: 500, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative", animation: "popIn 0.25s ease" }}>
         <style>{"@keyframes popIn{from{opacity:0;transform:scale(0.93) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}"}</style>
         <button onClick={onClose} style={{ position: "absolute", top: 21, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {step === "form" ? (

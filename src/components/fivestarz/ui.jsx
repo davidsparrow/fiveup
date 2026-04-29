@@ -101,6 +101,15 @@ export function ButtonLink({ children, href, v = "primary", sz = "md", sx = {}, 
   );
 }
 
+/** Renders a feature string, turning "Proof Lab" into a link to /proof-lab */
+export function FeatureText({ text }) {
+  if (!text.includes("Proof Lab")) return <>{text}</>;
+  const [before, after] = text.split("Proof Lab");
+  return (
+    <>{before}<Link href="/proof-lab" style={{ color: "inherit", textDecoration: "underline", fontWeight: 700 }}>Proof Lab</Link>{after}</>
+  );
+}
+
 export function Card({ children, sx = {}, hover = true, dim = false }) {
   const [hovered, setHovered] = useState(false);
   return (

@@ -54,7 +54,7 @@ export default function SiteNav() {
 
   return (
     <>
-      <nav style={{ position: "sticky", top: 0, zIndex: 200, background: scrolled ? "rgba(255,248,240,0.95)" : "transparent", backdropFilter: scrolled ? "blur(12px)" : "none", borderBottom: scrolled ? `1px solid ${T.orangeP}` : "1px solid transparent", transition: "all 0.3s", padding: isMobile ? "0 16px" : "0 32px" }}>
+      <nav style={{ position: "sticky", top: 0, zIndex: 200, background: "rgba(255,248,240,0.75)", backdropFilter: scrolled ? "blur(14px)" : "blur(8px)", borderBottom: scrolled ? `1px solid ${T.orangeP}` : "1px solid rgba(255,200,160,0.25)", transition: "border-color 0.3s, backdrop-filter 0.3s", padding: isMobile ? "0 16px" : "0 32px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", flexShrink: 0, marginLeft: 0 }}>
@@ -67,9 +67,9 @@ export default function SiteNav() {
             <span style={{ fontFamily: "'Fraunces',serif", fontSize: 21, fontWeight: 800, color: T.brown, letterSpacing: "-0.02em" }}>Proof<span style={{ color: T.orange }}>Signals</span></span>
           </Link>
 
-          {/* Right side: CTA + planet menu trigger */}
+          {/* Right side: CTA (desktop only) + planet menu trigger */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 0 }}>
-            <Btn sz="sm" onClick={openBeta}>Get Early Access</Btn>
+            {!isMobile && <Btn sz="sm" onClick={openBeta}>Get Early Access</Btn>}
             <button
               onClick={() => setOpen((o) => !o)}
               aria-label="Open navigation menu"
