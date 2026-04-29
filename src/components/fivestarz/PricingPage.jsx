@@ -101,22 +101,25 @@ export default function PricingPage() {
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <Pill color={T.teal}>Full Comparison</Pill>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 28 : 38, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>What&rsquo;s included in each plan</h2>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 38, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>What&rsquo;s included in each plan</h2>
           </div>
-          <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", border: "1.5px solid #F0E8E0" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", background: T.brown, padding: "14px 20px" }}>
-              {["Feature", "Sprout", "Bloom", "Flourish"].map((h, i) => (
-                <div key={h} style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, color: i === 0 ? "#C4A68A" : i === 2 ? T.orange : "#fff", textAlign: i > 0 ? "center" : "left" }}>{h}</div>
-              ))}
-            </div>
-            {FEATURE_TABLE.map((row, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", padding: "14px 20px", borderBottom: i < FEATURE_TABLE.length - 1 ? "1px solid #F0E8E0" : "none", background: i % 2 === 0 ? "#fff" : T.cream }}>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: T.slate }}>{row.feature}</div>
-                {[row.sprout, row.bloom, row.flourish].map((v, j) => (
-                  <div key={j} style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: v === "—" ? "#CCC4BC" : v === "✓" ? T.green : T.brown, fontWeight: v !== "—" ? 600 : 400, textAlign: "center" }}>{v}</div>
+          {/* Horizontally scrollable on mobile */}
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", borderRadius: 20, border: "1.5px solid #F0E8E0" }}>
+            <div style={{ minWidth: 480 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", background: T.brown, padding: "14px 20px" }}>
+                {["Feature", "Sprout", "Bloom", "Flourish"].map((h, i) => (
+                  <div key={h} style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, color: i === 0 ? "#C4A68A" : i === 2 ? T.orange : "#fff", textAlign: i > 0 ? "center" : "left" }}>{h}</div>
                 ))}
               </div>
-            ))}
+              {FEATURE_TABLE.map((row, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", padding: "14px 20px", borderBottom: i < FEATURE_TABLE.length - 1 ? "1px solid #F0E8E0" : "none", background: i % 2 === 0 ? "#fff" : T.cream }}>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: T.slate }}>{row.feature}</div>
+                  {[row.sprout, row.bloom, row.flourish].map((v, j) => (
+                    <div key={j} style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: v === "—" ? "#CCC4BC" : v === "✓" ? T.green : T.brown, fontWeight: v !== "—" ? 600 : 400, textAlign: "center" }}>{v}</div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -143,10 +146,10 @@ export default function PricingPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section style={{ padding: "72px 32px", background: T.brown, textAlign: "center" }}>
+      <section style={{ padding: isMobile ? "56px 20px" : "72px 32px", background: T.brown, textAlign: "center" }}>
         <div style={{ maxWidth: 540, margin: "0 auto" }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>✦</div>
-          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 30 : 40, fontWeight: 800, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.02em" }}>
+          <div style={{ fontSize: isMobile ? 32 : 40, marginBottom: 14 }}>✦</div>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 40, fontWeight: 800, color: "#fff", margin: "0 0 14px", letterSpacing: "-0.02em" }}>
             Join the beta free.<br /><span style={{ color: T.gold }}>Upgrade when you&rsquo;re ready.</span>
           </h2>
           <p style={{ color: "#C4A68A", fontSize: 16, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: 32 }}>First 500 members get free Bloom access for 90 days. No credit card required to start.</p>

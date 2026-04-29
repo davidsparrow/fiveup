@@ -148,13 +148,13 @@ export default function CommunityPage() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: "64px 32px", background: T.brown, textAlign: "center" }}>
+      <section style={{ padding: isMobile ? "56px 20px" : "64px 32px", background: T.brown, textAlign: "center" }}>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>🤝</div>
-          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 28 : 38, fontWeight: 800, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.02em" }}>
+          <div style={{ fontSize: isMobile ? 32 : 40, marginBottom: 14 }}>🤝</div>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 38, fontWeight: 800, color: "#fff", margin: "0 0 14px", letterSpacing: "-0.02em" }}>
             Ready to join a community<br /><span style={{ color: T.gold }}>built on real trust?</span>
           </h2>
-          <p style={{ color: "#C4A68A", fontSize: 16, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: 32 }}>Human feedback only. No games, no swaps, no manipulation.</p>
+          <p style={{ color: "#C4A68A", fontSize: isMobile ? 15 : 16, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: isMobile ? 24 : 32 }}>Human feedback only. No games, no swaps, no manipulation.</p>
           <Btn sz="lg" v="gold" onClick={openBeta}>✦ Request Beta Access →</Btn>
         </div>
       </section>

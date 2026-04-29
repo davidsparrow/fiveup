@@ -4,16 +4,18 @@ import { useState } from "react";
 
 import { PROOF_LISTINGS, PROOF_CATS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Btn, Pill } from "@/components/fivestarz/ui";
 
 export default function ProofLabPage() {
+  const isMobile = useIsMobile();
   const [cat, setCat] = useState("All");
   const [reqModal, setReqModal] = useState(null);
   const shown = cat === "All" ? PROOF_LISTINGS : PROOF_LISTINGS.filter(l => l.category === cat);
 
   return (
     <div style={{ background: T.cream, minHeight: "100vh" }}>
-      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: "40px 32px 0" }}>
+      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: isMobile ? "24px 16px 0" : "40px 32px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ marginBottom: 24 }}>
             <Pill color={T.gold}>🧪 Members-Only Deals</Pill>
@@ -28,9 +30,9 @@ export default function ProofLabPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 32px 60px" }}>
-        <div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, marginBottom: 20 }}>{shown.length} listing{shown.length !== 1 ? "s" : ""}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "20px 16px 48px" : "28px 32px 60px" }}>
+        <div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, marginBottom: 16 }}>{shown.length} listing{shown.length !== 1 ? "s" : ""}</div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? 14 : 20 }}>
           {shown.map(l => (
             <div key={l.id}
               style={{ background: "#fff", borderRadius: 20, border: "1.5px solid #F0E8E0", overflow: "hidden", display: "flex", flexDirection: "column", transition: "all 0.22s", boxShadow: "0 2px 10px rgba(61,43,31,0.06)" }}
@@ -75,6 +77,7 @@ export default function ProofLabPage() {
 }
 
 function ProofLabRequestModal({ listing, onClose }) {
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [timeframe, setTimeframe] = useState(1);
@@ -99,7 +102,7 @@ function ProofLabRequestModal({ listing, onClose }) {
   };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "#fff", borderRadius: 28, padding: "36px 40px", maxWidth: 460, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
+      <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "28px 20px" : "36px 40px", maxWidth: 460, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {!sent ? (
           <>
