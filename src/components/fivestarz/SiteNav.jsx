@@ -19,10 +19,12 @@ function isActive(pathname, href) {
 const SLIDE_NAV_LINKS = [
   { label: "My Dashboard", href: "/dashboard" },
   { label: "Add Asset +", href: "/assets/new" },
-  { label: "Support", href: "#" },
   { label: "Browse Members", href: "/browse" },
   { label: "Proof Lab", href: "/proof-lab" },
   { label: "How It Works", href: "/how-it-works" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Community Rules", href: "/community" },
+  { label: "Trust & Safety", href: "/safety" },
 ];
 
 export default function SiteNav() {
@@ -62,7 +64,7 @@ export default function SiteNav() {
               {/* Front layer (main orange) */}
               <GiStarSwirl style={{ position: "absolute", fontSize: 24, color: T.orange, left: 2, top: 2 }} />
             </span>
-            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 21, fontWeight: 800, color: T.brown, letterSpacing: "-0.02em" }}>five<span style={{ color: T.orange }}>starz</span></span>
+            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 21, fontWeight: 800, color: T.brown, letterSpacing: "-0.02em" }}>Proof<span style={{ color: T.orange }}>Signals</span></span>
           </Link>
 
           {/* Right side: CTA + planet menu trigger */}
@@ -89,7 +91,7 @@ export default function SiteNav() {
       <div style={{ position: "fixed", top: 0, right: 0, width: "78vw", maxWidth: 300, height: "100vh", background: "#fff", zIndex: 299, transform: open ? "translateX(0)" : "translateX(100%)", transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)", boxShadow: "-8px 0 40px rgba(61,43,31,0.2)", display: "flex", flexDirection: "column" }}>
         {/* Drawer header */}
         <div style={{ padding: "18px 22px 14px", borderBottom: `1.5px solid ${T.orangeP}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 800, color: T.brown }}>five<span style={{ color: T.orange }}>starz</span></span>
+          <span style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 800, color: T.brown }}>Proof<span style={{ color: T.orange }}>Signals</span></span>
           <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24, color: "#4A5568", lineHeight: 1, padding: 4 }}>×</button>
         </div>
 

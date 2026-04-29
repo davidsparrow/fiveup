@@ -2,8 +2,8 @@ import PageShell from "@/components/fivestarz/PageShell";
 import HowPage from "@/components/fivestarz/HowPage";
 
 export const metadata = {
-  title: "How It Works | FiveStarz",
-  description: "Learn how FiveStarz connects founders and solopreneurs to exchange honest, ethical feedback and build real social proof.",
+  title: "How It Works | ProofSignals",
+  description: "Learn how ProofSignals connects founders and marketers to exchange honest, human feedback — and optionally publish proof of it.",
 };
 
 export default function HowItWorksPage() {

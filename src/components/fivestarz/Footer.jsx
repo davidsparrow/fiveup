@@ -8,8 +8,8 @@ export default function Footer() {
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40, gap: 32, flexWrap: "wrap" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><span style={{ fontSize: 22 }}>⭐</span><span style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color: "#fff" }}>five<span style={{ color: T.orange }}>starz</span></span></div>
-            <div style={{ fontSize: 14, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", maxWidth: 260, lineHeight: 1.6 }}>Hone pitches. Prove products. Consult founders. Gather stars. GROW.</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><span style={{ fontSize: 20 }}>✦</span><span style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color: "#fff" }}>Proof<span style={{ color: T.orange }}>Signals</span></span></div>
+            <div style={{ fontSize: 14, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", maxWidth: 260, lineHeight: 1.6 }}>AI helps you present your asset. Humans provide the feedback. Public proof is optional and earned.</div>
           </div>
           <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
             <div>
@@ -25,7 +25,7 @@ export default function Footer() {
           </div>
         </div>
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 13, color: "#8A7060", fontFamily: "'DM Sans',sans-serif" }}>© 2025 FiveStarz. All rights reserved.</div>
+          <div style={{ fontSize: 13, color: "#8A7060", fontFamily: "'DM Sans',sans-serif" }}>© 2026 ProofSignals. All rights reserved.</div>
           <div style={{ fontSize: 13, color: "#8A7060", fontFamily: "'DM Sans',sans-serif" }}>Made with ❤️ for solopreneurs</div>
         </div>
       </div>

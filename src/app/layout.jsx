@@ -2,13 +2,13 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "FiveStarz — Hone pitches, Prove products, GROW.",
+  title: "ProofSignals — Honest feedback from founders who actually get it.",
   description:
-    "A members-only club where founders and solopreneurs hone pitches, prove products, consult each other, and gather real stars. GROW together.",
+    "A trusted founder feedback network. Post your asset, get meaningful human feedback, build trust, and publish public proof only when you choose.",
   openGraph: {
-    title: "FiveStarz — Hone pitches, Prove products, GROW.",
+    title: "ProofSignals — Honest feedback from founders who actually get it.",
     description:
-      "Exchange honest, ethical feedback and decide together whether to share it as a real review.",
+      "AI helps you present your asset. Humans provide the feedback. Public proof is optional and earned.",
     type: "website",
   },
 };

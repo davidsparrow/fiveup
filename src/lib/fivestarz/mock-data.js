@@ -45,8 +45,8 @@ export const CREDIT_OPTS = ["Any Credits", "Has Credits Now"];
 export const HOW_STEPS = [
   { n: "01", icon: "🤝", title: "Get Matched", desc: "Paired with another member whose work you'll genuinely experience. Free: 4 auto-matches/month. Paid: 6 auto + 6 browse." },
   { n: "02", icon: "👀", title: "Experience Their Work", desc: "Interact with their asset — service, product, content, consultation, or advisory session. Give it a real try." },
-  { n: "03", icon: "✍️", title: "Leave Honest Feedback", desc: "Submit inside FiveStarz using any format you choose: stars, written review, structured categories, or video/audio." },
-  { n: "04", icon: "📣", title: "Decide to Post", desc: "If genuine and positive, the asset owner can ask you to post it publicly. You're never obligated." },
+  { n: "03", icon: "✍️", title: "Give Honest Feedback", desc: "Submit your feedback privately inside ProofSignals using any format: written, structured categories, or video/audio. This is the core of what we do." },
+  { n: "04", icon: "🌐", title: "Optionally Share Publicly", desc: "Optionally request a real online review — the choice is 100% that of the other person. Never expect one, never pressure one." },
 ];
 
 export const PLANS = [

@@ -50,7 +50,7 @@ export default function BrowsePage() {
                 <input value={filters.search} onChange={e => sf("search", e.target.value)} placeholder="Name or asset..." style={{ padding: "8px 10px 8px 30px", borderRadius: 10, border: "none", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 13, fontFamily: "'DM Sans',sans-serif", outline: "none", width: 155, boxSizing: "border-box" }} />
               </div>
             </div>
-            {[["Asset Type", "assetType", ASSET_TYPES], ["Review Channel", "channel", CHANNELS], ["Feedback Format", "format", FB_FORMATS], ["Plan", "plan", PLAN_OPTS], ["Credits", "credits", CREDIT_OPTS]].map(([label, key, opts]) => (
+            {[["Asset Type", "assetType", ASSET_TYPES], ["Profile Channel", "channel", CHANNELS], ["Feedback Format", "format", FB_FORMATS], ["Plan", "plan", PLAN_OPTS], ["Credits", "credits", CREDIT_OPTS]].map(([label, key, opts]) => (
               <div key={key}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5, fontFamily: "'DM Sans',sans-serif" }}>{label}</div>
                 <select value={filters[key]} onChange={e => sf(key, e.target.value)} style={selStyle(filters[key] !== opts[0])}>
