@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { HOW_STEPS, PLANS } from "@/lib/fivestarz/mock-data";
+import { HOW_STEPS, PLANS, PROOF_LISTINGS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Btn, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
+import { Av, Btn, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
 import { useBetaModal } from "@/components/fivestarz/PageShell";
 
 export default function HomePageContent() {
@@ -79,20 +79,107 @@ export default function HomePageContent() {
             <Pill color={T.teal}>The Process</Pill>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 42, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>How ProofSignals works</h2>
           </div>
-          {/* 2×2 grid on mobile, 4-col on desktop */}
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 12 : 24 }}>
-            {HOW_STEPS.map((s, i) => (
-              <Card key={i} sx={{ padding: isMobile ? 16 : 28, textAlign: "center" }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: T.orangeL, letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif", marginBottom: isMobile ? 6 : 10 }}>{s.n}</div>
-                <div style={{ fontSize: isMobile ? 28 : 36, marginBottom: isMobile ? 8 : 12 }}>{s.icon}</div>
-                <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 14 : 19, fontWeight: 700, color: T.brown, marginBottom: isMobile ? 6 : 10 }}>{s.title}</div>
-                <div style={{ fontSize: isMobile ? 12 : 14, color: T.slate, lineHeight: 1.55, fontFamily: "'DM Sans',sans-serif" }}>{s.desc}</div>
-              </Card>
-            ))}
-          </div>
+          {/* Mobile: single column stack. Desktop: 2 cards top row + 3 cards bottom row, both centered */}
+          {isMobile ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {HOW_STEPS.map((s, i) => (
+                <Card key={i} sx={{ padding: 16, textAlign: "center" }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: T.orangeL, letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif", marginBottom: 6 }}>{s.n}</div>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{s.icon}</div>
+                  <div style={{ fontFamily: "'Fraunces',serif", fontSize: 14, fontWeight: 700, color: T.brown, marginBottom: 6 }}>{s.title}</div>
+                  <div style={{ fontSize: 12, color: T.slate, lineHeight: 1.55, fontFamily: "'DM Sans',sans-serif" }}>{s.desc}</div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {/* Row 1 — 2 cards */}
+              <div style={{ display: "flex", gap: 24, justifyContent: "center" }}>
+                {HOW_STEPS.slice(0, 2).map((s, i) => (
+                  <Card key={i} sx={{ padding: 28, textAlign: "center", flex: "0 0 calc(33.33% - 16px)" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: T.orangeL, letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif", marginBottom: 10 }}>{s.n}</div>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>{s.icon}</div>
+                    <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 700, color: T.brown, marginBottom: 10 }}>{s.title}</div>
+                    <div style={{ fontSize: 14, color: T.slate, lineHeight: 1.55, fontFamily: "'DM Sans',sans-serif" }}>{s.desc}</div>
+                  </Card>
+                ))}
+              </div>
+              {/* Row 2 — 3 cards */}
+              <div style={{ display: "flex", gap: 24, justifyContent: "center" }}>
+                {HOW_STEPS.slice(2).map((s, i) => (
+                  <Card key={i} sx={{ padding: 28, textAlign: "center", flex: "0 0 calc(33.33% - 16px)" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: T.orangeL, letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif", marginBottom: 10 }}>{s.n}</div>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>{s.icon}</div>
+                    <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 700, color: T.brown, marginBottom: 10 }}>{s.title}</div>
+                    <div style={{ fontSize: 14, color: T.slate, lineHeight: 1.55, fontFamily: "'DM Sans',sans-serif" }}>{s.desc}</div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ textAlign: "center", marginTop: isMobile ? 24 : 32 }}>
             <Btn v="ghost" onClick={() => router.push("/how-it-works")}>Full Rules & Guidelines →</Btn>
           </div>
+        </div>
+      </section>
+
+      {/* ── Proof Lab Marketplace ── */}
+      <section style={{ background: `linear-gradient(160deg, ${T.brown} 0%, #1C3A40 100%)`, overflow: "hidden", paddingTop: isMobile ? 56 : 80, paddingBottom: isMobile ? 48 : 72 }}>
+        {/* Header + benefits */}
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "0 20px 40px" : "0 32px 52px", textAlign: "center" }}>
+          <Pill color={T.teal} bg={T.teal + "28"}>🧪 Member Marketplace</Pill>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 42, fontWeight: 900, color: "#fff", margin: "14px 0 16px", letterSpacing: "-0.02em" }}>
+            The Proof Lab
+          </h2>
+          <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 15 : 18, color: "#C4A68A", lineHeight: 1.65, maxWidth: 580, margin: "0 auto 36px" }}>
+            Members offer exclusive deals on their best services — marketing, design, video, AI, ads, and more. Access comes with your membership. Zero middlemen.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? 12 : 20, textAlign: "left" }}>
+            {[
+              ["💼", "Members-only pricing", "Deals typically 60–80% below retail — offered by founders who understand your world and want long-term relationships, not one-off transactions."],
+              ["🤝", "Peer-vetted sellers", "Every listing comes from a verified ProofSignals member with a real feedback history. Quality is earned, not bought."],
+              ["🎟️", "Access with your plan", "Sprout members get 1 listing. Bloom gets 3. Flourish gets unlimited. Your marketplace access grows with your plan."],
+            ].map(([icon, title, desc]) => (
+              <div key={title} style={{ background: "rgba(255,255,255,0.07)", borderRadius: 16, padding: isMobile ? "16px 18px" : "20px 22px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(8px)" }}>
+                <div style={{ fontSize: isMobile ? 24 : 28, marginBottom: 10 }}>{icon}</div>
+                <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 15 : 16, fontWeight: 700, color: "#fff", marginBottom: 6 }}>{title}</div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 12 : 13, color: "#C4A68A", lineHeight: 1.6 }}>{desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Auto-scrolling listings strip */}
+        <style>{"@keyframes proofScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}"}</style>
+        <div style={{ overflow: "hidden", marginBottom: isMobile ? 36 : 48, paddingBottom: 4 }}>
+          <div style={{ display: "flex", gap: 14, width: "max-content", animation: "proofScroll 55s linear infinite" }}>
+            {[...PROOF_LISTINGS, ...PROOF_LISTINGS].map((l, i) => (
+              <div key={i} style={{ width: 220, background: "#fff", borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 4px 18px rgba(0,0,0,0.18)" }}>
+                <div style={{ height: 3, background: l.color }} />
+                <div style={{ padding: "14px 14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <Av txt={l.avatar} color={l.color} size={28} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 11, color: T.brown, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.seller}</div>
+                      <div style={{ fontSize: 10, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.category}</div>
+                    </div>
+                    {l.badge && <span style={{ fontSize: 9, fontWeight: 700, color: l.color, background: l.color + "18", padding: "2px 6px", borderRadius: 8, fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>{l.badge}</span>}
+                  </div>
+                  <div style={{ fontFamily: "'Fraunces',serif", fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 8, lineHeight: 1.3 }}>{l.title}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 900, color: T.orange }}>{l.members}</span>
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#C4B5AD", textDecoration: "line-through" }}>{l.retail}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: T.brownL, fontFamily: "'DM Sans',sans-serif", marginTop: 2 }}>{l.unit}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div style={{ textAlign: "center" }}>
+          <Btn v="teal" sz="lg" onClick={() => router.push("/proof-lab")}>🧪 Explore the Proof Lab →</Btn>
         </div>
       </section>
 
