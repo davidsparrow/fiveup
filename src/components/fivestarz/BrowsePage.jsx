@@ -36,7 +36,6 @@ export default function BrowsePage() {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "center" : "flex-end", marginBottom: isMobile ? 16 : 24, gap: 12 }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#C4A68A", marginBottom: 4, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.06em" }}>Paid Members Only</div>
               <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 30, fontWeight: 900, color: "#fff", margin: 0 }}>Browse & Request Matches</h1>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
