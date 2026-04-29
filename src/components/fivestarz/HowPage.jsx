@@ -22,8 +22,8 @@ export default function HowPage() {
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", padding: "5px 16px", borderRadius: 20, marginBottom: 16 }}>
               <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "#C4A68A", textTransform: "uppercase", letterSpacing: "0.1em" }}>Member Guidelines</span>
             </div>
-            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 36 : 52, fontWeight: 900, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.03em" }}>The ProofSignals Way</h1>
-            <p style={{ fontSize: 17, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: 0 }}>Human feedback first. Trust built honestly. Public proof earned, never manufactured.</p>
+            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? "clamp(26px,7vw,36px)" : 52, fontWeight: 900, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.03em" }}>The ProofSignals Way</h1>
+            <p style={{ fontSize: isMobile ? 15 : 17, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: 0 }}>Human feedback first. Trust built honestly. Public proof earned, never manufactured.</p>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 20, overflowX: "auto", WebkitOverflowScrolling: "touch", justifyContent: isMobile ? "flex-start" : "center", flexWrap: isMobile ? "nowrap" : "wrap" }}>
             {tabs.map(([id, lbl]) => (
@@ -37,11 +37,11 @@ export default function HowPage() {
         <div style={{ maxWidth: 900, margin: "0 auto", padding: isMobile ? "32px 16px" : "48px 32px" }}>
           {tab === "steps" && (
             <div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 36 }}>Step-by-Step Process</h2>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 24 : 32, fontWeight: 800, color: T.brown, marginBottom: isMobile ? 24 : 36 }}>Step-by-Step Process</h2>
               {HOW_STEPS.map((s, i) => (
-                <div key={i} style={{ display: "flex", gap: 28, marginBottom: 36, paddingBottom: 36, borderBottom: i < HOW_STEPS.length - 1 ? `1.5px dashed ${T.orangeP}` : "none", alignItems: "flex-start" }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg,${T.orange} 0%,${T.gold} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 900, color: "#fff" }}>{i + 1}</div>
-                  <div style={{ flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}><span style={{ fontSize: 24 }}>{s.icon}</span><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>{s.title}</h3></div><p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: 0 }}>{s.desc}</p></div>
+                <div key={i} style={{ display: "flex", gap: isMobile ? 16 : 28, marginBottom: isMobile ? 24 : 36, paddingBottom: isMobile ? 24 : 36, borderBottom: i < HOW_STEPS.length - 1 ? `1.5px dashed ${T.orangeP}` : "none", alignItems: "flex-start" }}>
+                  <div style={{ width: isMobile ? 40 : 56, height: isMobile ? 40 : 56, borderRadius: "50%", flexShrink: 0, background: `linear-gradient(135deg,${T.orange} 0%,${T.gold} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces',serif", fontSize: isMobile ? 17 : 22, fontWeight: 900, color: "#fff" }}>{i + 1}</div>
+                  <div style={{ flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}><span style={{ fontSize: isMobile ? 20 : 24 }}>{s.icon}</span><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 18 : 22, fontWeight: 700, color: T.brown, margin: 0 }}>{s.title}</h3></div><p style={{ fontSize: isMobile ? 14 : 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: 0 }}>{s.desc}</p></div>
                 </div>
               ))}
             </div>
@@ -49,7 +49,7 @@ export default function HowPage() {
 
           {tab === "matching" && (
             <div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Matching System Logic</h2>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 24 : 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Matching System Logic</h2>
               <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 32 }}>How ProofSignals pairs members — including the semi-duplicate matching rules.</p>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 28 }}>
                 {[
@@ -93,12 +93,12 @@ export default function HowPage() {
 
           {tab === "advisory" && (
             <div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Advisory & Consulting Skills as Assets</h2>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 24 : 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Advisory & Consulting Skills as Assets</h2>
               <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 28 }}>Paid members can collect feedback not just on things — but on <em>themselves as professionals</em>. Your knowledge, insight, and expertise are assets other members can genuinely experience and give you honest input on.</p>
               <div style={{ padding: "24px 28px", background: T.purpleP, border: `2px solid ${T.purple}33`, borderRadius: 20, marginBottom: 28 }}>
                 <div style={{ display: "flex", gap: 14 }}><span style={{ fontSize: 36, flexShrink: 0 }}>🧠</span><div><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color: T.purple, marginBottom: 8 }}>What counts as an Advisory Skills asset?</h3><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65 }}>Any offering where <em>you</em> are the product. Your strategic thinking, coaching, auditing, or consulting — experienced by a peer and reviewed honestly inside the platform. The internal feedback is the primary goal; any public sharing is entirely the reviewer&rsquo;s independent choice.</p></div></div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 14 : 20, marginBottom: 28 }}>
                 {[["💬", "Free 30-Min Consultation", "You give a genuine business growth consultation. The other member gives you structured internal feedback on your thinking, delivery, and value. You give feedback on their business context in return."], ["🎯", "Strategy Session", "A paid or complimentary strategy session. The member gives you candid internal feedback on the clarity and value of your strategic guidance — honest signal you can actually act on."], ["🛠️", "Done-For-You Audit", "You audit their site, funnel, or pitch deck. They give you internal feedback on the quality and actionability of your findings. Real signal from a real engagement."], ["🎓", "Coaching / Mentoring", "A coaching call or mentorship session. The member's honest internal feedback builds your advisory reputation inside ProofSignals — written, structured, or video format."]].map(([icon, title, desc]) => (
                   <div key={title} style={{ padding: 20, background: T.cream, borderRadius: 16 }}><div style={{ fontSize: 28, marginBottom: 10 }}>{icon}</div><div style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: T.brown, marginBottom: 6 }}>{title}</div><div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55 }}>{desc}</div></div>
                 ))}
@@ -114,9 +114,9 @@ export default function HowPage() {
 
           {tab === "rules" && (
             <div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>The Rules of the Club</h2>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 24 : 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>The Rules of the Club</h2>
               <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 36 }}>Breaking these gets you removed. We protect our community fiercely.</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
                 <div><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.green, marginBottom: 16 }}>✅ Do This</h3>{RULES.filter(r => r.t === "do").map((r, i) => <div key={i} style={{ display: "flex", gap: 12, padding: "12px 16px", background: T.greenP, borderRadius: 12, marginBottom: 10, fontSize: 14, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}><span>{r.icon}</span>{r.text}</div>)}</div>
                 <div><h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.red, marginBottom: 16 }}>🚫 Never Do This</h3>{RULES.filter(r => r.t === "dont").map((r, i) => <div key={i} style={{ display: "flex", gap: 12, padding: "12px 16px", background: "#FFF5F5", borderRadius: 12, marginBottom: 10, fontSize: 14, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}><span>{r.icon}</span>{r.text}</div>)}</div>
               </div>
@@ -129,7 +129,7 @@ export default function HowPage() {
 
           {tab === "roadmap" && (
             <div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Feature Roadmap</h2>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 24 : 32, fontWeight: 800, color: T.brown, marginBottom: 8 }}>Feature Roadmap</h2>
               <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 32 }}>We build ProofSignals with our beta members. Here&rsquo;s what&rsquo;s live, in progress, and planned.</p>
               {[
                 { phase: "✅ Live in Beta", color: T.green, bg: T.greenP, items: [{ t: "Auto-matching (Free & Paid)", d: "Category-aware pairing with duplicate prevention and degrees-of-separation filtering." }, { t: "Browse & Request (Paid)", d: "Browse members with filters: asset type, feedback format, plan, and availability." }, { t: "Multi-asset support", d: "Paid members can create multiple assets — services, products, content, and advisory skills." }, { t: "Advisory Skills asset type", d: "Paid members list consulting expertise as an asset. Peer members experience and give honest internal feedback on knowledge and value delivered." }, { t: "Feedback form builder", d: "Asset owners control which feedback formats (written, structured categories, video) are allowed or required." }, { t: "Optional public sharing", d: "After feedback is submitted, asset owners may optionally ask if the reviewer would like to share their experience publicly. Reviewers are never obligated or incentivized." }, { t: "Client asset management", d: "Paid members manage assets on behalf of clients and coordinate their feedback collection." }] },
@@ -155,7 +155,7 @@ export default function HowPage() {
         </div>
       </div>
 
-      <section style={{ background: T.brown, padding: "64px 32px", overflow: "hidden", position: "relative" }}>
+      <section style={{ background: T.brown, padding: isMobile ? "48px 20px" : "64px 32px", overflow: "hidden", position: "relative" }}>
         <div style={{ position: "absolute", top: -60, right: -60, width: 320, height: 320, borderRadius: "50%", background: T.orange + "18", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: -80, left: -40, width: 260, height: 260, borderRadius: "50%", background: T.gold + "14", pointerEvents: "none" }} />
         <div style={{ maxWidth: 840, margin: "0 auto", position: "relative", zIndex: 1 }}>
@@ -166,7 +166,7 @@ export default function HowPage() {
           <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: "clamp(28px,4vw,46px)", fontWeight: 900, color: "#fff", margin: "0 0 20px", lineHeight: 1.12, letterSpacing: "-0.02em" }}>
             The most helpful members get paid<br /><span style={{ color: T.gold }}>to shape tomorrow&rsquo;s products.</span>
           </h2>
-          <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 17, color: "#C4A68A", lineHeight: 1.7, maxWidth: 620, marginBottom: 32 }}>
+          <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 15 : 17, color: "#C4A68A", lineHeight: 1.7, maxWidth: 620, marginBottom: 28 }}>
             Members build an internal signal rating based on the quality of feedback they <em style={{ color: "#FDD07A" }}>give</em> — helpfulness, honesty, and specificity. Top-signal members earn exclusive invitations to participate in <strong style={{ color: "#fff" }}>paid virtual focus groups</strong> for new products coming to market. Real input. Real money.
           </p>
           <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
@@ -181,10 +181,10 @@ export default function HowPage() {
         </div>
       </section>
 
-      <section style={{ padding: "60px 32px", textAlign: "center", background: T.cream }}>
+      <section style={{ padding: isMobile ? "48px 20px" : "60px 32px", textAlign: "center", background: T.cream }}>
         <div style={{ maxWidth: 500, margin: "0 auto" }}>
-          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 36, fontWeight: 800, color: T.brown, margin: "0 0 16px" }}>Ready to get honest feedback?</h2>
-          <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 28 }}>Join the beta and start building real credibility — the honest way.</p>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 36, fontWeight: 800, color: T.brown, margin: "0 0 14px" }}>Ready to get honest feedback?</h2>
+          <p style={{ fontSize: isMobile ? 15 : 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 24 }}>Join the beta and start building real credibility — the honest way.</p>
           <Btn sz="lg" onClick={openBeta}>✦ Request Beta Access →</Btn>
         </div>
       </section>

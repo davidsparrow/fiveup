@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 
 import { T } from "@/lib/fivestarz/theme";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Btn, Card, Pill } from "@/components/fivestarz/ui";
 
 const CHNLS = ["Google Business Profile", "Yelp", "Tripadvisor", "Amazon", "Shopify App Store", "Clutch.co", "Trustpilot", "Apple Podcasts", "Spotify", "Substack", "LinkedIn", "G2", "Capterra", "Gumroad", "Teachable"];
@@ -11,6 +12,7 @@ const TYPES = ["Service / Consulting", "Advisory / Consulting Skills", "Physical
 const FBTYPES = ["Star Rating (1–5)", "Written Review", "Structured Categories", "Video / Audio Upload"];
 
 export default function AssetPage() {
+  const isMobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [a, setA] = useState({ name: "", url: "", type: "", desc: "", channels: [], fbTypes: [], reqStars: false, reqTwo: false, forClient: false, clientName: "", screenshots: [] });
   const [dragOver, setDragOver] = useState(false);
@@ -41,7 +43,7 @@ export default function AssetPage() {
 
   return (
     <div style={{ background: T.cream, minHeight: "100vh" }}>
-      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: "40px 32px 32px" }}>
+      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: isMobile ? "24px 16px 20px" : "40px 32px 32px" }}>
         <div style={{ maxWidth: 740, margin: "0 auto" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#C4A68A", marginBottom: 8, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.06em" }}>New Asset Setup</div>
           <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 34, fontWeight: 900, color: "#fff", margin: "0 0 24px" }}>What would you like reviews on?</h1>
@@ -50,14 +52,14 @@ export default function AssetPage() {
               <div key={s} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
                 {i < 3 && <div style={{ position: "absolute", top: 14, left: "50%", right: "-50%", height: 2, background: step > i + 1 ? T.orange : "rgba(255,255,255,0.2)", zIndex: 0 }} />}
                 <div style={{ width: 28, height: 28, borderRadius: "50%", zIndex: 1, background: step > i + 1 ? T.gold : step === i + 1 ? T.orange : "rgba(255,255,255,0.2)", color: step >= i + 1 ? "#fff" : "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{step > i + 1 ? "✓" : i + 1}</div>
-                <div style={{ fontSize: 11, color: step === i + 1 ? "#fff" : "rgba(255,255,255,0.5)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, textAlign: "center" }}>{s}</div>
+                {!isMobile && <div style={{ fontSize: 11, color: step === i + 1 ? "#fff" : "rgba(255,255,255,0.5)", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, textAlign: "center" }}>{s}</div>}
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div style={{ maxWidth: 740, margin: "0 auto", padding: "40px 32px" }}>
-        <Card sx={{ padding: 36 }}>
+      <div style={{ maxWidth: 740, margin: "0 auto", padding: isMobile ? "20px 16px 40px" : "40px 32px" }}>
+        <Card sx={{ padding: isMobile ? 20 : 36 }}>
           {step === 1 && (
 
             <div>
@@ -104,7 +106,7 @@ export default function AssetPage() {
             <div>
               <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 700, color: T.brown, marginBottom: 8 }}>Review Channels</h2>
               <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 24 }}>Where can reviewers post? The reviewer chooses which channel to use.</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3,1fr)", gap: 10, marginBottom: 24 }}>
                 {CHNLS.map(ch => <div key={ch} onClick={() => tog("channels", ch)} style={{ padding: "12px 14px", borderRadius: 12, cursor: "pointer", border: `2px solid ${a.channels.includes(ch) ? T.teal : "#E8DDD5"}`, background: a.channels.includes(ch) ? T.tealP : "#fff", fontSize: 13, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, color: a.channels.includes(ch) ? T.teal : T.brown, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6 }}>{a.channels.includes(ch) && <span>✓</span>}{ch}</div>)}
               </div>
               {a.channels.length > 0 && <div style={{ padding: "14px 18px", background: T.greenP, borderRadius: 12, fontSize: 14, color: T.green, fontFamily: "'DM Sans',sans-serif", marginBottom: 20, fontWeight: 600 }}>✓ {a.channels.length} channel{a.channels.length > 1 ? "s" : ""}: {a.channels.join(", ")}</div>}
