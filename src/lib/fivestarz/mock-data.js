@@ -43,16 +43,17 @@ export const PLAN_OPTS = ["All Plans", "Paid Only", "Free Only"];
 export const CREDIT_OPTS = ["Any Credits", "Has Credits Now"];
 
 export const HOW_STEPS = [
-  { n: "01", icon: "🤝", title: "Get Matched", desc: "Paired with another member whose work you'll genuinely experience. Free: 4 auto-matches/month. Paid: 6 auto + 6 browse." },
-  { n: "02", icon: "👀", title: "Experience Their Work", desc: "Interact with their asset — service, product, content, consultation, or advisory session. Give it a real try." },
-  { n: "03", icon: "✍️", title: "Give Honest Feedback", desc: "Submit your feedback privately inside ProofSignals using any format: written, structured categories, or video/audio. This is the core of what we do." },
-  { n: "04", icon: "🌐", title: "Optionally Share Publicly", desc: "Optionally request a real online review — the choice is 100% that of the other person. Never expect one, never pressure one." },
+  { n: "01", icon: "🏗️", title: "Setup Your Profile & Assets", desc: "Create your profile and add the asset(s) you want feedback on. Assets can be private — for matched feedback only — or publicly browsable and available for Paid-member match-requests." },
+  { n: "02", icon: "🤝", title: "Get Matched", desc: "Paired with another member whose work you'll genuinely experience. Free: 4 auto-matches/month. Paid: 6 auto + 6 browse." },
+  { n: "03", icon: "👀", title: "Experience Their Work", desc: "Interact with their asset — service, product, content, consultation, or advisory session. Give it a real try." },
+  { n: "04", icon: "✍️", title: "Give Honest Feedback", desc: "Submit your feedback privately inside ProofSignals using any format: written, structured categories, or video/audio. This is the core of what we do." },
+  { n: "05", icon: "🌐", title: "Optionally Share Publicly", desc: "Optionally request a real online review — the choice is 100% that of the other person. Never expect one, never pressure one." },
 ];
 
 export const PLANS = [
-  { name: "Sprout", price: "Free", sub: "forever", color: "#1A9E8F", features: ["4 auto-matches / month", "1 asset", "1 review channel per asset", "Text + star feedback", "Default 1° separation"] },
-  { name: "Bloom", price: "$29", sub: "/ month", color: "#FF6B35", badge: "Most Popular", features: ["6 auto + 6 browse matches", "Up to 5 assets", "Multiple channels per asset", "All feedback formats incl. Advisory Skills", "Set 1–3 degrees of separation", "Manage client assets", "Require specific feedback types", "Control semi-duplicate match settings"] },
-  { name: "Flourish", price: "$79", sub: "/ month", color: "#F4A832", features: ["Everything in Bloom", "Unlimited assets", "Priority matching", "White-label feedback forms", "Team seats (3 users)", "Dedicated support"] },
+  { name: "Sprout", price: "Free", sub: "forever", color: "#1A9E8F", features: ["4 auto-matches / month", "1 asset", "1 review channel per asset", "Text + star feedback", "Default 1° separation", "1 Proof Lab Marketplace Listing"] },
+  { name: "Bloom", price: "$29", sub: "/ month", color: "#FF6B35", badge: "Most Popular", features: ["6 auto + 6 browse matches", "Up to 5 assets", "Multiple channels per asset", "All feedback formats incl. Advisory Skills", "Set 1–3 degrees of separation", "3 Proof Lab Listings", "Require specific feedback types", "Control semi-duplicate match settings"] },
+  { name: "Flourish", price: "$79", sub: "/ month", color: "#F4A832", features: ["Everything in Bloom", "Unlimited assets", "Priority matching", "Manage client assets", "White-label feedback forms", "Team seats (3 users)", "Dedicated support"] },
 ];
 
 export const RULES = [
