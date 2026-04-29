@@ -91,17 +91,17 @@ export default function BrowsePage() {
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 12 }}>
                     <Av txt={m.avatar} color={dimmed ? "#B0A0A0" : m.color} size={48} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                        <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: dimmed ? T.brownL : T.brown }}>{m.name}</span>
+                      {/* Name row — plan pill left, View Profile right */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: dimmed ? T.brownL : T.brown, flex: 1, minWidth: 0 }}>{m.name}</span>
                         <PlanPill plan={m.plan} planName={m.planName} />
-                        {noCredits && <Pill color={T.red} bg={T.red + "18"} sx={{ fontSize: 10 }}>No Credits</Pill>}
-                        {semiOk && <Pill color={T.gold} bg={T.gold + "28"} sx={{ fontSize: 10 }}>⚡ Re-match OK</Pill>}
+                        <Btn sz="sm" v="ghost" sx={{ flexShrink: 0, padding: "5px 12px", fontSize: 12 }}>View Profile</Btn>
                       </div>
                       <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>📍 {m.loc} · Member since {m.since}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
-                        <Stars n={Math.round(m.rating)} size={12} />
-                        <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{m.rating} feedback quality · {m.exchanges} exchanges</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, background: T.gold + "22", color: T.gold, padding: "1px 8px", borderRadius: 10, fontFamily: "'DM Sans',sans-serif", letterSpacing: "0.04em" }}>⭐ INTERNAL RATING</span>
+                      {/* Simplified rating row: ⭐ 4.8 · 12 Exchanges */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
+                        <span style={{ fontSize: 13 }}>⭐</span>
+                        <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{m.rating} · {m.exchanges} Exchanges</span>
                       </div>
                     </div>
                   </div>
@@ -133,12 +133,9 @@ export default function BrowsePage() {
                     <span style={{ fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}><span style={{ color: noCredits ? T.red : T.green, fontWeight: 700 }}>{noCredits ? "0 credits" : `${m.credits} credits`}</span><span style={{ color: T.brownL }}> left this month</span></span>
                     <div style={{ display: "flex", gap: 3 }}>{Array.from({ length: Math.min(m.creditsTotal, 12) }).map((_, i) => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i < m.credits ? T.green : "#E0D5CC" }} />)}</div>
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <Btn sz="sm" v="ghost">View Profile</Btn>
-                    <Btn sz="sm" v={noCredits ? "ghost" : semiOk ? "gold" : "primary"} sx={{ flex: 1, justifyContent: "center" }} onClick={() => onRequest(m)}>
-                      {noCredits ? "💾 Save for Next Month" : semiOk ? "⚡ Request Re-Match" : "Request Match →"}
-                    </Btn>
-                  </div>
+                  <Btn sz="sm" v={noCredits ? "ghost" : semiOk ? "gold" : "primary"} sx={{ width: "100%", justifyContent: "center" }} onClick={() => onRequest(m)}>
+                    {noCredits ? "💾 Save for Next Month" : semiOk ? "⚡ Request Re-Match" : "Request Match →"}
+                  </Btn>
                 </div>
               </Card>
             );

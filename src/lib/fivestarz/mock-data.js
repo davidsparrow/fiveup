@@ -17,6 +17,30 @@ export const ME = {
   ],
 };
 
+export const ME_PROFILE = {
+  title: "Founder & Growth Consultant",
+  bio: "I help B2B SaaS founders grow through smarter positioning, better messaging, and conversion-focused content. Ex-agency. Fully indie since 2022.",
+  location: "Austin, TX",
+  website: "revflow.co",
+  linkedin: "linkedin.com/in/jordanrivera",
+  memberSince: "Oct 2024",
+  rating: 4.8,
+  exchanges: 14,
+  channels: [
+    { name: "Google Business Profile", active: true, url: "g.co/revflow" },
+    { name: "Clutch.co", active: true, url: "clutch.co/profile/revflow" },
+    { name: "LinkedIn", active: true, url: "linkedin.com/company/revflow" },
+    { name: "Trustpilot", active: false, url: "" },
+    { name: "Yelp", active: false, url: "" },
+  ],
+};
+
+export const ME_PROOF_LISTINGS = [
+  { id: 1, title: "Revenue Growth Strategy Session", category: "Advisory / Consulting", desc: "60-min 1:1. Cover growth bottlenecks, positioning, and a 90-day action plan you can execute immediately.", retail: "$350", members: "$49", unit: "per session", active: true },
+  { id: 2, title: "RevFlow Consulting Audit", category: "Service / Consulting", desc: "Full business and marketing audit. I identify revenue leaks and deliver a prioritised action report within 5 days.", retail: "$800", members: "$99", unit: "per audit", active: true },
+  { id: 3, title: "30-Day SaaS Content Plan", category: "Content / Copywriting", desc: "30 pieces — planned, briefed, and outlined. Hooks, angles, and a full distribution strategy included.", retail: "$500", members: "$65", unit: "per month", active: true },
+];
+
 export const MATCHES = [
   { id: 1, person: "Alex Chen", avatar: "AC", asset: "UX Design Studio", type: "Service / Consulting", status: "feedback_pending", due: "Mar 8", channels: ["Google Business Profile"], color: "#FF6B35" },
   { id: 2, person: "Maya Patel", avatar: "MP", asset: "E-com Growth Newsletter", type: "Content / Podcast / Video", status: "awaiting_post", due: "Mar 5", channels: ["Substack", "LinkedIn"], color: "#1A9E8F" },
