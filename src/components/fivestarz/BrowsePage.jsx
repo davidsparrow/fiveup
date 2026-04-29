@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { ME, MEMBERS, ASSET_TYPES, CHANNELS, FB_FORMATS, PLAN_OPTS, CREDIT_OPTS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 
 export default function BrowsePage() {
+  const isMobile = useIsMobile();
   const [filters, setFilters] = useState({ assetType: "All Types", channel: "Any Channel", format: "Any Format", plan: "All Plans", credits: "Any Credits", search: "" });
   const [outModal, setOutModal] = useState(null);
   const [savedModal, setSavedModal] = useState(null);
@@ -30,16 +32,16 @@ export default function BrowsePage() {
 
   return (
     <div style={{ background: T.cream, minHeight: "100vh" }}>
-      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: "32px 32px 0" }}>
+      <div style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: isMobile ? "20px 16px 0" : "32px 32px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "center" : "flex-end", marginBottom: isMobile ? 16 : 24, gap: 12 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#C4A68A", marginBottom: 6, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.06em" }}>Paid Members Only</div>
-              <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 30, fontWeight: 900, color: "#fff", margin: 0 }}>Browse & Request Matches</h1>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#C4A68A", marginBottom: 4, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.06em" }}>Paid Members Only</div>
+              <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 30, fontWeight: 900, color: "#fff", margin: 0 }}>Browse & Request Matches</h1>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 13, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", marginBottom: 4 }}>Browse credits left</div>
-              <div style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 800, color: "#fff" }}>{ME.browseTotal - ME.browseUsed}<span style={{ fontSize: 16, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", fontWeight: 400 }}> / {ME.browseTotal}</span></div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontSize: isMobile ? 11 : 13, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>Credits left</div>
+              <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#fff" }}>{ME.browseTotal - ME.browseUsed}<span style={{ fontSize: 13, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", fontWeight: 400 }}> / {ME.browseTotal}</span></div>
             </div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: "16px 16px 0 0", padding: "18px 22px", display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -63,16 +65,19 @@ export default function BrowsePage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 32px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 22, flexWrap: "wrap" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "16px 16px" : "24px 32px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{shown.length} member{shown.length !== 1 ? "s" : ""} shown</span>
-          <div style={{ display: "flex", gap: 16, marginLeft: "auto", flexWrap: "wrap" }}>
-            {[[T.green, "Has credits, new match"], [T.gold, "⚡ Re-match eligible (diff channels)"], [T.brownL, "Previously matched"], [T.red, "Out of credits"]].map(([c, l]) => (
-              <div key={l} style={{ display: "flex", gap: 6, alignItems: "center" }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0 }} /><span style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l}</span></div>
-            ))}
-          </div>
+          {/* Legend — hidden on mobile to save space */}
+          {!isMobile && (
+            <div style={{ display: "flex", gap: 16, marginLeft: "auto", flexWrap: "wrap" }}>
+              {[[T.green, "Has credits, new match"], [T.gold, "⚡ Re-match eligible (diff channels)"], [T.brownL, "Previously matched"], [T.red, "Out of credits"]].map(([c, l]) => (
+                <div key={l} style={{ display: "flex", gap: 6, alignItems: "center" }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0 }} /><span style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l}</span></div>
+              ))}
+            </div>
+          )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)", gap: isMobile ? 14 : 18 }}>
           {shown.map(m => {
             const noCredits = m.credits === 0;
             const hasPrev = !!m.prev;
@@ -176,13 +181,14 @@ export default function BrowsePage() {
 }
 
 function RequestMatchModal({ member, onClose }) {
+  const isMobile = useIsMobile();
   const [myAsset, setMyAsset] = useState(null);
   const [theirAsset, setTheirAsset] = useState(null);
   const [sent, setSent] = useState(false);
   const semi = member.prev?.semiOk;
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "#fff", borderRadius: 28, padding: "32px 36px", maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "24px 18px" : "32px 36px", maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {!sent ? (
           <>

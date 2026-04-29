@@ -195,14 +195,15 @@ export default function DashboardPage() {
 
 
 function FeedbackModal({ match, onClose }) {
+  const isMobile = useIsMobile();
   const [stars, setStars] = useState(0);
   const [hover, setHover] = useState(0);
   const [text, setText] = useState("");
   const [done, setDone] = useState(false);
   const [cats, setCats] = useState({ quality: 0, value: 0, communication: 0 });
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#fff", borderRadius: 28, padding: "36px 40px", maxWidth: 520, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "24px 18px" : "36px 40px", maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {!done ? (
           <>
@@ -250,11 +251,12 @@ function FeedbackModal({ match, onClose }) {
 }
 
 function PostModal({ match, onClose }) {
+  const isMobile = useIsMobile();
   const [sel, setSel] = useState(null);
   const [sent, setSent] = useState(false);
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#fff", borderRadius: 28, padding: "36px 40px", maxWidth: 460, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "24px 18px" : "36px 40px", maxWidth: 460, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {!sent ? (
           <>

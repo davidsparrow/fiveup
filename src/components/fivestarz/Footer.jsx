@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
 
 import { NAV_LINKS, T } from "@/lib/fivestarz/theme";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export default function Footer() {
+  const isMobile = useIsMobile();
   return (
-    <footer style={{ background: T.brown, padding: "48px 32px 32px" }}>
+    <footer style={{ background: T.brown, padding: isMobile ? "36px 20px 24px" : "48px 32px 32px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40, gap: 32, flexWrap: "wrap" }}>
           <div>
