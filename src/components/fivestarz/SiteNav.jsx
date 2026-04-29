@@ -67,9 +67,9 @@ export default function SiteNav() {
             <span style={{ fontFamily: "'Fraunces',serif", fontSize: 21, fontWeight: 800, color: T.brown, letterSpacing: "-0.02em" }}>Proof<span style={{ color: T.orange }}>Signals</span></span>
           </Link>
 
-          {/* Right side: CTA + planet menu trigger */}
+          {/* Right side: CTA (desktop only) + planet menu trigger */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 0 }}>
-            <Btn sz="sm" onClick={openBeta}>Get Early Access</Btn>
+            {!isMobile && <Btn sz="sm" onClick={openBeta}>Get Early Access</Btn>}
             <button
               onClick={() => setOpen((o) => !o)}
               aria-label="Open navigation menu"
