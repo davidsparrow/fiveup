@@ -22,10 +22,10 @@ export default function HomePageContent() {
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 36 : 60, alignItems: "center", width: "100%" }}>
           <div>
             <Pill color={T.teal}>✦ Invite-Only Beta Now Open</Pill>
-            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? "clamp(32px,8vw,48px)" : "clamp(36px,4.5vw,62px)", lineHeight: 1.1, color: T.brown, margin: "20px 0 24px", fontWeight: 900, letterSpacing: "-0.03em" }}>Hone pitches. Prove products.<br />Gather stars.<br /><span style={{ color: T.orange }}>GROW.</span></h1>
-            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 16 : 19, color: T.slate, lineHeight: 1.65, maxWidth: 480, marginBottom: 0 }}>Exchange valuable feedback with other founders, find powerful wholesale services, <Link href="/how-it-works" style={{ color: T.orange, textDecoration: "underline", fontWeight: 600 }}>gather stars</Link>, beef up your reputation.</p>
+            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? "clamp(32px,8vw,48px)" : "clamp(36px,4.5vw,62px)", lineHeight: 1.1, color: T.brown, margin: "20px 0 24px", fontWeight: 900, letterSpacing: "-0.03em" }}>Honest feedback from founders<br />and marketers<br /><span style={{ color: T.orange }}>who actually get it.</span></h1>
+            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 16 : 19, color: T.slate, lineHeight: 1.65, maxWidth: 480, marginBottom: 0 }}>Post your asset, get meaningful human feedback from peers who understand your space. Build trust, and <Link href="/how-it-works" style={{ color: T.orange, textDecoration: "underline", fontWeight: 600 }}>publish public proof</Link> only when you choose.</p>
             <div style={{ marginTop: 32, display: "flex", gap: 20, flexWrap: "wrap" }}>
-              {[["500", "Beta Seats"], ["90", "Days Free Access"], ["0", "When you don't join."]].map(([n, l]) => (
+              {[["500", "Beta Seats"], ["90", "Days Free Access"], ["Human", "Feedback Only"], ["0", "Fake AI reviews."]].map(([n, l]) => (
                 <div key={l}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown }}>{n}</div><div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{l}</div></div>
               ))}
             </div>
@@ -51,7 +51,7 @@ export default function HomePageContent() {
 
       <section style={{ padding: isMobile ? "56px 16px" : "80px 32px", background: "#fff", overflow: "hidden" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}><Pill color={T.teal}>The Process</Pill><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>How FiveStarz works</h2></div>
+          <div style={{ textAlign: "center", marginBottom: 48 }}><Pill color={T.teal}>The Process</Pill><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>How ProofSignals works</h2></div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(4,1fr)", gap: isMobile ? 16 : 24 }}>
             {HOW_STEPS.map((s, i) => <Card key={i} sx={{ padding: 28, textAlign: "center" }}><div style={{ fontSize: 11, fontWeight: 800, color: T.orangeL, letterSpacing: "0.08em", fontFamily: "'DM Sans',sans-serif", marginBottom: 10 }}>{s.n}</div><div style={{ fontSize: 36, marginBottom: 12 }}>{s.icon}</div><div style={{ fontFamily: "'Fraunces',serif", fontSize: 19, fontWeight: 700, color: T.brown, marginBottom: 10 }}>{s.title}</div><div style={{ fontSize: 14, color: T.slate, lineHeight: 1.6, fontFamily: "'DM Sans',sans-serif" }}>{s.desc}</div></Card>)}
           </div>
@@ -78,9 +78,9 @@ export default function HomePageContent() {
 
       <section style={{ padding: "80px 32px", background: T.brown, textAlign: "center" }}>
         <div style={{ maxWidth: 600, margin: "0 auto" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>⭐</div>
-          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 800, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.02em" }}>Join the beta. Build your<br /><span style={{ color: T.gold }}>social proof the right way.</span></h2>
-          <p style={{ color: "#C4A68A", fontSize: 17, lineHeight: 1.6, fontFamily: "'DM Sans',sans-serif", marginBottom: 32 }}>First 500 members get free access to Bloom plan for 90 days.</p>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>✦</div>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 800, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.02em" }}>Join the beta. Earn trust<br /><span style={{ color: T.gold }}>the honest way.</span></h2>
+          <p style={{ color: "#C4A68A", fontSize: 17, lineHeight: 1.6, fontFamily: "'DM Sans',sans-serif", marginBottom: 32 }}>First 500 members get free access to Bloom plan for 90 days. Human feedback only — no fake reviews, no engagement swaps.</p>
           <Btn sz="lg" v="gold" onClick={openBeta}>✦ Request Beta Access →</Btn>
         </div>
       </section>

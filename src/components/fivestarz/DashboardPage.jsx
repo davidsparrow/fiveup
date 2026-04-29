@@ -46,8 +46,8 @@ export default function DashboardPage() {
   const hideHeaderIdentityText = useIsMobile(1024);
   const sc = {
     feedback_pending: { label: "Feedback Due", color: T.orange, bg: T.orangeP },
-    awaiting_post: { label: "Awaiting Post", color: T.teal, bg: T.tealP },
-    posted: { label: "Review Posted ✓", color: T.green, bg: T.greenP },
+    awaiting_post: { label: "Post Requested", color: T.teal, bg: T.tealP },
+    posted: { label: "Publicly Shared ✓", color: T.green, bg: T.greenP },
     matched: { label: "New Match", color: T.gold, bg: T.goldL + "55" },
   };
 
@@ -240,7 +240,7 @@ function FeedbackModal({ match, onClose }) {
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>🙌</div>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Feedback Submitted!</h2>
-            <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>Your feedback for <strong>{match.person}</strong> has been saved inside FiveStarz.</p>
+            <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>Your feedback for <strong>{match.person}</strong> has been saved privately inside ProofSignals. The recipient will be notified.</p>
             <Btn onClick={onClose}>Done</Btn>
           </div>
         )}

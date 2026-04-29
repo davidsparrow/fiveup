@@ -22,8 +22,11 @@ export const T = {
 
 export const NAV_LINKS = [
   { label: "How It Works", href: "/how-it-works" },
-  { label: "Browse Members", href: "/browse" },
   { label: "Proof Lab", href: "/proof-lab" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Community Rules", href: "/community" },
+  { label: "Trust & Safety", href: "/safety" },
+  { label: "Browse Members", href: "/browse" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Add Asset", href: "/assets/new" },
 ];
