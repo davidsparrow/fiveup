@@ -89,9 +89,9 @@ for each row execute function public.set_updated_at();
 --    against product intent before shipping.
 insert into public.plan_feature_gates (plan_code, feature_key, enabled, limit_int, description, config)
 values
-  ('sprout',   'max_proof_lab_listings', false, 0,    'Max active Proof Lab listings', '{}'::jsonb),
-  ('bloom',    'max_proof_lab_listings', true,  3,    'Max active Proof Lab listings', '{}'::jsonb),
-  ('flourish', 'max_proof_lab_listings', true,  null, 'Max active Proof Lab listings', '{"unlimited":true}'::jsonb)
+  ('sprout',   'max_proof_lab_listings', false, 0,  'Max active Proof Lab listings', '{}'::jsonb),
+  ('bloom',    'max_proof_lab_listings', true,  3,  'Max active Proof Lab listings', '{}'::jsonb),
+  ('flourish', 'max_proof_lab_listings', true,  10, 'Max active Proof Lab listings', '{}'::jsonb)
 on conflict (plan_code, feature_key) do update set
   enabled = excluded.enabled, limit_int = excluded.limit_int,
   description = excluded.description, config = excluded.config, updated_at = now();
@@ -308,7 +308,7 @@ Add an enum map in `src/lib/fivestarz/enums.js` for category slug↔label and ti
 
 ### Frontend wiring
 
-- **Route gating** — `src/app/proof-lab/page.jsx` is currently a public server component with no user fetch. Convert it to fetch the user (mirror `src/app/dashboard/page.jsx`); since the surface is framed "Members-Only Deals," redirect anonymous visitors to `/login?next=/proof-lab` (or render a teaser — product decision, see questions). Pass `userId` into `ProofLabPage`.
+- **Route gating** — `src/app/proof-lab/page.jsx` is currently a public server component with no user fetch. Convert it to fetch the user (mirror `src/app/dashboard/page.jsx`) and redirect anonymous visitors to `/login?next=/proof-lab` (settled decision — members-only in 6a; public teaser deferred to Phase 8). Pass `userId` into `ProofLabPage`.
 - **`ProofLabPage.jsx`** — replace `PROOF_LISTINGS`/`PROOF_CATS` imports with `listProofLabListings` + `getProofLabCategories`; derive seller avatar/initials/color the same way `BrowsePage.jsx` does (`colorForUser`, `initials`) instead of the mock's stored `avatar`/`color`. Rewrite the "Request This Deal" modal's `send()` to call `requestProofLabDeal()` (RPC) **and** then `POST` to a new `/api/proof-lab/notify-seller` route so the seller is actually emailed (see below) — replacing the current `/api/beta-signup` call. Format cents → display price.
 - **`DashboardPage.jsx` → `ProofLabListingsTab`** — replace `ME_PROOF_LISTINGS` with `listMyProofLabListings`; wire **Add New Listing** to a create modal (`createProofLabListing`), **Edit** to an edit modal (`updateProofLabListing`), **Activate/De-activate** to `setProofLabListingStatus`; read the real cap from `plan_feature_limit(plan, 'max_proof_lab_listings')` instead of the hard-coded `3`, and surface the RPC's limit exception inline. Add an **Incoming Deal Requests** view (via `listIncomingDealRequests`) so sellers can see who requested what — this is the payoff that makes the marketplace two-sided.
 - **Seller notification API** — new `src/app/api/proof-lab/notify-seller/route.js` (mirror `src/app/api/beta-signup/route.js`): accepts a `dealRequestId`, uses the **service-role** client to look up the deal request + listing + seller's `auth.users` email (not exposed to the browser), and sends a Resend email to the seller. Guard against spam by confirming the deal-request row exists and is recent.
@@ -348,10 +348,10 @@ All still fully unimplemented (see `docs/fiveup-project-status-7-4-26.txt`). Sug
 3. **Phase 9 — Video/audio feedback (Mux).** The `video_audio` feedback_format enum, `asset_feedback_formats` acceptance, and `feedback_submissions.media_url` already exist; this phase adds real recording/upload → Mux ingestion, a `video_feedback` table (asset/upload state, duration, playback id, moderation status), and player UI. Independent of 7/8 but benefits from Phase 7 moderation for public videos.
 4. **Phase 10 — AI Asset Builder.** Onboarding assist that drafts asset name/description/channels/feedback-format suggestions from a URL. LLM integration (use the latest Claude model per the `claude-api` skill); lowest structural risk, no schema dependencies — can be slotted in anytime. Feeds `create_asset` (Phase 5a).
 
-### Open questions to resolve before starting 6a
+### Settled decisions (resolved before starting 6a)
 
-- **Route access:** gate `/proof-lab` to authenticated members (redirect anon to login), or show anonymous visitors a teaser grid? ("Members-Only Deals" framing suggests gating, but a public teaser aids acquisition.)
-- **Listing↔asset link:** keep `asset_id` optional (a listing may be pure service with no reviewed asset), or require every listing to be backed by an asset for "proof"? Draft assumes optional.
-- **Seed migration:** migrate the 22 `PROOF_LISTINGS` mock rows into real seed data for demo continuity, or start empty and let real sellers populate? Draft seeds only categories, not listings.
-- **Flourish cap:** unlimited active listings for Flourish (draft assumes yes, `limit_int = null`), or a higher finite cap?
+- **Route access → gate to members.** `/proof-lab` becomes a server component that fetches the user and redirects anonymous visitors to `/login?next=/proof-lab`. No `anon`-role RLS is introduced in 6a; a proper public teaser is deferred to Phase 8 (public profiles), where anonymous exposure is designed holistically with moderation already in place.
+- **Listing↔asset link → optional, with a proof badge.** `asset_id` stays nullable (a listing may be a pure service with no reviewed asset). When it *is* set, the UI shows a "verified proof" badge linking to the reviewed asset — trust upside without blocking coaching/photography/etc. listings.
+- **Seed data → start empty (categories only).** The 22 `PROOF_LISTINGS` mock rows are **not** migrated: doing so would require fabricated seller `user_profiles` that would pollute the real members table and leak into the matching graph / browse candidates. The migration seeds only `proof_lab_categories`. `ProofLabPage` needs a proper empty state ("No listings yet — be the first to post a deal"). Any demo data is a separate **dev-only** script using intentionally-created demo accounts, never a prod migration.
+- **Flourish cap → 10 (finite, generous).** Guards a small early marketplace against single-seller flooding before Phase 7 moderation exists. It's a one-row change in `plan_feature_gates` to raise or make unlimited later, no code change. (Reflected in the migration draft above.)
 ```
