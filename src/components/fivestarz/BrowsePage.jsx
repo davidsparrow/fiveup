@@ -6,7 +6,7 @@ import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { getMyProfile, listMyAssets, getBrowseQuota, getEligibleCandidates, getChannelsAndFormatsForAssets, requestMatch } from "@/lib/fivestarz/data";
+import { getMyProfile, listMyAssets, getBrowseQuota, getEligibleCandidates, getChannelsAndFormatsForAssets, requestMatch, getPreviousMatches, getUsedChannelsForMatches } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, FEEDBACK_FORMAT_DB_TO_SHORT_LABEL } from "@/lib/fivestarz/enums";
 
 const AVATAR_COLORS = ["#7C3AED", "#1A9E8F", "#F4A832", "#FF6B35", "#6B4226", "#38A169", "#4A5568", "#A0644A"];
@@ -180,7 +180,8 @@ export default function BrowsePage({ userId }) {
           {shown.map(c => {
             const hasPrev = c.prior_match_count > 0;
             const blocked = c.has_active_match;
-            const dimmed = blocked || hasPrev;
+            const rematchable = hasPrev && !blocked;
+            const dimmed = blocked;
             const barColor = blocked ? T.red : hasPrev ? "#C8BFB5" : c.would_queue ? T.gold : T.green;
             const rating = c.profile?.feedback_rating_avg || 0;
             const exchanges = c.profile?.feedback_rating_count || 0;
@@ -220,10 +221,10 @@ export default function BrowsePage({ userId }) {
                     {c.formats.map(f => <Pill key={f} color={T.brownL} bg={T.cream} sx={{ fontSize: 9 }}>{f}</Pill>)}
                   </div>
                   {blocked && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: "#F0EAE3", border: "1px solid #DDD4C8", fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>🔁 A match with this member is already in progress.</div>}
-                  {!blocked && hasPrev && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: "#F0EAE3", border: "1px solid #DDD4C8", fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>🔁 Previously matched · re-matching is coming soon.</div>}
+                  {rematchable && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: T.orangeP, border: `1px solid ${T.orange}44`, fontSize: 12, color: T.brownM, fontFamily: "'DM Sans',sans-serif" }}>🔁 Previously matched · re-match eligible on channels you haven&rsquo;t used yet.</div>}
                   {!blocked && !hasPrev && c.would_queue && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: T.goldL + "33", border: `1px solid ${T.gold}55`, fontSize: 12, color: T.brownM, fontFamily: "'DM Sans',sans-serif" }}>⏳ This member is near their monthly match limit — your request may be declined.</div>}
-                  <Btn sz="sm" v={dimmed ? "ghost" : "primary"} disabled={dimmed} sx={{ width: "100%", justifyContent: "center" }} onClick={() => setMatchModal(c)}>
-                    {blocked ? "Match In Progress" : hasPrev ? "Previously Matched" : "Request Match →"}
+                  <Btn sz="sm" v={blocked ? "ghost" : "primary"} disabled={blocked} sx={{ width: "100%", justifyContent: "center" }} onClick={() => setMatchModal(c)}>
+                    {blocked ? "Match In Progress" : rematchable ? "⚡ Request Re-Match →" : "Request Match →"}
                   </Btn>
                 </div>
               </Card>
@@ -239,23 +240,68 @@ export default function BrowsePage({ userId }) {
         )}
       </div>
 
-      {matchModal && <RequestMatchModal candidate={matchModal} myAssetId={offeringAssetId} myAssetName={myActiveAssets.find(a => a.id === offeringAssetId)?.name} onClose={() => setMatchModal(null)} />}
+      {matchModal && (() => {
+        const offeringAsset = myActiveAssets.find(a => a.id === offeringAssetId);
+        return (
+          <RequestMatchModal
+            candidate={matchModal}
+            userId={userId}
+            myAssetId={offeringAssetId}
+            myAssetName={offeringAsset?.name}
+            myAssetChannels={(offeringAsset?.asset_channels || []).map(c => c.channel_name)}
+            onClose={() => setMatchModal(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
 
-function RequestMatchModal({ candidate, myAssetId, myAssetName, onClose }) {
+function RequestMatchModal({ candidate, userId, myAssetId, myAssetName, myAssetChannels, onClose }) {
   const isMobile = useIsMobile();
+  const isRematch = candidate.prior_match_count > 0;
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  // For a re-match, look up the prior match(es) and the channels already used,
+  // intersected with the current assets' channels so create_match won't reject.
+  const [prep, setPrep] = useState({ loading: isRematch, previousMatchId: null, myBlockedChannels: [], theirBlockedChannels: [] });
+
+  useEffect(() => {
+    if (!isRematch) return;
+    const supabase = createClient();
+    let cancelled = false;
+    (async () => {
+      try {
+        const { previousMatchId, priorMatchIds } = await getPreviousMatches(supabase, userId, candidate.candidate_user_id);
+        const { mine, theirs } = await getUsedChannelsForMatches(supabase, priorMatchIds, userId);
+        if (cancelled) return;
+        const myBlockedChannels = mine.filter(ch => (myAssetChannels || []).includes(ch));
+        const theirBlockedChannels = theirs.filter(ch => (candidate.channels || []).includes(ch));
+        setPrep({ loading: false, previousMatchId, myBlockedChannels, theirBlockedChannels });
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || "Could not load your prior match with this member.");
+          setPrep(p => ({ ...p, loading: false }));
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isRematch, userId, candidate.candidate_user_id, candidate.channels, myAssetChannels]);
 
   const send = async () => {
     setSending(true);
     setError("");
     try {
       const supabase = createClient();
-      await requestMatch(supabase, { otherUserId: candidate.candidate_user_id, myAssetId, theirAssetId: candidate.candidate_asset_id });
+      await requestMatch(supabase, {
+        otherUserId: candidate.candidate_user_id,
+        myAssetId,
+        theirAssetId: candidate.candidate_asset_id,
+        previousMatchId: isRematch ? prep.previousMatchId : null,
+        myBlockedChannels: isRematch ? prep.myBlockedChannels : [],
+        theirBlockedChannels: isRematch ? prep.theirBlockedChannels : [],
+      });
       setSent(true);
     } catch (err) {
       setError(err.message || "Could not send this match request.");
@@ -270,8 +316,8 @@ function RequestMatchModal({ candidate, myAssetId, myAssetName, onClose }) {
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {!sent ? (
           <>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, marginBottom: 6 }}>Request Match with {candidate.candidate_display_name}</h2>
-            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 20 }}>You&rsquo;ll each review one another&rsquo;s asset.</p>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, marginBottom: 6 }}>{isRematch ? "Re-Match" : "Request Match"} with {candidate.candidate_display_name}</h2>
+            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 20 }}>{isRematch ? "You’ve matched before — this round covers channels you haven’t used yet." : "You’ll each review one another’s asset."}</p>
             <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
               <div style={{ flex: 1, padding: "12px 16px", borderRadius: 12, border: `2px solid ${T.orange}`, background: T.orangeP }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.brownL, textTransform: "uppercase", marginBottom: 4 }}>You&rsquo;re offering</div>
@@ -282,8 +328,31 @@ function RequestMatchModal({ candidate, myAssetId, myAssetName, onClose }) {
                 <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{candidate.candidate_asset_name}</div>
               </div>
             </div>
+            {isRematch && (
+              <div style={{ padding: "14px 16px", background: T.cream, borderRadius: 14, marginBottom: 20 }}>
+                {prep.loading ? (
+                  <div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Checking which channels you&rsquo;ve already used…</div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, fontFamily: "'DM Sans',sans-serif" }}>Channels on {candidate.candidate_asset_name}</div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {(candidate.channels || []).length === 0 && <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>No channels listed.</span>}
+                      {(candidate.channels || []).map(ch => {
+                        const used = prep.theirBlockedChannels.includes(ch);
+                        return (
+                          <span key={ch} title={used ? "Already reviewed here in a prior match" : undefined} style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", background: used ? "#F0EAE3" : "#fff", color: used ? T.brownL : T.brownM, border: `1px solid ${used ? "#DDD4C8" : T.teal + "55"}`, textDecoration: used ? "line-through" : "none", opacity: used ? 0.7 : 1 }}>{ch}</span>
+                        );
+                      })}
+                    </div>
+                    {prep.theirBlockedChannels.length + prep.myBlockedChannels.length > 0 && (
+                      <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", marginTop: 10 }}>Struck-through channels were used in a prior match and are blocked this round.</div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
             {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 16 }}>⚠️ {error}</div>}
-            <Btn onClick={send} disabled={sending} sx={{ width: "100%", justifyContent: "center" }}>{sending ? "Sending…" : "Send Match Request →"}</Btn>
+            <Btn onClick={send} disabled={sending || prep.loading} sx={{ width: "100%", justifyContent: "center" }}>{sending ? "Sending…" : isRematch ? "⚡ Send Re-Match Request →" : "Send Match Request →"}</Btn>
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 52, marginBottom: 16 }}>🤝</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Match Request Sent!</h2><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We&rsquo;ve notified <strong>{candidate.candidate_display_name}</strong>. Once feedback is exchanged, you&rsquo;ll both see it on your Dashboard.</p><Btn onClick={onClose}>Done</Btn></div>
