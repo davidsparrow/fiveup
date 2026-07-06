@@ -21,7 +21,7 @@ export default async function NewAssetPage() {
 
   return (
     <PageShell>
-      <AssetPage userId={user.id} />
+      <AssetPage />
     </PageShell>
   );
 }
