@@ -310,3 +310,110 @@ export async function requestReviewPost(supabase, { feedbackSubmissionId, channe
   if (error) throw error;
   return data;
 }
+
+// ── Proof Lab (marketplace) ────────────────────────────────────────────────
+
+export async function getProofLabCategories(supabase) {
+  const { data, error } = await supabase
+    .from("proof_lab_categories")
+    .select("slug, label")
+    .order("sort_order");
+
+  if (error) throw error;
+  return data;
+}
+
+// Active listings visible to all members (RLS enforces active-or-owner).
+export async function listProofLabListings(supabase, { categorySlug } = {}) {
+  let query = supabase
+    .from("proof_lab_listings")
+    .select(
+      "*, seller:user_profiles!seller_user_id(display_name), category:proof_lab_categories!category_slug(label), asset:assets!asset_id(name)",
+    )
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  if (categorySlug) query = query.eq("category_slug", categorySlug);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function listMyProofLabListings(supabase, sellerId) {
+  const { data, error } = await supabase
+    .from("proof_lab_listings")
+    .select("*, category:proof_lab_categories!category_slug(label)")
+    .eq("seller_user_id", sellerId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function createProofLabListing(supabase, form) {
+  const { data, error } = await supabase.rpc("create_proof_lab_listing", {
+    p_title: form.title,
+    p_description: form.description,
+    p_category_slug: form.categorySlug,
+    p_retail_price_cents: form.retailPriceCents ?? null,
+    p_member_price_cents: form.memberPriceCents ?? null,
+    p_price_unit: form.priceUnit || null,
+    p_badge: form.badge || null,
+    p_asset_id: form.assetId || null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProofLabListing(supabase, listingId, form) {
+  const { error } = await supabase.rpc("update_proof_lab_listing", {
+    p_listing_id: listingId,
+    p_title: form.title,
+    p_description: form.description,
+    p_category_slug: form.categorySlug,
+    p_retail_price_cents: form.retailPriceCents ?? null,
+    p_member_price_cents: form.memberPriceCents ?? null,
+    p_price_unit: form.priceUnit || null,
+    p_badge: form.badge || null,
+    p_asset_id: form.assetId || null,
+  });
+
+  if (error) throw error;
+}
+
+export async function setProofLabListingStatus(supabase, listingId, status) {
+  const { error } = await supabase.rpc("set_proof_lab_listing_status", {
+    p_listing_id: listingId,
+    p_status: status,
+  });
+
+  if (error) throw error;
+}
+
+export async function requestProofLabDeal(supabase, { listingId, email, note, timeframe }) {
+  const { data, error } = await supabase.rpc("request_proof_lab_deal", {
+    p_listing_id: listingId,
+    p_requester_email: email,
+    p_note: note || null,
+    p_timeframe: timeframe || "soon",
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+// Deal requests received on the seller's own listings, newest first.
+export async function listIncomingDealRequests(supabase, sellerId) {
+  const { data, error } = await supabase
+    .from("proof_lab_deal_requests")
+    .select(
+      "*, listing:proof_lab_listings!listing_id(title), requester:user_profiles!requester_user_id(display_name)",
+    )
+    .eq("seller_user_id", sellerId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}

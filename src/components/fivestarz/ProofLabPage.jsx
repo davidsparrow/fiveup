@@ -1,17 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { PROOF_LISTINGS, PROOF_CATS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Btn, Pill } from "@/components/fivestarz/ui";
+import { createClient } from "@/lib/supabase/client";
+import { listProofLabListings, getProofLabCategories, requestProofLabDeal } from "@/lib/fivestarz/data";
+import { PROOF_LAB_TIMEFRAMES } from "@/lib/fivestarz/enums";
 
-export default function ProofLabPage() {
+const AVATAR_COLORS = ["#7C3AED", "#1A9E8F", "#F4A832", "#FF6B35", "#6B4226", "#38A169", "#4A5568", "#A0644A"];
+function colorForUser(userId) {
+  const sum = Array.from(userId || "").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+function initials(name) {
+  return (name || "?").split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase();
+}
+function formatPrice(cents) {
+  if (cents === null || cents === undefined) return "—";
+  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+export default function ProofLabPage({ userId }) {
   const isMobile = useIsMobile();
   const [cat, setCat] = useState("All");
+  const [categories, setCategories] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [reqModal, setReqModal] = useState(null);
-  const shown = cat === "All" ? PROOF_LISTINGS : PROOF_LISTINGS.filter(l => l.category === cat);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    setLoading(true);
+    setLoadError("");
+    (async () => {
+      try {
+        const [cats, rows] = await Promise.all([
+          getProofLabCategories(supabase),
+          listProofLabListings(supabase),
+        ]);
+        if (cancelled) return;
+        setCategories(cats);
+        setListings(rows);
+      } catch (err) {
+        if (!cancelled) setLoadError(err.message || "Could not load listings.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const shown = cat === "All" ? listings : listings.filter(l => l.category_slug === cat);
 
   return (
     <div style={{ background: T.cream, minHeight: "100vh" }}>
@@ -23,51 +66,69 @@ export default function ProofLabPage() {
             <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 16, color: "#C4A68A", margin: 0, maxWidth: 560 }}>Members offer exclusive deals on their best services — marketing, design, video, AI, ads, and more. Lock in founder-only pricing.</p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingBottom: 20 }}>
-            {PROOF_CATS.map(c => (
-              <button key={c} onClick={() => setCat(c)} style={{ padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 12, background: cat === c ? T.gold : "rgba(255,255,255,0.12)", color: cat === c ? T.brown : "#fff", transition: "all 0.15s" }}>{c}</button>
+            {[{ slug: "All", label: "All" }, ...categories].map(c => (
+              <button key={c.slug} onClick={() => setCat(c.slug)} style={{ padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 12, background: cat === c.slug ? T.gold : "rgba(255,255,255,0.12)", color: cat === c.slug ? T.brown : "#fff", transition: "all 0.15s" }}>{c.label}</button>
             ))}
           </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "20px 16px 48px" : "28px 32px 60px" }}>
-        <div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, marginBottom: 16 }}>{shown.length} listing{shown.length !== 1 ? "s" : ""}</div>
+        {loadError && <div style={{ padding: "16px 20px", background: "#FFE5E5", borderRadius: 14, marginBottom: 18, fontSize: 14, color: "#C0392B", fontFamily: "'DM Sans',sans-serif" }}>⚠️ {loadError}</div>}
+        <div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, marginBottom: 16 }}>{loading ? "Loading…" : `${shown.length} listing${shown.length !== 1 ? "s" : ""}`}</div>
+
+        {!loading && listings.length === 0 && !loadError && (
+          <div style={{ textAlign: "center", padding: "60px 32px" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🧪</div>
+            <div style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, marginBottom: 8 }}>No listings yet</div>
+            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", maxWidth: 420, margin: "0 auto 20px" }}>Be the first to post a members-only deal. Add a listing from your dashboard.</p>
+            <Btn v="teal" onClick={() => { window.location.href = "/dashboard"; }}>Go to Dashboard →</Btn>
+          </div>
+        )}
+
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? 14 : 20 }}>
-          {shown.map(l => (
-            <div key={l.id}
-              style={{ background: "#fff", borderRadius: 20, border: "1.5px solid #F0E8E0", overflow: "hidden", display: "flex", flexDirection: "column", transition: "all 0.22s", boxShadow: "0 2px 10px rgba(61,43,31,0.06)" }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 32px rgba(61,43,31,0.12)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 10px rgba(61,43,31,0.06)"; }}>
-              <div style={{ height: 4, background: l.color }} />
-              <div style={{ padding: "20px 20px 18px", display: "flex", flexDirection: "column", flex: 1 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
-                  <Av txt={l.avatar} color={l.color} size={34} />
-                  <div>
-                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, color: T.brown }}>{l.seller}</div>
-                    <div style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.category}</div>
-                  </div>
-                  {l.badge && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color: l.color, background: l.color + "18", padding: "3px 9px", borderRadius: 12 }}>{l.badge}</span>}
-                </div>
-                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: T.brown, marginBottom: 8, lineHeight: 1.25 }}>{l.title}</div>
-                <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, marginBottom: 16, flex: 1 }}>{l.desc}</div>
-                <div style={{ background: T.cream, borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          {shown.map(l => {
+            const color = colorForUser(l.seller_user_id);
+            const sellerName = l.seller?.display_name || "Member";
+            return (
+              <div key={l.id}
+                style={{ background: "#fff", borderRadius: 20, border: "1.5px solid #F0E8E0", overflow: "hidden", display: "flex", flexDirection: "column", transition: "all 0.22s", boxShadow: "0 2px 10px rgba(61,43,31,0.06)" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 32px rgba(61,43,31,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 10px rgba(61,43,31,0.06)"; }}>
+                <div style={{ height: 4, background: color }} />
+                <div style={{ padding: "20px 20px 18px", display: "flex", flexDirection: "column", flex: 1 }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14 }}>
+                    <Av txt={initials(sellerName)} color={color} size={34} />
                     <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "'DM Sans',sans-serif" }}>Retail</div>
-                      <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, color: T.brownL, textDecoration: "line-through" }}>{l.retail}</div>
+                      <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, color: T.brown }}>{sellerName}</div>
+                      <div style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.category?.label || l.category_slug}</div>
                     </div>
-                    <div style={{ fontSize: 20, color: "#DDD4C8" }}>→</div>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "'DM Sans',sans-serif" }}>Members Pay</div>
-                      <div style={{ fontFamily: "'Fraunces',serif", fontWeight: 900, fontSize: 22, color: T.orange }}>{l.members}</div>
-                    </div>
-                    <div style={{ marginLeft: "auto", fontSize: 10, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textAlign: "right", lineHeight: 1.4 }}>{l.unit}</div>
+                    {l.badge && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color, background: color + "18", padding: "3px 9px", borderRadius: 12 }}>{l.badge}</span>}
                   </div>
+                  <div style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: T.brown, marginBottom: 8, lineHeight: 1.25 }}>{l.title}</div>
+                  {l.asset?.name && <div style={{ marginBottom: 8 }}><span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color: T.teal, background: T.tealP, padding: "3px 9px", borderRadius: 12 }}>✓ Verified proof · {l.asset.name}</span></div>}
+                  <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, marginBottom: 16, flex: 1 }}>{l.description}</div>
+                  <div style={{ background: T.cream, borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "'DM Sans',sans-serif" }}>Retail</div>
+                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, color: T.brownL, textDecoration: "line-through" }}>{formatPrice(l.retail_price_cents)}</div>
+                      </div>
+                      <div style={{ fontSize: 20, color: "#DDD4C8" }}>→</div>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "'DM Sans',sans-serif" }}>Members Pay</div>
+                        <div style={{ fontFamily: "'Fraunces',serif", fontWeight: 900, fontSize: 22, color: T.orange }}>{formatPrice(l.member_price_cents)}</div>
+                      </div>
+                      <div style={{ marginLeft: "auto", fontSize: 10, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textAlign: "right", lineHeight: 1.4 }}>{l.price_unit}</div>
+                    </div>
+                  </div>
+                  {l.seller_user_id === userId
+                    ? <Btn v="ghost" disabled sx={{ width: "100%", justifyContent: "center" }}>Your listing</Btn>
+                    : <Btn onClick={() => setReqModal(l)} sx={{ width: "100%", justifyContent: "center" }}>Request This Deal →</Btn>}
                 </div>
-                <Btn onClick={() => setReqModal(l)} sx={{ width: "100%", justifyContent: "center" }}>Request This Deal →</Btn>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -84,22 +145,36 @@ function ProofLabRequestModal({ listing, onClose }) {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const TF = ["ASAP", "Soon", "No Rush"];
+  const sellerName = listing.seller?.display_name || "The member";
+
   const send = async () => {
     if (!email) return;
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
-      const res = await fetch("/api/beta-signup", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-          name: `Proof Lab: ${listing.title}`, email, business: listing.seller, url: listing.category,
-          goal: `Timeframe: ${TF[timeframe]}\n\nNote: ${note || "(none)"}`,
-        }),
+      const supabase = createClient();
+      const dealRequestId = await requestProofLabDeal(supabase, {
+        listingId: listing.id,
+        email,
+        note,
+        timeframe: PROOF_LAB_TIMEFRAMES[timeframe].value,
       });
-      if (!res.ok) throw new Error();
+      // Notify the seller out-of-band; a failed email shouldn't fail the request.
+      try {
+        await fetch("/api/proof-lab/notify-seller", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dealRequestId }),
+        });
+      } catch { /* non-fatal */ }
       setSent(true);
-    } catch { setError("Something went wrong — please try again."); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError(err.message || "Something went wrong — please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "28px 20px" : "36px 40px", maxWidth: 460, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
@@ -109,7 +184,7 @@ function ProofLabRequestModal({ listing, onClose }) {
             <div style={{ marginBottom: 22 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4, fontFamily: "'DM Sans',sans-serif" }}>Request Deal</div>
               <div style={{ fontFamily: "'Fraunces',serif", fontSize: 21, fontWeight: 800, color: T.brown, lineHeight: 1.2, marginBottom: 4 }}>{listing.title}</div>
-              <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>by {listing.seller} · <span style={{ color: T.orange, fontWeight: 700 }}>{listing.members}</span> {listing.unit}</div>
+              <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>by {sellerName} · <span style={{ color: T.orange, fontWeight: 700 }}>{formatPrice(listing.member_price_cents)}</span> {listing.price_unit}</div>
             </div>
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>Your Best Email *</label>
@@ -126,7 +201,7 @@ function ProofLabRequestModal({ listing, onClose }) {
               <div style={{ padding: "14px 16px", background: T.cream, borderRadius: 12 }}>
                 <input type="range" min={0} max={2} step={1} value={timeframe} onChange={e => setTimeframe(Number(e.target.value))} style={{ width: "100%", accentColor: T.orange, cursor: "pointer" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-                  {TF.map((lbl, i) => <span key={lbl} style={{ fontSize: 12, fontWeight: timeframe === i ? 800 : 500, color: timeframe === i ? T.orange : T.brownL, fontFamily: "'DM Sans',sans-serif", transition: "all 0.15s" }}>{lbl}</span>)}
+                  {PROOF_LAB_TIMEFRAMES.map((tf, i) => <span key={tf.value} style={{ fontSize: 12, fontWeight: timeframe === i ? 800 : 500, color: timeframe === i ? T.orange : T.brownL, fontFamily: "'DM Sans',sans-serif", transition: "all 0.15s" }}>{tf.label}</span>)}
                 </div>
               </div>
             </div>
@@ -138,7 +213,7 @@ function ProofLabRequestModal({ listing, onClose }) {
             <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Request Sent!</h2>
             <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>
-              <strong>{listing.seller}</strong> will reach out to <strong>{email}</strong> with next steps.
+              <strong>{sellerName}</strong> will reach out to <strong>{email}</strong> with next steps.
             </p>
             <Btn onClick={onClose}>Done</Btn>
           </div>
@@ -147,4 +222,3 @@ function ProofLabRequestModal({ listing, onClose }) {
     </div>
   );
 }
-
