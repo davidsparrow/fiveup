@@ -339,7 +339,7 @@ export async function listProofLabListings(supabase, { categorySlug } = {}) {
   let query = supabase
     .from("proof_lab_listings")
     .select(
-      "*, seller:user_profiles!seller_user_id(display_name), category:proof_lab_categories!category_slug(label), asset:assets!asset_id(name), charity:charities!charity_id(name, logo_emoji)",
+      "*, seller:user_profiles!seller_user_id(display_name, proof_lab_rating_avg, proof_lab_rating_count), category:proof_lab_categories!category_slug(label), asset:assets!asset_id(name), charity:charities!charity_id(name, logo_emoji)",
     )
     .eq("status", "active")
     .order("created_at", { ascending: false });
@@ -434,11 +434,13 @@ export async function listIncomingDealRequests(supabase, sellerId) {
 }
 
 // Deal requests the current member has sent to other sellers, newest first.
+// Embeds the buyer's own review (if any) so the UI can show "reviewed" vs
+// offer a "Leave Review" action on completed deals.
 export async function listOutgoingDealRequests(supabase, requesterId) {
   const { data, error } = await supabase
     .from("proof_lab_deal_requests")
     .select(
-      "*, listing:proof_lab_listings!listing_id(title), seller:user_profiles!seller_user_id(display_name)",
+      "*, listing:proof_lab_listings!listing_id(title), seller:user_profiles!seller_user_id(display_name), review:proof_lab_reviews!deal_request_id(id, stars)",
     )
     .eq("requester_user_id", requesterId)
     .order("created_at", { ascending: false });
@@ -479,6 +481,29 @@ export async function getFundraiserLeaderboard(supabase, since = null) {
   const { data, error } = await supabase.rpc("proof_lab_fundraiser_leaderboard", {
     p_since: since,
   });
+  if (error) throw error;
+  return data;
+}
+
+// Buyer leaves a review on a completed deal (buyer-only, one per deal, RPC-gated).
+export async function createProofLabReview(supabase, { dealId, stars, written }) {
+  const { data, error } = await supabase.rpc("create_proof_lab_review", {
+    p_deal_id: dealId,
+    p_stars: stars,
+    p_written: written || null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Reviews a seller has received, newest first (for their dashboard).
+export async function getProofLabReviewsForSeller(supabase, sellerId) {
+  const { data, error } = await supabase
+    .from("proof_lab_reviews")
+    .select("*, reviewer:user_profiles!reviewer_user_id(display_name), listing:proof_lab_listings!listing_id(title)")
+    .eq("reviewee_user_id", sellerId)
+    .order("created_at", { ascending: false });
+
   if (error) throw error;
   return data;
 }

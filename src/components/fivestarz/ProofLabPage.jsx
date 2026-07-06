@@ -101,7 +101,10 @@ export default function ProofLabPage({ userId }) {
                     <Av txt={initials(sellerName)} color={color} size={34} />
                     <div>
                       <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, color: T.brown }}>{sellerName}</div>
-                      <div style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.category?.label || l.category_slug}</div>
+                      <div style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
+                        <span>{l.category?.label || l.category_slug}</span>
+                        {l.seller?.proof_lab_rating_count > 0 && <span style={{ color: T.gold, fontWeight: 700 }}>★ {Number(l.seller.proof_lab_rating_avg).toFixed(1)} ({l.seller.proof_lab_rating_count})</span>}
+                      </div>
                     </div>
                     {l.badge && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color, background: color + "18", padding: "3px 9px", borderRadius: 12 }}>{l.badge}</span>}
                   </div>
