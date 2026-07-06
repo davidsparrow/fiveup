@@ -417,3 +417,38 @@ export async function listIncomingDealRequests(supabase, sellerId) {
   if (error) throw error;
   return data;
 }
+
+// Deal requests the current member has sent to other sellers, newest first.
+export async function listOutgoingDealRequests(supabase, requesterId) {
+  const { data, error } = await supabase
+    .from("proof_lab_deal_requests")
+    .select(
+      "*, listing:proof_lab_listings!listing_id(title), seller:user_profiles!seller_user_id(display_name)",
+    )
+    .eq("requester_user_id", requesterId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+// ── Deal lifecycle transitions (all RPC-only; see 6b.1 migration) ──────────
+export async function acceptProofLabDeal(supabase, dealId) {
+  const { error } = await supabase.rpc("accept_proof_lab_deal", { p_deal_id: dealId });
+  if (error) throw error;
+}
+
+export async function declineProofLabDeal(supabase, dealId) {
+  const { error } = await supabase.rpc("decline_proof_lab_deal", { p_deal_id: dealId });
+  if (error) throw error;
+}
+
+export async function cancelProofLabDeal(supabase, dealId) {
+  const { error } = await supabase.rpc("cancel_proof_lab_deal", { p_deal_id: dealId });
+  if (error) throw error;
+}
+
+export async function markProofLabDealFulfilled(supabase, dealId) {
+  const { error } = await supabase.rpc("mark_proof_lab_deal_fulfilled", { p_deal_id: dealId });
+  if (error) throw error;
+}

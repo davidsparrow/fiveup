@@ -8,8 +8,17 @@ import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests } from "@/lib/fivestarz/data";
+import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
+
+const DEAL_STATUS_META = {
+  pending: { label: "Pending", color: T.gold, bg: T.goldL + "55" },
+  accepted: { label: "Accepted", color: T.teal, bg: T.tealP },
+  fulfilled: { label: "Fulfilled", color: T.orange, bg: T.orangeP },
+  completed: { label: "Completed", color: T.green, bg: T.greenP },
+  declined: { label: "Declined", color: T.brownL, bg: T.cream },
+  cancelled: { label: "Cancelled", color: T.brownL, bg: T.cream },
+};
 
 function formatPrice(cents) {
   if (cents === null || cents === undefined) return "—";
@@ -399,24 +408,43 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
   const [listings, setListings] = useState([]);
   const [categories, setCategories] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [outgoing, setOutgoing] = useState([]);
   const [gate, setGate] = useState({ enabled: false, limit: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [dealBusyId, setDealBusyId] = useState(null);
   const [editModal, setEditModal] = useState(null); // { listing } for edit, {} for new
   const [addMsg, setAddMsg] = useState(false);
 
   const load = async (supabase) => {
-    const [rows, cats, reqs, { data: gateRow }] = await Promise.all([
+    const [rows, cats, reqs, outReqs, { data: gateRow }] = await Promise.all([
       listMyProofLabListings(supabase, userId),
       getProofLabCategories(supabase),
       listIncomingDealRequests(supabase, userId),
+      listOutgoingDealRequests(supabase, userId),
       supabase.from("plan_feature_gates").select("enabled, limit_int").eq("plan_code", planCode).eq("feature_key", "max_proof_lab_listings").maybeSingle(),
     ]);
     setListings(rows);
     setCategories(cats);
     setRequests(reqs);
+    setOutgoing(outReqs);
     setGate({ enabled: gateRow?.enabled ?? false, limit: gateRow?.limit_int ?? null });
+  };
+
+  // Runs a lifecycle transition RPC then refreshes both request lists.
+  const runDealAction = async (fn, dealId) => {
+    setDealBusyId(dealId);
+    setError("");
+    try {
+      const supabase = createClient();
+      await fn(supabase, dealId);
+      await load(supabase);
+    } catch (err) {
+      setError(err.message || "Could not update this deal request.");
+    } finally {
+      setDealBusyId(null);
+    }
   };
 
   useEffect(() => {
@@ -457,15 +485,54 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
     }
   };
 
+  // Buyer-side requests are available on any plan (requesting a deal isn't
+  // plan-gated), so this renders in both the gated and ungated returns.
+  const outgoingSection = (
+    <div style={{ marginTop: 28 }}>
+      <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 14px" }}>My Deal Requests {outgoing.length > 0 && <span style={{ fontSize: 14, color: T.orange }}>({outgoing.length})</span>}</h3>
+      {outgoing.length === 0 ? (
+        <div style={{ padding: "20px 22px", background: T.cream, borderRadius: 14, fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>You haven&rsquo;t requested any deals yet. Browse the <a href="/proof-lab" style={{ color: T.teal, fontWeight: 700 }}>Proof Lab →</a></div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {outgoing.map(r => {
+            const meta = DEAL_STATUS_META[r.status] || { label: r.status, color: T.brownL, bg: T.cream };
+            const busy = dealBusyId === r.id;
+            const canCancel = r.status === "pending" || r.status === "accepted";
+            return (
+              <Card key={r.id} sx={{ padding: isMobile ? "14px 16px" : "16px 20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
+                  <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{r.listing?.title || "Listing"}</span>
+                  <Pill color={meta.color} bg={meta.bg}>{meta.label}</Pill>
+                </div>
+                <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>
+                  To <strong>{r.seller?.display_name || "seller"}</strong> · {PROOF_LAB_TIMEFRAME_LABEL[r.timeframe] || r.timeframe}
+                </div>
+                {canCancel && (
+                  <div style={{ marginTop: 10 }}>
+                    <Btn sz="sm" v="ghost" disabled={busy} onClick={() => runDealAction(cancelProofLabDeal, r.id)}>{busy ? "…" : "Cancel Request"}</Btn>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) return <div style={{ padding: "40px 0", textAlign: "center", fontSize: 14, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Loading…</div>;
 
   if (!gate.enabled) {
     return (
-      <div style={{ padding: "28px 24px", background: T.orangeP, borderRadius: 16, textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 10 }}>🧪</div>
-        <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 8px" }}>Proof Lab listings are a paid feature</h3>
-        <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", maxWidth: 420, margin: "0 auto 18px" }}>Upgrade to Bloom or Flourish to offer members-only deals in the Proof Lab.</p>
-        <Btn v="teal" onClick={() => { window.location.href = "/pricing"; }}>See Plans →</Btn>
+      <div>
+        <div style={{ padding: "28px 24px", background: T.orangeP, borderRadius: 16, textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🧪</div>
+          <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 8px" }}>Proof Lab listings are a paid feature</h3>
+          <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", maxWidth: 420, margin: "0 auto 18px" }}>Upgrade to Bloom or Flourish to offer members-only deals in the Proof Lab.</p>
+          <Btn v="teal" onClick={() => { window.location.href = "/pricing"; }}>See Plans →</Btn>
+        </div>
+        {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginTop: 16 }}>⚠️ {error}</div>}
+        {outgoingSection}
       </div>
     );
   }
@@ -543,21 +610,38 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
           <div style={{ padding: "20px 22px", background: T.cream, borderRadius: 14, fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>No deal requests yet. When a member requests one of your listings, it&rsquo;ll show up here.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {requests.map(r => (
-              <Card key={r.id} sx={{ padding: isMobile ? "14px 16px" : "16px 20px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
-                  <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{r.listing?.title || "Listing"}</span>
-                  <Pill color={T.brownM} bg={T.cream}>{PROOF_LAB_TIMEFRAME_LABEL[r.timeframe] || r.timeframe}</Pill>
-                </div>
-                <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: r.note ? 6 : 0 }}>
-                  From <strong>{r.requester?.display_name || "A member"}</strong> · <a href={`mailto:${r.requester_email}`} style={{ color: T.teal, fontWeight: 700 }}>{r.requester_email}</a>
-                </div>
-                {r.note && <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", fontStyle: "italic" }}>&ldquo;{r.note}&rdquo;</div>}
-              </Card>
-            ))}
+            {requests.map(r => {
+              const meta = DEAL_STATUS_META[r.status] || { label: r.status, color: T.brownL, bg: T.cream };
+              const busy = dealBusyId === r.id;
+              return (
+                <Card key={r.id} sx={{ padding: isMobile ? "14px 16px" : "16px 20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{r.listing?.title || "Listing"}</span>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <Pill color={meta.color} bg={meta.bg}>{meta.label}</Pill>
+                      <Pill color={T.brownM} bg={T.cream}>{PROOF_LAB_TIMEFRAME_LABEL[r.timeframe] || r.timeframe}</Pill>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: r.note ? 6 : 0 }}>
+                    From <strong>{r.requester?.display_name || "A member"}</strong> · <a href={`mailto:${r.requester_email}`} style={{ color: T.teal, fontWeight: 700 }}>{r.requester_email}</a>
+                  </div>
+                  {r.note && <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", fontStyle: "italic", marginBottom: 4 }}>&ldquo;{r.note}&rdquo;</div>}
+                  {(r.status === "pending" || r.status === "accepted") && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                      {r.status === "pending" && <Btn sz="sm" v="teal" disabled={busy} onClick={() => runDealAction(acceptProofLabDeal, r.id)}>{busy ? "…" : "Accept"}</Btn>}
+                      {r.status === "accepted" && <Btn sz="sm" v="teal" disabled={busy} onClick={() => runDealAction(markProofLabDealFulfilled, r.id)}>{busy ? "…" : "Mark Fulfilled"}</Btn>}
+                      <Btn sz="sm" v="ghost" disabled={busy} onClick={() => runDealAction(declineProofLabDeal, r.id)}>{busy ? "…" : "Decline"}</Btn>
+                    </div>
+                  )}
+                  {r.status === "fulfilled" && <div style={{ marginTop: 8, fontSize: 12, color: T.orange, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>Deliverables marked done — awaiting completion confirmation.</div>}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {outgoingSection}
 
       {editModal && (
         <ProofLabListingModal
