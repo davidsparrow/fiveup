@@ -34,3 +34,15 @@ export const FEEDBACK_FORMAT_DB_TO_SHORT_LABEL = {
   structured: "Structured Categories",
   video_audio: "Video / Audio",
 };
+
+// Proof Lab deal-request timeframes (public.proof_lab_timeframe enum). Order
+// matches the request modal's ASAP → Soon → No Rush slider.
+export const PROOF_LAB_TIMEFRAMES = [
+  { value: "asap", label: "ASAP" },
+  { value: "soon", label: "Soon" },
+  { value: "no_rush", label: "No Rush" },
+];
+
+export const PROOF_LAB_TIMEFRAME_LABEL = Object.fromEntries(
+  PROOF_LAB_TIMEFRAMES.map((t) => [t.value, t.label]),
+);

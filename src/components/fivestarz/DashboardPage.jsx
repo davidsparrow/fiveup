@@ -3,13 +3,25 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ME, ME_PROFILE, ME_PROOF_LISTINGS, HISTORY_ITEMS } from "@/lib/fivestarz/mock-data";
+import { ME, ME_PROFILE, HISTORY_ITEMS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost } from "@/lib/fivestarz/data";
-import { ASSET_TYPE_DB_TO_LABEL } from "@/lib/fivestarz/enums";
+import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests } from "@/lib/fivestarz/data";
+import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
+
+function formatPrice(cents) {
+  if (cents === null || cents === undefined) return "—";
+  return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+function dollarsToCents(v) {
+  const n = parseFloat(String(v).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? Math.round(n * 100) : null;
+}
+function centsToDollars(cents) {
+  return cents === null || cents === undefined ? "" : String(cents / 100);
+}
 
 const PLAN_DISPLAY_NAME = { sprout: "Sprout", bloom: "Bloom", flourish: "Flourish" };
 const ASSET_TYPE_EMOJI = {
@@ -354,7 +366,7 @@ export default function DashboardPage({ userId }) {
 
         {/* ── Proof Lab Listings Tab ── */}
         {tab === "prooflab" && (
-          <ProofLabListingsTab isMobile={isMobile} />
+          <ProofLabListingsTab isMobile={isMobile} userId={userId} planCode={planCode} assets={assets} />
         )}
       </div>
 
@@ -383,65 +395,266 @@ export default function DashboardPage({ userId }) {
 }
 
 
-function ProofLabListingsTab({ isMobile }) {
+function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
+  const [listings, setListings] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [gate, setGate] = useState({ enabled: false, limit: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const [editModal, setEditModal] = useState(null); // { listing } for edit, {} for new
   const [addMsg, setAddMsg] = useState(false);
-  const activeCnt = ME_PROOF_LISTINGS.filter(l => l.active).length;
-  const planLimit = 3; // Bloom tier
-  const atLimit = activeCnt >= planLimit;
+
+  const load = async (supabase) => {
+    const [rows, cats, reqs, { data: gateRow }] = await Promise.all([
+      listMyProofLabListings(supabase, userId),
+      getProofLabCategories(supabase),
+      listIncomingDealRequests(supabase, userId),
+      supabase.from("plan_feature_gates").select("enabled, limit_int").eq("plan_code", planCode).eq("feature_key", "max_proof_lab_listings").maybeSingle(),
+    ]);
+    setListings(rows);
+    setCategories(cats);
+    setRequests(reqs);
+    setGate({ enabled: gateRow?.enabled ?? false, limit: gateRow?.limit_int ?? null });
+  };
+
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    (async () => {
+      try {
+        await load(supabase);
+      } catch (err) {
+        if (!cancelled) setError(err.message || "Could not load your listings.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, planCode]);
+
+  const activeCnt = listings.filter(l => l.status === "active").length;
+  const planLimit = gate.limit;
+  const atLimit = planLimit !== null && activeCnt >= planLimit;
+  const canAdd = gate.enabled && (planLimit === null || planLimit > 0) && !atLimit;
+  const planName = PLAN_DISPLAY_NAME[planCode] || planCode;
+
+  const changeStatus = async (listing, status) => {
+    setBusyId(listing.id);
+    setError("");
+    try {
+      const supabase = createClient();
+      await setProofLabListingStatus(supabase, listing.id, status);
+      await load(supabase);
+    } catch (err) {
+      setError(err.message || "Could not update the listing.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (loading) return <div style={{ padding: "40px 0", textAlign: "center", fontSize: 14, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Loading…</div>;
+
+  if (!gate.enabled) {
+    return (
+      <div style={{ padding: "28px 24px", background: T.orangeP, borderRadius: 16, textAlign: "center" }}>
+        <div style={{ fontSize: 40, marginBottom: 10 }}>🧪</div>
+        <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 8px" }}>Proof Lab listings are a paid feature</h3>
+        <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", maxWidth: 420, margin: "0 auto 18px" }}>Upgrade to Bloom or Flourish to offer members-only deals in the Proof Lab.</p>
+        <Btn v="teal" onClick={() => { window.location.href = "/pricing"; }}>See Plans →</Btn>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>My Proof Lab Listings</h3>
         <div style={{ position: "relative" }}>
-          <Btn sz="sm" v={atLimit ? "ghost" : "teal"}
-            onClick={() => atLimit && setAddMsg(v => !v)}
-            onMouseEnter={() => atLimit && setAddMsg(true)}
+          <Btn sz="sm" v={canAdd ? "teal" : "ghost"}
+            onClick={() => canAdd ? setEditModal({}) : setAddMsg(v => !v)}
+            onMouseEnter={() => !canAdd && setAddMsg(true)}
             onMouseLeave={() => setAddMsg(false)}>
             + Add New Listing
           </Btn>
-          {addMsg && (
+          {addMsg && !canAdd && (
             <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", width: 260, background: T.brown, color: "#fff", borderRadius: 12, padding: "12px 16px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, zIndex: 10, boxShadow: "0 8px 24px rgba(61,43,31,0.25)" }}>
-              <strong>Bloom Tier: {activeCnt} of {planLimit} Listings Active.</strong><br />De-activate one to add or activate a different one.
+              <strong>{planName} Tier: {activeCnt} of {planLimit} Listings Active.</strong><br />De-activate one to add or activate a different one.
               <div style={{ position: "absolute", top: -6, right: 20, width: 12, height: 12, background: T.brown, transform: "rotate(45deg)", borderRadius: 2 }} />
             </div>
           )}
         </div>
       </div>
 
+      {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 16 }}>⚠️ {error}</div>}
+
+      {listings.length === 0 && (
+        <div style={{ padding: "28px 24px", background: T.cream, borderRadius: 16, textAlign: "center", marginBottom: 20 }}>
+          <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", margin: 0 }}>You haven&rsquo;t posted any deals yet. Add your first listing to appear in the Proof Lab.</p>
+        </div>
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {ME_PROOF_LISTINGS.map(l => (
-          <Card key={l.id} sx={{ padding: 0, overflow: "hidden", border: `2px solid ${l.active ? T.green + "55" : "#E8DDD5"}` }}>
-            <div style={{ height: 4, background: l.active ? T.green : "#C8BFB5" }} />
-            <div style={{ padding: isMobile ? "16px" : "18px 22px", display: "flex", alignItems: "flex-start", gap: 16, flexDirection: isMobile ? "column" : "row" }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: T.brown }}>{l.title}</span>
-                  {l.active
-                    ? <Pill color={T.green} bg={T.greenP}>● Active</Pill>
-                    : <Pill color={T.brownL} bg={T.cream}>Inactive</Pill>}
+        {listings.map(l => {
+          const active = l.status === "active";
+          const busy = busyId === l.id;
+          return (
+            <Card key={l.id} sx={{ padding: 0, overflow: "hidden", border: `2px solid ${active ? T.green + "55" : "#E8DDD5"}` }}>
+              <div style={{ height: 4, background: active ? T.green : "#C8BFB5" }} />
+              <div style={{ padding: isMobile ? "16px" : "18px 22px", display: "flex", alignItems: "flex-start", gap: 16, flexDirection: isMobile ? "column" : "row" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: T.brown }}>{l.title}</span>
+                    {active
+                      ? <Pill color={T.green} bg={T.greenP}>● Active</Pill>
+                      : <Pill color={T.brownL} bg={T.cream}>{l.status === "archived" ? "Archived" : "Inactive"}</Pill>}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: T.teal, fontFamily: "'DM Sans',sans-serif", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>{l.category?.label || l.category_slug}</div>
+                  <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, margin: "0 0 10px" }}>{l.description}</p>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 900, color: T.orange }}>{formatPrice(l.member_price_cents)}</span>
+                    <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textDecoration: "line-through" }}>{formatPrice(l.retail_price_cents)}</span>
+                    <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.price_unit}</span>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.teal, fontFamily: "'DM Sans',sans-serif", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>{l.category}</div>
-                <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, margin: "0 0 10px" }}>{l.desc}</p>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 900, color: T.orange }}>{l.members}</span>
-                  <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textDecoration: "line-through" }}>{l.retail}</span>
-                  <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.unit}</span>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0, alignSelf: isMobile ? "stretch" : "center" }}>
+                  <Btn sz="sm" v="ghost" disabled={busy} onClick={() => setEditModal({ listing: l })} sx={isMobile ? { flex: 1, justifyContent: "center" } : {}}>Edit</Btn>
+                  <Btn sz="sm" v={active ? "ghost" : "teal"} disabled={busy || (!active && !canAdd)} onClick={() => changeStatus(l, active ? "inactive" : "active")} sx={isMobile ? { flex: 1, justifyContent: "center" } : {}}>
+                    {busy ? "…" : active ? "De-activate" : "Activate"}
+                  </Btn>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, flexShrink: 0, alignSelf: isMobile ? "stretch" : "center" }}>
-                <Btn sz="sm" v="ghost" sx={isMobile ? { flex: 1, justifyContent: "center" } : {}}>Edit</Btn>
-                <Btn sz="sm" v={l.active ? "ghost" : "teal"} sx={isMobile ? { flex: 1, justifyContent: "center" } : {}}>
-                  {l.active ? "De-activate" : "Activate"}
-                </Btn>
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
       <div style={{ marginTop: 20, padding: "14px 18px", background: T.tealP, borderRadius: 12, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>
-        🧪 Bloom Tier: {activeCnt} of {planLimit} listings active · <a href="/proof-lab" style={{ color: T.teal, fontWeight: 700 }}>View your listings in the Proof Lab →</a>
+        🧪 {planName} Tier: {activeCnt} of {planLimit === null ? "∞" : planLimit} listings active · <a href="/proof-lab" style={{ color: T.teal, fontWeight: 700 }}>View them in the Proof Lab →</a>
+      </div>
+
+      <div style={{ marginTop: 28 }}>
+        <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 14px" }}>Incoming Deal Requests {requests.length > 0 && <span style={{ fontSize: 14, color: T.orange }}>({requests.length})</span>}</h3>
+        {requests.length === 0 ? (
+          <div style={{ padding: "20px 22px", background: T.cream, borderRadius: 14, fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>No deal requests yet. When a member requests one of your listings, it&rsquo;ll show up here.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {requests.map(r => (
+              <Card key={r.id} sx={{ padding: isMobile ? "14px 16px" : "16px 20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
+                  <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{r.listing?.title || "Listing"}</span>
+                  <Pill color={T.brownM} bg={T.cream}>{PROOF_LAB_TIMEFRAME_LABEL[r.timeframe] || r.timeframe}</Pill>
+                </div>
+                <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: r.note ? 6 : 0 }}>
+                  From <strong>{r.requester?.display_name || "A member"}</strong> · <a href={`mailto:${r.requester_email}`} style={{ color: T.teal, fontWeight: 700 }}>{r.requester_email}</a>
+                </div>
+                {r.note && <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", fontStyle: "italic" }}>&ldquo;{r.note}&rdquo;</div>}
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {editModal && (
+        <ProofLabListingModal
+          listing={editModal.listing}
+          categories={categories}
+          assets={assets}
+          onClose={() => setEditModal(null)}
+          onSaved={async () => {
+            const supabase = createClient();
+            await load(supabase);
+            setEditModal(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProofLabListingModal({ listing, categories, assets, onClose, onSaved }) {
+  const isMobile = useIsMobile();
+  const isEdit = !!listing;
+  const [form, setForm] = useState({
+    title: listing?.title || "",
+    description: listing?.description || "",
+    categorySlug: listing?.category_slug || categories[0]?.slug || "",
+    retail: centsToDollars(listing?.retail_price_cents),
+    member: centsToDollars(listing?.member_price_cents),
+    priceUnit: listing?.price_unit || "",
+    badge: listing?.badge || "",
+    assetId: listing?.asset_id || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const payload = {
+        title: form.title,
+        description: form.description,
+        categorySlug: form.categorySlug,
+        retailPriceCents: dollarsToCents(form.retail),
+        memberPriceCents: dollarsToCents(form.member),
+        priceUnit: form.priceUnit,
+        badge: form.badge,
+        assetId: form.assetId || null,
+      };
+      if (isEdit) await updateProofLabListing(supabase, listing.id, payload);
+      else await createProofLabListing(supabase, payload);
+      await onSaved();
+    } catch (err) {
+      setError(err.message || "Could not save this listing.");
+      setSaving(false);
+    }
+  };
+
+  const inputStyle = { width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: T.cream, boxSizing: "border-box" };
+  const labelStyle = { display: "block", fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 6, fontFamily: "'DM Sans',sans-serif" };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "#fff", borderRadius: 24, padding: isMobile ? "24px 18px" : "30px 32px", maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
+        <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, margin: "0 0 20px" }}>{isEdit ? "Edit Listing" : "New Proof Lab Listing"}</h2>
+
+        <div style={{ marginBottom: 14 }}><label style={labelStyle}>Title *</label><input value={form.title} onChange={e => set("title", e.target.value)} placeholder="e.g. Sales Page Copywriting" style={inputStyle} /></div>
+        <div style={{ marginBottom: 14 }}><label style={labelStyle}>Description *</label><textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="What the buyer gets…" style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} /></div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>Category *</label>
+          <select value={form.categorySlug} onChange={e => set("categorySlug", e.target.value)} style={inputStyle}>
+            {categories.map(c => <option key={c.slug} value={c.slug}>{c.label}</option>)}
+          </select>
+        </div>
+        <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}><label style={labelStyle}>Retail price ($)</label><input value={form.retail} onChange={e => set("retail", e.target.value)} placeholder="1200" inputMode="decimal" style={inputStyle} /></div>
+          <div style={{ flex: 1 }}><label style={labelStyle}>Member price ($)</label><input value={form.member} onChange={e => set("member", e.target.value)} placeholder="149" inputMode="decimal" style={inputStyle} /></div>
+        </div>
+        <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}><label style={labelStyle}>Unit</label><input value={form.priceUnit} onChange={e => set("priceUnit", e.target.value)} placeholder="per page" style={inputStyle} /></div>
+          <div style={{ flex: 1 }}><label style={labelStyle}>Badge</label><input value={form.badge} onChange={e => set("badge", e.target.value)} placeholder="🔥 Hot Deal" style={inputStyle} /></div>
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>Link a reviewed asset <span style={{ fontWeight: 400, color: T.brownL }}>(optional — adds a “verified proof” badge)</span></label>
+          <select value={form.assetId} onChange={e => set("assetId", e.target.value)} style={inputStyle}>
+            <option value="">None</option>
+            {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </div>
+
+        {error && <div style={{ padding: "10px 14px", background: "#FFE5E5", borderRadius: 10, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 14 }}>⚠️ {error}</div>}
+        <div style={{ display: "flex", gap: 12 }}>
+          <Btn v="ghost" onClick={onClose} disabled={saving}>Cancel</Btn>
+          <Btn v="teal" onClick={save} disabled={saving || !form.title || !form.description || !form.categorySlug} sx={{ flex: 1, justifyContent: "center" }}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Listing"}</Btn>
+        </div>
       </div>
     </div>
   );
