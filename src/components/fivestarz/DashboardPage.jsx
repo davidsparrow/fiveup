@@ -8,7 +8,7 @@ import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard } from "@/lib/fivestarz/data";
+import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard, createProofLabReview, getProofLabReviewsForSeller } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
 
 const DEAL_STATUS_META = {
@@ -428,22 +428,25 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
   const [outgoing, setOutgoing] = useState([]);
   const [charities, setCharities] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [gate, setGate] = useState({ enabled: false, limit: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [dealBusyId, setDealBusyId] = useState(null);
   const [editModal, setEditModal] = useState(null); // { listing } for edit, {} for new
+  const [reviewModal, setReviewModal] = useState(null); // deal being reviewed
   const [addMsg, setAddMsg] = useState(false);
 
   const load = async (supabase) => {
-    const [rows, cats, reqs, outReqs, chars, board, { data: gateRow }] = await Promise.all([
+    const [rows, cats, reqs, outReqs, chars, board, revs, { data: gateRow }] = await Promise.all([
       listMyProofLabListings(supabase, userId),
       getProofLabCategories(supabase),
       listIncomingDealRequests(supabase, userId),
       listOutgoingDealRequests(supabase, userId),
       getCharities(supabase),
       getFundraiserLeaderboard(supabase),
+      getProofLabReviewsForSeller(supabase, userId),
       supabase.from("plan_feature_gates").select("enabled, limit_int").eq("plan_code", planCode).eq("feature_key", "max_proof_lab_listings").maybeSingle(),
     ]);
     setListings(rows);
@@ -452,6 +455,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
     setOutgoing(outReqs);
     setCharities(chars);
     setLeaderboard(board);
+    setReviews(revs);
     setGate({ enabled: gateRow?.enabled ?? false, limit: gateRow?.limit_int ?? null });
   };
 
@@ -521,6 +525,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
             const meta = DEAL_STATUS_META[r.status] || { label: r.status, color: T.brownL, bg: T.cream };
             const busy = dealBusyId === r.id;
             const canCancel = r.status === "pending" || r.status === "accepted";
+            const myReview = Array.isArray(r.review) ? r.review[0] : r.review;
             return (
               <Card key={r.id} sx={{ padding: isMobile ? "14px 16px" : "16px 20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
@@ -536,6 +541,13 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
                   </div>
                 )}
                 {r.status === "fulfilled" && <DealConfirmBlock deal={r} perspective="buyer" busy={busy} onConfirm={() => runDealAction(confirmProofLabDeal, r.id)} />}
+                {r.status === "completed" && (
+                  <div style={{ marginTop: 10 }}>
+                    {myReview
+                      ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>You reviewed <Stars n={myReview.stars} size={13} /></span>
+                      : <Btn sz="sm" v="teal" onClick={() => setReviewModal(r)}>★ Leave Review</Btn>}
+                  </div>
+                )}
               </Card>
             );
           })}
@@ -685,6 +697,26 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
         </div>
       )}
 
+      {reviews.length > 0 && (
+        <div style={{ marginTop: 28 }}>
+          <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 14px" }}>Reviews Received {reviews.length > 0 && <span style={{ fontSize: 14, color: T.orange }}>({reviews.length})</span>}</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {reviews.map(rv => (
+              <Card key={rv.id} sx={{ padding: isMobile ? "14px 16px" : "16px 20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: rv.written_review ? 6 : 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <Stars n={rv.stars} size={14} />
+                    <span style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>on <strong>{rv.listing?.title || "your listing"}</strong></span>
+                  </div>
+                  <Pill color={T.green} bg={T.greenP}>Engaged Buyer ✓</Pill>
+                </div>
+                {rv.written_review && <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", fontStyle: "italic", margin: 0 }}>&ldquo;{rv.written_review}&rdquo; <span style={{ fontStyle: "normal", color: T.brownL }}>— {rv.reviewer?.display_name || "A member"}</span></p>}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {editModal && (
         <ProofLabListingModal
           listing={editModal.listing}
@@ -696,6 +728,18 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
             const supabase = createClient();
             await load(supabase);
             setEditModal(null);
+          }}
+        />
+      )}
+
+      {reviewModal && (
+        <ProofLabReviewModal
+          deal={reviewModal}
+          onClose={() => setReviewModal(null)}
+          onSaved={async () => {
+            const supabase = createClient();
+            await load(supabase);
+            setReviewModal(null);
           }}
         />
       )}
@@ -799,6 +843,64 @@ function ProofLabListingModal({ listing, categories, assets, charities, onClose,
         <div style={{ display: "flex", gap: 12 }}>
           <Btn v="ghost" onClick={onClose} disabled={saving}>Cancel</Btn>
           <Btn v="teal" onClick={save} disabled={saving || !form.title || !form.description || !form.categorySlug} sx={{ flex: 1, justifyContent: "center" }}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Listing"}</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProofLabReviewModal({ deal, onClose, onSaved }) {
+  const isMobile = useIsMobile();
+  const [stars, setStars] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const sellerName = deal.seller?.display_name || "the seller";
+  const listingTitle = deal.listing?.title || "this deal";
+
+  const save = async () => {
+    if (!stars) return;
+    setSaving(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      await createProofLabReview(supabase, { dealId: deal.id, stars, written: text });
+      await onSaved();
+    } catch (err) {
+      setError(err.message || "Could not submit your review.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "#fff", borderRadius: 24, padding: isMobile ? "24px 18px" : "30px 32px", maxWidth: 460, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
+        <div style={{ display: "inline-flex", marginBottom: 8 }}><Pill color={T.green} bg={T.greenP}>Engaged Buyer ✓</Pill></div>
+        <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, margin: "0 0 4px" }}>Review {sellerName}</h2>
+        <p style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", margin: "0 0 20px" }}>For your completed deal: <strong>{listingTitle}</strong></p>
+
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Your rating *</div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {[1, 2, 3, 4, 5].map(n => (
+              <svg key={n} width={34} height={34} viewBox="0 0 20 20" fill={(hover || stars) >= n ? T.gold : "#E2D9D0"}
+                style={{ cursor: "pointer", transition: "transform 0.1s", transform: (hover || stars) >= n ? "scale(1.1)" : "scale(1)" }}
+                onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setStars(n)}>
+                <path d="M10 1l2.39 4.84 5.34.78-3.86 3.76.91 5.32L10 13.27l-4.78 2.51.91-5.32L2.27 6.62l5.34-.78z" />
+              </svg>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>Written review <span style={{ fontWeight: 400, color: T.brownL }}>(optional)</span></label>
+          <textarea value={text} onChange={e => setText(e.target.value)} placeholder="What was working with them like?" style={{ width: "100%", minHeight: 90, padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: T.cream, resize: "vertical", boxSizing: "border-box" }} />
+        </div>
+        {error && <div style={{ padding: "10px 14px", background: "#FFE5E5", borderRadius: 10, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 14 }}>⚠️ {error}</div>}
+        <div style={{ display: "flex", gap: 12 }}>
+          <Btn v="ghost" onClick={onClose} disabled={saving}>Cancel</Btn>
+          <Btn v="teal" onClick={save} disabled={saving || !stars} sx={{ flex: 1, justifyContent: "center" }}>{saving ? "Submitting…" : "Submit Review"}</Btn>
         </div>
       </div>
     </div>
