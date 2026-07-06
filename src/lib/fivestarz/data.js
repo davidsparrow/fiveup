@@ -33,6 +33,29 @@ export async function createAsset(supabase, form) {
   return { id: assetId };
 }
 
+// Uploads one screenshot File to the asset-screenshots Storage bucket at
+// `<assetId>/<unique-name>`, then records that path in asset_screenshots.
+// Storage RLS restricts writes to the object owner; the table's write policy
+// restricts rows to the asset owner — both resolve to the current user.
+export async function uploadAssetScreenshot(supabase, assetId, file, sortOrder = 0) {
+  const safeName = (file.name || "screenshot").replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${assetId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("asset-screenshots")
+    .upload(path, file, { contentType: file.type || undefined, upsert: false });
+
+  if (uploadError) throw uploadError;
+
+  const { error: insertError } = await supabase
+    .from("asset_screenshots")
+    .insert({ asset_id: assetId, storage_path: path, sort_order: sortOrder });
+
+  if (insertError) throw insertError;
+
+  return path;
+}
+
 export async function listMyAssets(supabase, ownerId) {
   const { data, error } = await supabase
     .from("assets")

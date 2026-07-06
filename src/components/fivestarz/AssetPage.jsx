@@ -7,13 +7,13 @@ import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Btn, Card, Pill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { createAsset } from "@/lib/fivestarz/data";
+import { createAsset, uploadAssetScreenshot } from "@/lib/fivestarz/data";
 
 const CHNLS = ["Google Business Profile", "Yelp", "Tripadvisor", "Amazon", "Shopify App Store", "Clutch.co", "Trustpilot", "Apple Podcasts", "Spotify", "Substack", "LinkedIn", "G2", "Capterra", "Gumroad", "Teachable"];
 const TYPES = ["Service / Consulting", "Advisory / Consulting Skills", "Physical Product", "Digital Product / SaaS", "Content / Podcast / Video", "E-commerce Store", "Free Session / Consultation", "Client Asset"];
 const FBTYPES = ["Star Rating (1–5)", "Written Review", "Structured Categories", "Video / Audio Upload"];
 
-export default function AssetPage({ userId }) {
+export default function AssetPage() {
   const isMobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [a, setA] = useState({ name: "", url: "", type: "", desc: "", channels: [], fbTypes: [], reqStars: false, reqTwo: false, forClient: false, clientName: "", screenshots: [] });
@@ -22,13 +22,30 @@ export default function AssetPage({ userId }) {
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [uploadWarning, setUploadWarning] = useState("");
 
   const handleCreateAsset = async () => {
     setSaving(true);
     setSaveError("");
+    setUploadWarning("");
     try {
       const supabase = createClient();
-      await createAsset(supabase, a);
+      const { id: assetId } = await createAsset(supabase, a);
+
+      // Asset exists now; screenshots are optional, so a failed upload should
+      // warn rather than block (retrying create would hit the unique-URL guard).
+      const withFiles = a.screenshots.filter(s => s.file);
+      const failed = [];
+      for (let i = 0; i < withFiles.length; i++) {
+        try {
+          await uploadAssetScreenshot(supabase, assetId, withFiles[i].file, i);
+        } catch {
+          failed.push(withFiles[i].name);
+        }
+      }
+      if (failed.length > 0) {
+        setUploadWarning(`Your asset was created, but ${failed.length} screenshot${failed.length > 1 ? "s" : ""} couldn't be uploaded (${failed.join(", ")}). You can add them later from the asset page.`);
+      }
       setDone(true);
     } catch (err) {
       setSaveError(err.message || "Something went wrong creating this asset.");
@@ -41,7 +58,7 @@ export default function AssetPage({ userId }) {
     const imgs = Array.from(files).filter(f => f.type.startsWith("image/"));
     imgs.forEach(f => {
       const reader = new FileReader();
-      reader.onload = e => setA(p => ({ ...p, screenshots: [...p.screenshots, { name: f.name, src: e.target.result }] }));
+      reader.onload = e => setA(p => ({ ...p, screenshots: [...p.screenshots, { name: f.name, src: e.target.result, file: f }] }));
       reader.readAsDataURL(f);
     });
   };
@@ -54,7 +71,8 @@ export default function AssetPage({ userId }) {
         <div style={{ fontSize: 64, marginBottom: 20 }}>🚀</div>
         <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 36, fontWeight: 900, color: T.brown, margin: "0 0 16px" }}>Asset Live!</h1>
         <p style={{ fontSize: 16, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 28 }}><strong>{a.name || "Your asset"}</strong> is set up and ready to collect feedback.</p>
-        <Btn onClick={() => { setDone(false); setStep(1); setA({ name: "", url: "", type: "", desc: "", channels: [], fbTypes: [], reqStars: false, reqTwo: false, forClient: false, clientName: "", screenshots: [] }); }}>Add Another Asset</Btn>
+        {uploadWarning && <div style={{ padding: "14px 18px", background: "#FFF6E5", borderRadius: 12, fontSize: 14, color: "#8A6D3B", fontFamily: "'DM Sans',sans-serif", marginBottom: 24, textAlign: "left" }}>⚠️ {uploadWarning}</div>}
+        <Btn onClick={() => { setDone(false); setStep(1); setUploadWarning(""); setA({ name: "", url: "", type: "", desc: "", channels: [], fbTypes: [], reqStars: false, reqTwo: false, forClient: false, clientName: "", screenshots: [] }); }}>Add Another Asset</Btn>
       </div>
     </div>
   );
