@@ -452,3 +452,9 @@ export async function markProofLabDealFulfilled(supabase, dealId) {
   const { error } = await supabase.rpc("mark_proof_lab_deal_fulfilled", { p_deal_id: dealId });
   if (error) throw error;
 }
+
+// Either participant confirms a fulfilled deal completed; both → 'completed'.
+export async function confirmProofLabDeal(supabase, dealId) {
+  const { error } = await supabase.rpc("confirm_proof_lab_deal", { p_deal_id: dealId });
+  if (error) throw error;
+}
