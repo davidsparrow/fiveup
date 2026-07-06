@@ -109,16 +109,81 @@ export async function getChannelsAndFormatsForAssets(supabase, assetIds) {
   return { channelsByAsset, formatsByAsset };
 }
 
-export async function requestMatch(supabase, { otherUserId, myAssetId, theirAssetId }) {
-  const { data, error } = await supabase.rpc("create_match", {
+export async function requestMatch(
+  supabase,
+  { otherUserId, myAssetId, theirAssetId, previousMatchId = null, myBlockedChannels = [], theirBlockedChannels = [] },
+) {
+  const params = {
     p_other_user_id: otherUserId,
     p_my_asset_id: myAssetId,
     p_their_asset_id: theirAssetId,
     p_source: "browse",
-  });
+  };
+
+  // create_match requires previous_match_id whenever any prior match exists
+  // between the two users; only then does it read the blocked-channel arrays.
+  if (previousMatchId) {
+    params.p_previous_match_id = previousMatchId;
+    params.p_my_blocked_channels = myBlockedChannels;
+    params.p_their_blocked_channels = theirBlockedChannels;
+  }
+
+  const { data, error } = await supabase.rpc("create_match", params);
 
   if (error) throw error;
   return data;
+}
+
+// All matches between the two users (any status), newest first. The newest id
+// is passed to create_match as p_previous_match_id; the full list feeds the
+// union of already-used channels below.
+export async function getPreviousMatches(supabase, userId, otherUserId) {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("id, created_at")
+    .or(
+      `and(member_a_user_id.eq.${userId},member_b_user_id.eq.${otherUserId}),and(member_a_user_id.eq.${otherUserId},member_b_user_id.eq.${userId})`,
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return {
+    previousMatchId: data[0]?.id ?? null,
+    priorMatchIds: data.map((m) => m.id),
+  };
+}
+
+// Union of channels already posted to across the given prior matches, split by
+// which side owned the reviewed asset: `mine` are channels of the caller's
+// asset(s) (blocked for the caller in the new match), `theirs` are the other
+// member's (blocked for them).
+export async function getUsedChannelsForMatches(supabase, matchIds, myUserId) {
+  if (matchIds.length === 0) return { mine: [], theirs: [] };
+
+  const { data: feedback, error: feedbackError } = await supabase
+    .from("feedback_submissions")
+    .select("id, reviewee_user_id")
+    .in("match_id", matchIds);
+
+  if (feedbackError) throw feedbackError;
+  if (feedback.length === 0) return { mine: [], theirs: [] };
+
+  const { data: posts, error: postsError } = await supabase
+    .from("review_post_requests")
+    .select("feedback_submission_id, requested_channel_name")
+    .in("feedback_submission_id", feedback.map((f) => f.id));
+
+  if (postsError) throw postsError;
+
+  const revieweeByFeedbackId = Object.fromEntries(feedback.map((f) => [f.id, f.reviewee_user_id]));
+  const mine = new Set();
+  const theirs = new Set();
+  posts.forEach((p) => {
+    if (revieweeByFeedbackId[p.feedback_submission_id] === myUserId) mine.add(p.requested_channel_name);
+    else theirs.add(p.requested_channel_name);
+  });
+
+  return { mine: [...mine], theirs: [...theirs] };
 }
 
 export async function listMyMatches(supabase, userId) {
