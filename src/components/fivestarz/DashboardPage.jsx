@@ -8,7 +8,7 @@ import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal } from "@/lib/fivestarz/data";
+import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
 
 const DEAL_STATUS_META = {
@@ -426,6 +426,8 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
   const [categories, setCategories] = useState([]);
   const [requests, setRequests] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
+  const [charities, setCharities] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [gate, setGate] = useState({ enabled: false, limit: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -435,17 +437,21 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
   const [addMsg, setAddMsg] = useState(false);
 
   const load = async (supabase) => {
-    const [rows, cats, reqs, outReqs, { data: gateRow }] = await Promise.all([
+    const [rows, cats, reqs, outReqs, chars, board, { data: gateRow }] = await Promise.all([
       listMyProofLabListings(supabase, userId),
       getProofLabCategories(supabase),
       listIncomingDealRequests(supabase, userId),
       listOutgoingDealRequests(supabase, userId),
+      getCharities(supabase),
+      getFundraiserLeaderboard(supabase),
       supabase.from("plan_feature_gates").select("enabled, limit_int").eq("plan_code", planCode).eq("feature_key", "max_proof_lab_listings").maybeSingle(),
     ]);
     setListings(rows);
     setCategories(cats);
     setRequests(reqs);
     setOutgoing(outReqs);
+    setCharities(chars);
+    setLeaderboard(board);
     setGate({ enabled: gateRow?.enabled ?? false, limit: gateRow?.limit_int ?? null });
   };
 
@@ -605,6 +611,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
                     <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textDecoration: "line-through" }}>{formatPrice(l.retail_price_cents)}</span>
                     <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l.price_unit}</span>
                   </div>
+                  {l.donation_percent && <div style={{ marginTop: 8 }}><span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color: T.green, background: T.greenP, padding: "3px 9px", borderRadius: 12 }}>💚 {l.donation_percent}% to {l.charity?.logo_emoji ? `${l.charity.logo_emoji} ` : ""}{l.charity?.name || "charity"}</span></div>}
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0, alignSelf: isMobile ? "stretch" : "center" }}>
                   <Btn sz="sm" v="ghost" disabled={busy} onClick={() => setEditModal({ listing: l })} sx={isMobile ? { flex: 1, justifyContent: "center" } : {}}>Edit</Btn>
@@ -661,11 +668,29 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
 
       {outgoingSection}
 
+      {leaderboard.length > 0 && (
+        <div style={{ marginTop: 28 }}>
+          <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 6px" }}>🏆 Fundraiser Leaderboard</h3>
+          <p style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", margin: "0 0 14px" }}>Total pledged to charity across members&rsquo; completed Proof Lab deals.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {leaderboard.map((row, i) => (
+              <div key={row.seller_user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: i === 0 ? T.goldL + "33" : T.cream, borderRadius: 12, border: `1px solid ${i === 0 ? T.gold + "66" : "#EDE4DA"}` }}>
+                <span style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 900, color: i === 0 ? T.gold : T.brownL, minWidth: 28 }}>{i + 1}</span>
+                <span style={{ flex: 1, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown, minWidth: 0 }}>{row.display_name || "Member"}{row.seller_user_id === userId && <span style={{ color: T.orange }}> (you)</span>}</span>
+                <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{row.completed_deals} deal{row.completed_deals !== 1 ? "s" : ""}</span>
+                <span style={{ fontFamily: "'Fraunces',serif", fontWeight: 800, fontSize: 16, color: T.green }}>{formatPrice(Number(row.total_pledged_cents))}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {editModal && (
         <ProofLabListingModal
           listing={editModal.listing}
           categories={categories}
           assets={assets}
+          charities={charities}
           onClose={() => setEditModal(null)}
           onSaved={async () => {
             const supabase = createClient();
@@ -678,7 +703,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
   );
 }
 
-function ProofLabListingModal({ listing, categories, assets, onClose, onSaved }) {
+function ProofLabListingModal({ listing, categories, assets, charities, onClose, onSaved }) {
   const isMobile = useIsMobile();
   const isEdit = !!listing;
   const [form, setForm] = useState({
@@ -690,6 +715,8 @@ function ProofLabListingModal({ listing, categories, assets, onClose, onSaved })
     priceUnit: listing?.price_unit || "",
     badge: listing?.badge || "",
     assetId: listing?.asset_id || "",
+    donationPercent: listing?.donation_percent != null ? String(listing.donation_percent) : "",
+    charityId: listing?.charity_id || "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -700,6 +727,7 @@ function ProofLabListingModal({ listing, categories, assets, onClose, onSaved })
     setError("");
     try {
       const supabase = createClient();
+      const pct = form.donationPercent.trim() === "" ? null : parseInt(form.donationPercent, 10);
       const payload = {
         title: form.title,
         description: form.description,
@@ -709,6 +737,8 @@ function ProofLabListingModal({ listing, categories, assets, onClose, onSaved })
         priceUnit: form.priceUnit,
         badge: form.badge,
         assetId: form.assetId || null,
+        donationPercent: pct,
+        charityId: pct === null ? null : form.charityId || null,
       };
       if (isEdit) await updateProofLabListing(supabase, listing.id, payload);
       else await createProofLabListing(supabase, payload);
@@ -744,12 +774,25 @@ function ProofLabListingModal({ listing, categories, assets, onClose, onSaved })
           <div style={{ flex: 1 }}><label style={labelStyle}>Unit</label><input value={form.priceUnit} onChange={e => set("priceUnit", e.target.value)} placeholder="per page" style={inputStyle} /></div>
           <div style={{ flex: 1 }}><label style={labelStyle}>Badge</label><input value={form.badge} onChange={e => set("badge", e.target.value)} placeholder="🔥 Hot Deal" style={inputStyle} /></div>
         </div>
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Link a reviewed asset <span style={{ fontWeight: 400, color: T.brownL }}>(optional — adds a “verified proof” badge)</span></label>
           <select value={form.assetId} onChange={e => set("assetId", e.target.value)} style={inputStyle}>
             <option value="">None</option>
             {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
+        </div>
+        <div style={{ marginBottom: 20, padding: 14, background: T.greenP, borderRadius: 12 }}>
+          <label style={labelStyle}>💚 Donate to charity <span style={{ fontWeight: 400, color: T.brownL }}>(optional — shows a badge to buyers)</span></label>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ width: 110 }}>
+              <input value={form.donationPercent} onChange={e => set("donationPercent", e.target.value.replace(/[^0-9]/g, ""))} placeholder="% e.g. 10" inputMode="numeric" style={inputStyle} />
+            </div>
+            <select value={form.charityId} onChange={e => set("charityId", e.target.value)} disabled={form.donationPercent.trim() === ""} style={{ ...inputStyle, flex: 1, opacity: form.donationPercent.trim() === "" ? 0.5 : 1 }}>
+              <option value="">Select a charity…</option>
+              {charities.map(c => <option key={c.id} value={c.id}>{c.logo_emoji ? `${c.logo_emoji} ` : ""}{c.name}</option>)}
+            </select>
+          </div>
+          <p style={{ fontSize: 11, color: T.brownM, fontFamily: "'DM Sans',sans-serif", margin: "8px 0 0", lineHeight: 1.5 }}>Honor-system pledge based on the member price — FiveStarz doesn&rsquo;t process the donation.</p>
         </div>
 
         {error && <div style={{ padding: "10px 14px", background: "#FFE5E5", borderRadius: 10, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 14 }}>⚠️ {error}</div>}

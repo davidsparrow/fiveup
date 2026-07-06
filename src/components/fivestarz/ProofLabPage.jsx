@@ -106,7 +106,12 @@ export default function ProofLabPage({ userId }) {
                     {l.badge && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color, background: color + "18", padding: "3px 9px", borderRadius: 12 }}>{l.badge}</span>}
                   </div>
                   <div style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: T.brown, marginBottom: 8, lineHeight: 1.25 }}>{l.title}</div>
-                  {l.asset?.name && <div style={{ marginBottom: 8 }}><span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color: T.teal, background: T.tealP, padding: "3px 9px", borderRadius: 12 }}>✓ Verified proof · {l.asset.name}</span></div>}
+                  {(l.asset?.name || l.donation_percent) && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                      {l.asset?.name && <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color: T.teal, background: T.tealP, padding: "3px 9px", borderRadius: 12 }}>✓ Verified proof · {l.asset.name}</span>}
+                      {l.donation_percent && <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", color: T.green, background: T.greenP, padding: "3px 9px", borderRadius: 12 }}>💚 {l.donation_percent}% to {l.charity?.logo_emoji ? `${l.charity.logo_emoji} ` : ""}{l.charity?.name || "charity"}</span>}
+                    </div>
+                  )}
                   <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, marginBottom: 16, flex: 1 }}>{l.description}</div>
                   <div style={{ background: T.cream, borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
