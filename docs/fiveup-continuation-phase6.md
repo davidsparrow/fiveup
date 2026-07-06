@@ -326,7 +326,11 @@ Node script with the service-role key: create temporary Bloom + Sprout confirmed
 
 ---
 
-## Phase 6b — Stripe payments (deferred; scoped, not designed in full)
+## Phase 6b — Stripe payments (SUPERSEDED / DROPPED)
+
+> **Superseded by `docs/fiveup-continuation-phase6b.md` (6b-lite).** Product decision: FiveStarz stays a **matchmaker, not a middleman** — no Stripe, no Connect, no escrow, no platform fee. The Proof Lab is monetized via subscription tiers only. The Stripe design below is **not** being built; it's kept for historical context. The replacement scope is a payment-free deal lifecycle, dual completion confirmation, honor-system charity pledges, and engaged-reviewer reviews.
+
+_Original (dropped) notes:_
 
 The 6a model deliberately stores prices as integer cents and models a request → accept/decline/fulfil lifecycle so payments layer on without reshaping tables. 6b is a **materially larger** effort with unresolved product/compliance decisions:
 
