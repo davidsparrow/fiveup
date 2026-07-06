@@ -8,7 +8,7 @@ import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled } from "@/lib/fivestarz/data";
+import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
 
 const DEAL_STATUS_META = {
@@ -23,6 +23,23 @@ const DEAL_STATUS_META = {
 function formatPrice(cents) {
   if (cents === null || cents === undefined) return "—";
   return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+// Completion-confirmation controls for a fulfilled deal, from one side's view.
+function DealConfirmBlock({ deal, perspective, busy, onConfirm }) {
+  const mine = perspective === "seller" ? deal.seller_confirmed_at : deal.buyer_confirmed_at;
+  const theirs = perspective === "seller" ? deal.buyer_confirmed_at : deal.seller_confirmed_at;
+  const theirLabel = perspective === "seller" ? "Buyer" : "Seller";
+  return (
+    <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      {mine
+        ? <span style={{ fontSize: 12, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>You confirmed ✓</span>
+        : <Btn sz="sm" v="teal" disabled={busy} onClick={onConfirm}>{busy ? "…" : "Confirm Completed"}</Btn>}
+      <span style={{ fontSize: 12, color: theirs ? T.green : T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>
+        {theirs ? `${theirLabel} confirmed ✓` : `Awaiting ${theirLabel.toLowerCase()}`}
+      </span>
+    </div>
+  );
 }
 function dollarsToCents(v) {
   const n = parseFloat(String(v).replace(/[^0-9.]/g, ""));
@@ -512,6 +529,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
                     <Btn sz="sm" v="ghost" disabled={busy} onClick={() => runDealAction(cancelProofLabDeal, r.id)}>{busy ? "…" : "Cancel Request"}</Btn>
                   </div>
                 )}
+                {r.status === "fulfilled" && <DealConfirmBlock deal={r} perspective="buyer" busy={busy} onConfirm={() => runDealAction(confirmProofLabDeal, r.id)} />}
               </Card>
             );
           })}
@@ -633,7 +651,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
                       <Btn sz="sm" v="ghost" disabled={busy} onClick={() => runDealAction(declineProofLabDeal, r.id)}>{busy ? "…" : "Decline"}</Btn>
                     </div>
                   )}
-                  {r.status === "fulfilled" && <div style={{ marginTop: 8, fontSize: 12, color: T.orange, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>Deliverables marked done — awaiting completion confirmation.</div>}
+                  {r.status === "fulfilled" && <DealConfirmBlock deal={r} perspective="seller" busy={busy} onConfirm={() => runDealAction(confirmProofLabDeal, r.id)} />}
                 </Card>
               );
             })}
