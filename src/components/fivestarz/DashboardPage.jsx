@@ -1,18 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ME, ME_PROFILE, ME_PROOF_LISTINGS, MATCHES, HISTORY_ITEMS } from "@/lib/fivestarz/mock-data";
+import { ME, ME_PROFILE, ME_PROOF_LISTINGS, HISTORY_ITEMS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
+import { createClient } from "@/lib/supabase/client";
+import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost } from "@/lib/fivestarz/data";
+import { ASSET_TYPE_DB_TO_LABEL } from "@/lib/fivestarz/enums";
 
-function RateFeedbackWidget({ match }) {
-  const [rating, setRating] = useState(match.myFbRating || 0);
+const PLAN_DISPLAY_NAME = { sprout: "Sprout", bloom: "Bloom", flourish: "Flourish" };
+const ASSET_TYPE_EMOJI = {
+  service_consulting: "🚀",
+  advisory_skills: "🧠",
+  physical_product: "📦",
+  digital_product_saas: "💻",
+  content_podcast_video: "🎙️",
+  ecommerce_store: "🛍️",
+  free_session_consultation: "🗓️",
+  client_asset: "🤝",
+};
+function initials(name) {
+  return (name || "")
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function RateFeedbackWidget({ feedbackSubmissionId, initialRating }) {
+  const [rating, setRating] = useState(initialRating || 0);
   const [hover, setHover] = useState(0);
-  const [saved, setSaved] = useState(match.myFbRating != null);
-  const save = n => { setRating(n); setSaved(true); };
+  const [saved, setSaved] = useState(initialRating != null);
+  const [saving, setSaving] = useState(false);
+  const save = async n => {
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      await rateFeedback(supabase, { feedbackSubmissionId, stars: n });
+      setRating(n);
+      setSaved(true);
+    } catch (err) {
+      window.alert(err.message || "Could not save your rating.");
+    } finally {
+      setSaving(false);
+    }
+  };
   if (saved && rating > 0) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -37,19 +74,62 @@ function RateFeedbackWidget({ match }) {
   );
 }
 
-export default function DashboardPage() {
+export default function DashboardPage({ userId }) {
   const router = useRouter();
   const [tab, setTab] = useState("matches");
   const [fbModal, setFbModal] = useState(null);
   const [postModal, setPostModal] = useState(null);
   const isMobile = useIsMobile();
   const hideHeaderIdentityText = useIsMobile(1024);
+  const [profile, setProfile] = useState(null);
+  const [assets, setAssets] = useState([]);
+  const [assetsLoading, setAssetsLoading] = useState(true);
+  const [matches, setMatches] = useState([]);
+  const [matchesLoading, setMatchesLoading] = useState(true);
   const sc = {
+    matched: { label: "New Match", color: T.gold, bg: T.goldL + "55" },
+    accepted: { label: "New Match", color: T.gold, bg: T.goldL + "55" },
     feedback_pending: { label: "Feedback Due", color: T.orange, bg: T.orangeP },
     awaiting_post: { label: "Post Requested", color: T.teal, bg: T.tealP },
     posted: { label: "Publicly Shared ✓", color: T.green, bg: T.greenP },
-    matched: { label: "New Match", color: T.gold, bg: T.goldL + "55" },
+    completed: { label: "Completed", color: T.green, bg: T.greenP },
+    queued_next_month: { label: "Queued", color: T.brownL, bg: T.cream },
+    cancelled: { label: "Cancelled", color: T.brownL, bg: T.cream },
   };
+
+  const refreshMatches = async (supabase) => {
+    const rows = await listMyMatches(supabase, userId);
+    setMatches(rows);
+    setMatchesLoading(false);
+  };
+
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    let cancelled = false;
+
+    (async () => {
+      const [profileRow, assetRows] = await Promise.all([
+        getMyProfile(supabase, userId),
+        listMyAssets(supabase, userId),
+      ]);
+      if (cancelled) return;
+      setProfile(profileRow);
+      setAssets(assetRows);
+      setAssetsLoading(false);
+      await refreshMatches(supabase);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const displayName = profile?.display_name || "…";
+  const planCode = profile?.plan_code || "sprout";
+  const planName = PLAN_DISPLAY_NAME[planCode] || planCode;
+  const planTier = planCode === "sprout" ? "free" : "paid";
+  const degrees = profile?.degrees_of_separation ?? ME.degrees;
 
   return (
     <div style={{ background: T.cream, minHeight: "100vh" }}>
@@ -57,13 +137,13 @@ export default function DashboardPage() {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? 18 : 24, marginBottom: isMobile ? 20 : 32 }}>
             <div style={{ display: "flex", gap: hideHeaderIdentityText ? 0 : (isMobile ? 12 : 16), alignItems: "center", minWidth: 0 }}>
-              <Av txt={ME.avatar} color={T.orange} size={isMobile ? 46 : 52} />
-              {!hideHeaderIdentityText && <div style={{ minWidth: 0 }}><div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#C4A68A", fontWeight: 600, marginBottom: 4 }}>Welcome back,</div><div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#fff", lineHeight: 1.15 }}>{ME.name}</div></div>}
+              <Av txt={initials(displayName) || ME.avatar} color={T.orange} size={isMobile ? 46 : 52} />
+              {!hideHeaderIdentityText && <div style={{ minWidth: 0 }}><div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#C4A68A", fontWeight: 600, marginBottom: 4 }}>Welcome back,</div><div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#fff", lineHeight: 1.15 }}>{displayName}</div></div>}
             </div>
             <div style={{ textAlign: isMobile ? "left" : "right", width: isMobile ? "100%" : "auto" }}>
-              <PlanPill plan={ME.plan} planName={ME.planName} />
+              <PlanPill plan={planTier} planName={planName} />
               <div style={{ marginTop: 10, display: "flex", gap: isMobile ? 8 : 20, justifyContent: isMobile ? "space-between" : "flex-start", flexWrap: isMobile ? "wrap" : "nowrap" }}>
-                {[["4/12", "Matches"], ["2/6", "Browse"], [`${ME.degrees}°`, "Separation"]].map(([v, l]) => (
+                {[["4/12", "Matches"], ["2/6", "Browse"], [`${degrees}°`, "Separation"]].map(([v, l]) => (
                   <div key={l} style={{ textAlign: "center", flex: isMobile ? 1 : "0 0 auto", minWidth: 0 }}>
                     <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 18 : 20, fontWeight: 800, color: "#fff" }}>{v}</div>
                     <div style={{ fontSize: isMobile ? 10 : 11, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif" }}>{l}</div>
@@ -73,7 +153,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: isMobile ? 8 : 16 }}>
-            {[["📦", "Assets", ME.assets.length], ["✅", "Posted", 14], ["✍️", "Pending", 2], ["🤝", "Matches", "4/12"]].map(([ic, lbl, val]) => (
+            {[["📦", "Assets", assets.length], ["✅", "Posted", 14], ["✍️", "Pending", 2], ["🤝", "Matches", "4/12"]].map(([ic, lbl, val]) => (
               <div key={lbl} style={{ background: "rgba(255,255,255,0.1)", borderRadius: "14px 14px 0 0", padding: isMobile ? "12px 8px" : "16px 20px", backdropFilter: "blur(8px)", minWidth: 0, textAlign: isMobile ? "center" : "left" }}>
                 <div style={{ fontSize: isMobile ? 18 : 20, marginBottom: 6 }}>{ic}</div>
                 <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 18 : 24, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{val}</div>
@@ -97,39 +177,51 @@ export default function DashboardPage() {
               <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>Your Matches</h3>
               <Btn sz="sm" v="teal" onClick={() => router.push("/browse")} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>+ Browse Members</Btn>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {MATCHES.map(m => {
-                const s = sc[m.status];
-                return (
-                  <Card key={m.id} sx={{ padding: isMobile ? "16px" : "20px 24px" }}>
-                    <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 12 : 16, flexDirection: isMobile ? "column" : "row" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, minWidth: 0 }}>
-                        <Av txt={m.person.split(" ").map(n => n[0]).join("")} color={m.color} size={44} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 6 : 10, marginBottom: 4 }}>
-                            <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 16, color: T.brown }}>{m.person}</span>
-                            <Pill color={s.color} bg={s.bg}>{s.label}</Pill>
+            {matchesLoading ? (
+              <div style={{ padding: "40px 0", textAlign: "center", color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Loading your matches…</div>
+            ) : matches.length === 0 ? (
+              <div style={{ padding: "40px 0", textAlign: "center", color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>No matches yet. Browse members to request your first one.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {matches.map(m => {
+                  const s = sc[m.status] || { label: m.status, color: T.brownL, bg: T.cream };
+                  const bothSubmitted = m.myFeedback && m.theirFeedback;
+                  return (
+                    <Card key={m.id} sx={{ padding: isMobile ? "16px" : "20px 24px" }}>
+                      <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 12 : 16, flexDirection: isMobile ? "column" : "row" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, minWidth: 0 }}>
+                          <Av txt={initials(m.otherDisplayName)} color={T.orange} size={44} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 6 : 10, marginBottom: 4 }}>
+                              <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 16, color: T.brown }}>{m.otherDisplayName}</span>
+                              <Pill color={s.color} bg={s.bg}>{s.label}</Pill>
+                            </div>
+                            <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.45 }}>You&rsquo;re reviewing <strong>{m.theirAsset.name}</strong> · {ASSET_TYPE_DB_TO_LABEL[m.theirAsset.asset_type] || m.theirAsset.asset_type}</div>
+                            <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>{m.theirAsset.asset_channels.map(c => <Pill key={c.channel_name} color={T.brownL} bg={T.cream}>{c.channel_name}</Pill>)}</div>
                           </div>
-                          <div style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.45 }}><strong>{m.asset}</strong> · {m.type} · Due {m.due}</div>
-                          <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>{m.channels.map(ch => <Pill key={ch} color={T.brownL} bg={T.cream}>{ch}</Pill>)}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexShrink: 0, flexDirection: "column", alignItems: isMobile ? "stretch" : "flex-end", width: isMobile ? "100%" : "auto" }}>
+                          {!m.myFeedback && m.status !== "cancelled" && m.status !== "queued_next_month" && <Btn sz="sm" onClick={() => setFbModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Leave Feedback</Btn>}
+                          {m.myFeedback && !m.theirFeedback && <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Feedback sent — waiting on their feedback</div>}
+                          {bothSubmitted && (
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "stretch" : "flex-end", gap: 6, width: isMobile ? "100%" : "auto" }}>
+                              {m.theirFeedbackPostRequest?.status === "posted" ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>✓ Posted to {m.theirFeedbackPostRequest.requested_channel_name}</div>
+                              ) : m.theirFeedbackPostRequest ? (
+                                <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Post requested · {m.theirFeedbackPostRequest.status}</div>
+                              ) : (
+                                <Btn sz="sm" v="teal" onClick={() => setPostModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Request Post</Btn>
+                              )}
+                              <RateFeedbackWidget feedbackSubmissionId={m.theirFeedback.id} initialRating={m.theirFeedbackMyRating} />
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 8, flexShrink: 0, flexDirection: "column", alignItems: isMobile ? "stretch" : "flex-end", width: isMobile ? "100%" : "auto" }}>
-                        {m.status === "feedback_pending" && <Btn sz="sm" onClick={() => setFbModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Leave Feedback</Btn>}
-                        {m.status === "awaiting_post" && <Btn sz="sm" v="teal" onClick={() => setPostModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Request Post</Btn>}
-                        {m.status === "posted" && (
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "stretch" : "flex-end", gap: 6, width: isMobile ? "100%" : "auto" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>✓ {m.postedCh}</div>
-                            <RateFeedbackWidget match={m} />
-                          </div>
-                        )}
-                        {m.status === "matched" && <Btn sz="sm" v="gold" sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Accept Match</Btn>}
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -139,27 +231,35 @@ export default function DashboardPage() {
               <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0, minWidth: 0 }}>My Assets</h3>
               <Btn sz="sm" onClick={() => router.push("/assets/new")} sx={{ marginLeft: "auto", flexShrink: 0 }}>+ Add Asset</Btn>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
-              {ME.assets.map(a => (
-                <Card key={a.id} sx={{ padding: 28 }}>
-                  <div style={{ display: "flex", gap: 14, marginBottom: 18 }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: a.type.includes("Advisory") ? T.purpleP : T.orangeP, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{a.img}</div>
-                    <div><div style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 700, color: T.brown }}>{a.name}</div><div style={{ fontSize: 12, color: T.teal, fontFamily: "'DM Sans',sans-serif" }}>{a.url}</div>{a.type.includes("Advisory") && <Pill color={T.purple} bg={T.purpleP} sx={{ marginTop: 4, fontSize: 10 }}>Advisory Skills</Pill>}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-                    <div style={{ flex: 1, background: T.cream, borderRadius: 12, padding: "12px 16px", textAlign: "center" }}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown }}>{a.reviews}</div><div style={{ fontSize: 12, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>Posted</div></div>
-                    <div style={{ flex: 1, background: a.pending ? T.orangeP : T.cream, borderRadius: 12, padding: "12px 16px", textAlign: "center" }}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: a.pending ? T.orange : T.brown }}>{a.pending}</div><div style={{ fontSize: 12, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>Pending</div></div>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>{a.channels.map(ch => <Pill key={ch} color={T.teal} bg={T.tealP}>{ch}</Pill>)}</div>
-                  <div style={{ display: "flex", gap: 8 }}><Btn sz="sm" v="ghost" sx={{ flex: 1, justifyContent: "center" }}>Edit</Btn><Btn sz="sm" sx={{ flex: 1, justifyContent: "center", background: T.cream, color: T.brown, border: `1.5px solid #E8DDD5`, boxShadow: "none" }}>Feedback</Btn></div>
+            {assetsLoading ? (
+              <div style={{ padding: "40px 0", textAlign: "center", color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Loading your assets…</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
+                {assets.map(a => {
+                  const typeLabel = ASSET_TYPE_DB_TO_LABEL[a.asset_type] || a.asset_type;
+                  const isAdvisory = a.asset_type === "advisory_skills";
+                  return (
+                    <Card key={a.id} sx={{ padding: 28 }}>
+                      <div style={{ display: "flex", gap: 14, marginBottom: 18 }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 14, background: isAdvisory ? T.purpleP : T.orangeP, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{ASSET_TYPE_EMOJI[a.asset_type] || "📦"}</div>
+                        <div><div style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 700, color: T.brown }}>{a.name}</div><div style={{ fontSize: 12, color: T.teal, fontFamily: "'DM Sans',sans-serif" }}>{a.public_url}</div>{isAdvisory && <Pill color={T.purple} bg={T.purpleP} sx={{ marginTop: 4, fontSize: 10 }}>Advisory Skills</Pill>}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                        <div style={{ flex: 1, background: T.cream, borderRadius: 12, padding: "12px 16px", textAlign: "center" }}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown }}>0</div><div style={{ fontSize: 12, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>Posted</div></div>
+                        <div style={{ flex: 1, background: T.cream, borderRadius: 12, padding: "12px 16px", textAlign: "center" }}><div style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown }}>0</div><div style={{ fontSize: 12, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>Pending</div></div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>{a.asset_channels.map(c => <Pill key={c.channel_name} color={T.teal} bg={T.tealP}>{c.channel_name}</Pill>)}</div>
+                      <div style={{ display: "flex", gap: 8 }}><Btn sz="sm" v="ghost" sx={{ flex: 1, justifyContent: "center" }}>Edit</Btn><Btn sz="sm" sx={{ flex: 1, justifyContent: "center", background: T.cream, color: T.brown, border: `1.5px solid #E8DDD5`, boxShadow: "none" }}>Feedback</Btn></div>
+                    </Card>
+                  );
+                })}
+                <Card sx={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: `2px dashed ${T.orangeP}`, background: T.cream }} hover={false}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>+</div>
+                  <div style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 700, color: T.brown, marginBottom: 12 }}>Add New Asset</div>
+                  <Btn sz="sm" onClick={() => router.push("/assets/new")}>+ Add Asset</Btn>
                 </Card>
-              ))}
-              <Card sx={{ padding: 28, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: `2px dashed ${T.orangeP}`, background: T.cream }} hover={false}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>+</div>
-                <div style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 700, color: T.brown, marginBottom: 12 }}>Add New Asset</div>
-                <Btn sz="sm" onClick={() => router.push("/assets/new")}>+ Add Asset</Btn>
-              </Card>
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -192,18 +292,18 @@ export default function DashboardPage() {
             {/* Header card */}
             <Card sx={{ padding: isMobile ? 20 : 28, marginBottom: 20 }}>
               <div style={{ display: "flex", gap: isMobile ? 14 : 20, alignItems: "flex-start", flexDirection: isMobile ? "column" : "row" }}>
-                <Av txt={ME.avatar} color={T.orange} size={isMobile ? 64 : 80} />
+                <Av txt={initials(displayName)} color={T.orange} size={isMobile ? 64 : 80} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                     <div>
-                      <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: T.brown }}>{ME.name}</div>
+                      <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: T.brown }}>{displayName}</div>
                       <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, color: T.brownM, fontWeight: 600, marginTop: 2 }}>{ME_PROFILE.title}</div>
                     </div>
                     <Btn sz="sm" v="ghost">Edit Profile</Btn>
                   </div>
-                  <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: "12px 0 14px" }}>{ME_PROFILE.bio}</p>
+                  <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: "12px 0 14px" }}>{profile?.bio || ME_PROFILE.bio}</p>
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                    {[["📍", ME_PROFILE.location], ["🌐", ME_PROFILE.website], ["💼", ME_PROFILE.linkedin]].map(([icon, val]) => (
+                    {[["📍", profile?.location_text || ME_PROFILE.location], ["🌐", ME_PROFILE.website], ["💼", ME_PROFILE.linkedin]].map(([icon, val]) => (
                       <span key={val} style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", gap: 5 }}>{icon} {val}</span>
                     ))}
                   </div>
@@ -216,11 +316,11 @@ export default function DashboardPage() {
               <div style={{ fontFamily: "'Fraunces',serif", fontSize: 16, fontWeight: 700, color: T.brown, marginBottom: 16 }}>ProofSignals Member Indicators</div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(5,1fr)", gap: isMobile ? 12 : 16 }}>
                 {[
-                  ["Plan", ME.planName, T.orange],
-                  ["⭐ Avg Rating", ME_PROFILE.rating, T.gold],
-                  ["Exchanges", ME_PROFILE.exchanges, T.teal],
-                  ["Separation", `${ME.degrees}°`, T.purple],
-                  ["Member Since", ME_PROFILE.memberSince, T.brownL],
+                  ["Plan", planName, T.orange],
+                  ["⭐ Avg Rating", (profile?.feedback_rating_avg ?? 0).toFixed(1), T.gold],
+                  ["Rated Exchanges", profile?.feedback_rating_count ?? 0, T.teal],
+                  ["Separation", `${degrees}°`, T.purple],
+                  ["Member Since", profile?.created_at ? new Date(profile.created_at).toLocaleString("default", { month: "short", year: "numeric" }) : "—", T.brownL],
                 ].map(([label, value, color]) => (
                   <div key={label} style={{ background: T.cream, borderRadius: 12, padding: "12px 14px", textAlign: "center" }}>
                     <div style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 800, color }}>{value}</div>
@@ -258,8 +358,26 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {fbModal && <FeedbackModal match={fbModal} onClose={() => setFbModal(null)} />}
-      {postModal && <PostModal match={postModal} onClose={() => setPostModal(null)} />}
+      {fbModal && (
+        <FeedbackModal
+          match={fbModal}
+          onClose={() => setFbModal(null)}
+          onSubmitted={async () => {
+            const supabase = createClient();
+            await refreshMatches(supabase);
+          }}
+        />
+      )}
+      {postModal && (
+        <PostModal
+          match={postModal}
+          onClose={() => setPostModal(null)}
+          onSubmitted={async () => {
+            const supabase = createClient();
+            await refreshMatches(supabase);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -329,13 +447,32 @@ function ProofLabListingsTab({ isMobile }) {
   );
 }
 
-function FeedbackModal({ match, onClose }) {
+function FeedbackModal({ match, onClose, onSubmitted }) {
   const isMobile = useIsMobile();
   const [stars, setStars] = useState(0);
   const [hover, setHover] = useState(0);
   const [text, setText] = useState("");
   const [done, setDone] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [cats, setCats] = useState({ quality: 0, value: 0, communication: 0 });
+
+  const submit = async () => {
+    if (!stars && !text) return;
+    setSaving(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      await submitFeedback(supabase, { matchId: match.id, stars, writtenFeedback: text, structuredFeedback: cats });
+      await onSubmitted?.();
+      setDone(true);
+    } catch (err) {
+      setError(err.message || "Could not submit your feedback.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "24px 18px" : "36px 40px", maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
@@ -344,8 +481,8 @@ function FeedbackModal({ match, onClose }) {
           <>
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Feedback For</div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: 0 }}>{match.person}</h2>
-              <div style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginTop: 4 }}>{match.asset}</div>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: 0 }}>{match.otherDisplayName}</h2>
+              <div style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginTop: 4 }}>{match.theirAsset.name}</div>
             </div>
             <div style={{ background: T.warm, borderRadius: 14, padding: 14, marginBottom: 20, fontSize: 13, color: T.brownM, fontFamily: "'DM Sans',sans-serif" }}>💡 Be honest and specific. Use at least one format below.</div>
             <div style={{ marginBottom: 20 }}>
@@ -368,15 +505,16 @@ function FeedbackModal({ match, onClose }) {
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: T.brown, marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Written Feedback</div>
-              <textarea value={text} onChange={e => setText(e.target.value)} placeholder={`Honest thoughts about ${match.person}'s ${match.asset}...`} style={{ width: "100%", minHeight: 100, padding: "12px 14px", borderRadius: 12, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: T.cream, resize: "vertical", outline: "none", boxSizing: "border-box" }} />
+              <textarea value={text} onChange={e => setText(e.target.value)} placeholder={`Honest thoughts about ${match.otherDisplayName}'s ${match.theirAsset.name}...`} style={{ width: "100%", minHeight: 100, padding: "12px 14px", borderRadius: 12, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: T.cream, resize: "vertical", outline: "none", boxSizing: "border-box" }} />
             </div>
-            <Btn onClick={() => { if (!stars && !text) return; setDone(true); }} sx={{ width: "100%", justifyContent: "center" }}>Submit Feedback</Btn>
+            {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 16 }}>⚠️ {error}</div>}
+            <Btn onClick={submit} disabled={saving} sx={{ width: "100%", justifyContent: "center" }}>{saving ? "Submitting…" : "Submit Feedback"}</Btn>
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>🙌</div>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Feedback Submitted!</h2>
-            <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>Your feedback for <strong>{match.person}</strong> has been saved privately inside ProofSignals. The recipient will be notified.</p>
+            <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>Your feedback for <strong>{match.otherDisplayName}</strong> has been saved privately inside ProofSignals. The recipient will be notified.</p>
             <Btn onClick={onClose}>Done</Btn>
           </div>
         )}
@@ -385,10 +523,30 @@ function FeedbackModal({ match, onClose }) {
   );
 }
 
-function PostModal({ match, onClose }) {
+function PostModal({ match, onClose, onSubmitted }) {
   const isMobile = useIsMobile();
   const [sel, setSel] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const channels = match.myAsset.asset_channels;
+
+  const send = async () => {
+    if (!sel) return;
+    setSending(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      await requestReviewPost(supabase, { feedbackSubmissionId: match.theirFeedback.id, channelName: sel });
+      await onSubmitted?.();
+      setSent(true);
+    } catch (err) {
+      setError(err.message || "Could not send this request.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "24px 18px" : "36px 40px", maxWidth: 460, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
@@ -397,22 +555,24 @@ function PostModal({ match, onClose }) {
           <>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Request Post From</div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: 0 }}>{match.person}</h2>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: 0 }}>{match.otherDisplayName}</h2>
             </div>
-            <div style={{ padding: "12px 14px", background: T.tealP, borderRadius: 12, marginBottom: 20, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif" }}>✓ {match.person} is never obligated to post. This is a friendly request only.</div>
-            {match.channels.map(ch => (
-              <div key={ch} onClick={() => setSel(ch)} style={{ padding: "14px 18px", borderRadius: 12, marginBottom: 10, cursor: "pointer", border: `2px solid ${sel === ch ? T.teal : "#E8DDD5"}`, background: sel === ch ? T.tealP : "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.15s" }}>
-                <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 600, color: T.brown }}>{ch}</span>
-                {sel === ch && <span style={{ color: T.teal }}>✓</span>}
+            <div style={{ padding: "12px 14px", background: T.tealP, borderRadius: 12, marginBottom: 20, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif" }}>✓ {match.otherDisplayName} is never obligated to post. This is a friendly request only.</div>
+            {channels.length === 0 && <div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", marginBottom: 16 }}>Your asset has no review channels set up yet.</div>}
+            {channels.map(c => (
+              <div key={c.channel_name} onClick={() => setSel(c.channel_name)} style={{ padding: "14px 18px", borderRadius: 12, marginBottom: 10, cursor: "pointer", border: `2px solid ${sel === c.channel_name ? T.teal : "#E8DDD5"}`, background: sel === c.channel_name ? T.tealP : "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.15s" }}>
+                <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 600, color: T.brown }}>{c.channel_name}</span>
+                {sel === c.channel_name && <span style={{ color: T.teal }}>✓</span>}
               </div>
             ))}
-            <Btn v="teal" onClick={() => sel && setSent(true)} sx={{ width: "100%", justifyContent: "center", marginTop: 12, opacity: sel ? 1 : 0.5 }}>Send Request</Btn>
+            {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginTop: 12 }}>⚠️ {error}</div>}
+            <Btn v="teal" onClick={send} disabled={!sel || sending} sx={{ width: "100%", justifyContent: "center", marginTop: 12, opacity: sel ? 1 : 0.5 }}>{sending ? "Sending…" : "Send Request"}</Btn>
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>📨</div>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Request Sent!</h2>
-            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}><strong>{match.person}</strong> has been notified. If they post to <strong>{sel}</strong>, you&rsquo;ll get a confirmation here.</p>
+            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}><strong>{match.otherDisplayName}</strong> has been notified. If they post to <strong>{sel}</strong>, you&rsquo;ll get a confirmation here.</p>
             <Btn onClick={onClose}>Done</Btn>
           </div>
         )}

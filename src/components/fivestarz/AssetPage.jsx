@@ -6,18 +6,36 @@ import Image from "next/image";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Btn, Card, Pill } from "@/components/fivestarz/ui";
+import { createClient } from "@/lib/supabase/client";
+import { createAsset } from "@/lib/fivestarz/data";
 
 const CHNLS = ["Google Business Profile", "Yelp", "Tripadvisor", "Amazon", "Shopify App Store", "Clutch.co", "Trustpilot", "Apple Podcasts", "Spotify", "Substack", "LinkedIn", "G2", "Capterra", "Gumroad", "Teachable"];
 const TYPES = ["Service / Consulting", "Advisory / Consulting Skills", "Physical Product", "Digital Product / SaaS", "Content / Podcast / Video", "E-commerce Store", "Free Session / Consultation", "Client Asset"];
 const FBTYPES = ["Star Rating (1–5)", "Written Review", "Structured Categories", "Video / Audio Upload"];
 
-export default function AssetPage() {
+export default function AssetPage({ userId }) {
   const isMobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [a, setA] = useState({ name: "", url: "", type: "", desc: "", channels: [], fbTypes: [], reqStars: false, reqTwo: false, forClient: false, clientName: "", screenshots: [] });
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
   const [done, setDone] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const handleCreateAsset = async () => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      const supabase = createClient();
+      await createAsset(supabase, a);
+      setDone(true);
+    } catch (err) {
+      setSaveError(err.message || "Something went wrong creating this asset.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleFiles = files => {
     const imgs = Array.from(files).filter(f => f.type.startsWith("image/"));
@@ -143,7 +161,8 @@ export default function AssetPage() {
                 ))}
               </div>
               <div style={{ padding: "14px 18px", background: T.tealP, borderRadius: 12, fontSize: 14, color: T.teal, fontFamily: "'DM Sans',sans-serif", marginBottom: 24 }}>🔍 We&rsquo;ll verify your URL before activating. Usually takes a few minutes.</div>
-              <div style={{ display: "flex", gap: 12 }}><Btn v="ghost" onClick={() => setStep(3)}>← Back</Btn><Btn v="teal" onClick={() => setDone(true)} sx={{ flex: 1, justifyContent: "center" }}>✦ Create Asset &amp; Start Matching</Btn></div>
+              {saveError && <div style={{ padding: "14px 18px", background: "#FFE5E5", borderRadius: 12, fontSize: 14, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 24 }}>⚠️ {saveError}</div>}
+              <div style={{ display: "flex", gap: 12 }}><Btn v="ghost" onClick={() => setStep(3)} disabled={saving}>← Back</Btn><Btn v="teal" onClick={handleCreateAsset} disabled={saving} sx={{ flex: 1, justifyContent: "center" }}>{saving ? "Creating…" : "✦ Create Asset & Start Matching"}</Btn></div>
             </div>
           )}
         </Card>
