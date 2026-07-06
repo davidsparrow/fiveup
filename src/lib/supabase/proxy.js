@@ -40,7 +40,7 @@ export async function updateSession(request) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  const protectedRoutes = ["/account"];
+  const protectedRoutes = ["/account", "/dashboard", "/assets", "/browse"];
   const authRoutes = ["/login", "/signup"];
 
   if (!user && matchesRoute(pathname, protectedRoutes)) {

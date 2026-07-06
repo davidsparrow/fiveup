@@ -1,34 +1,121 @@
 "use client";
 
-import { useState } from "react";
-import { ME, MEMBERS, ASSET_TYPES, CHANNELS, FB_FORMATS, PLAN_OPTS, CREDIT_OPTS } from "@/lib/fivestarz/mock-data";
+import { useEffect, useState } from "react";
+import { ASSET_TYPES, CHANNELS, FB_FORMATS, PLAN_OPTS, CREDIT_OPTS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
+import { Av, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
+import { createClient } from "@/lib/supabase/client";
+import { getMyProfile, listMyAssets, getBrowseQuota, getEligibleCandidates, getChannelsAndFormatsForAssets, requestMatch } from "@/lib/fivestarz/data";
+import { ASSET_TYPE_DB_TO_LABEL, FEEDBACK_FORMAT_DB_TO_SHORT_LABEL } from "@/lib/fivestarz/enums";
 
-export default function BrowsePage() {
+const AVATAR_COLORS = ["#7C3AED", "#1A9E8F", "#F4A832", "#FF6B35", "#6B4226", "#38A169", "#4A5568", "#A0644A"];
+function colorForUser(userId) {
+  const sum = Array.from(userId || "").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+function initials(name) {
+  return (name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+export default function BrowsePage({ userId }) {
   const isMobile = useIsMobile();
   const [filters, setFilters] = useState({ assetType: "All Types", channel: "Any Channel", format: "Any Format", plan: "All Plans", credits: "Any Credits", search: "" });
-  const [outModal, setOutModal] = useState(null);
-  const [savedModal, setSavedModal] = useState(null);
   const [matchModal, setMatchModal] = useState(null);
+
+  const [myActiveAssets, setMyActiveAssets] = useState([]);
+  const [offeringAssetId, setOfferingAssetId] = useState(null);
+  const [quota, setQuota] = useState({ limit: 0, used: 0 });
+  const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
   const sf = (k, v) => setFilters(f => ({ ...f, [k]: v }));
   const anyActive = filters.search || filters.assetType !== "All Types" || filters.channel !== "Any Channel" || filters.format !== "Any Format" || filters.plan !== "All Plans" || filters.credits !== "Any Credits";
+  const clearFilters = () => setFilters({ assetType: "All Types", channel: "Any Channel", format: "Any Format", plan: "All Plans", credits: "Any Credits", search: "" });
 
-  const shown = MEMBERS.filter(m => {
-    if (filters.search && !m.name.toLowerCase().includes(filters.search.toLowerCase()) && !m.assets.some(a => a.name.toLowerCase().includes(filters.search.toLowerCase()))) return false;
-    if (filters.assetType !== "All Types" && !m.assets.some(a => a.type === filters.assetType)) return false;
-    if (filters.channel !== "Any Channel" && !m.assets.some(a => a.channels.includes(filters.channel))) return false;
-    if (filters.format !== "Any Format" && !m.formats.includes(filters.format)) return false;
-    if (filters.plan === "Paid Only" && m.plan !== "paid") return false;
-    if (filters.plan === "Free Only" && m.plan !== "free") return false;
-    if (filters.credits === "Has Credits Now" && m.credits === 0) return false;
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    let cancelled = false;
+
+    (async () => {
+      const profile = await getMyProfile(supabase, userId);
+      const myAssets = await listMyAssets(supabase, userId);
+      if (cancelled) return;
+      const active = myAssets.filter(a => a.status === "active");
+      setMyActiveAssets(active);
+      setOfferingAssetId(active[0]?.id ?? null);
+      const q = await getBrowseQuota(supabase, profile.plan_code, userId);
+      if (cancelled) return;
+      setQuota(q);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!offeringAssetId) {
+      setCandidates([]);
+      setLoading(false);
+      return;
+    }
+    const supabase = createClient();
+    let cancelled = false;
+    setLoading(true);
+    setLoadError("");
+
+    (async () => {
+      try {
+        const rows = await getEligibleCandidates(supabase, offeringAssetId);
+        const assetIds = rows.map(r => r.candidate_asset_id);
+        const userIds = [...new Set(rows.map(r => r.candidate_user_id))];
+        const [{ channelsByAsset, formatsByAsset }, { data: profiles, error: profilesError }] = await Promise.all([
+          getChannelsAndFormatsForAssets(supabase, assetIds),
+          supabase.from("user_profiles").select("user_id, bio, location_text, created_at, feedback_rating_avg, feedback_rating_count").in("user_id", userIds),
+        ]);
+        if (profilesError) throw profilesError;
+        if (cancelled) return;
+        const profileById = Object.fromEntries(profiles.map(p => [p.user_id, p]));
+        setCandidates(rows.map(r => ({
+          ...r,
+          channels: channelsByAsset[r.candidate_asset_id] || [],
+          formats: (formatsByAsset[r.candidate_asset_id] || []).map(f => FEEDBACK_FORMAT_DB_TO_SHORT_LABEL[f] || f),
+          typeLabel: ASSET_TYPE_DB_TO_LABEL[r.candidate_asset_type] || r.candidate_asset_type,
+          profile: profileById[r.candidate_user_id],
+        })));
+      } catch (err) {
+        if (!cancelled) setLoadError(err.message || "Could not load candidates.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [offeringAssetId]);
+
+  const shown = candidates.filter(c => {
+    if (filters.search && !c.candidate_display_name?.toLowerCase().includes(filters.search.toLowerCase()) && !c.candidate_asset_name?.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (filters.assetType !== "All Types" && c.typeLabel !== filters.assetType) return false;
+    if (filters.channel !== "Any Channel" && !c.channels.includes(filters.channel)) return false;
+    if (filters.format !== "Any Format" && !c.formats.includes(filters.format)) return false;
+    if (filters.plan === "Paid Only" && c.candidate_plan_code === "sprout") return false;
+    if (filters.plan === "Free Only" && c.candidate_plan_code !== "sprout") return false;
+    if (filters.credits === "Has Credits Now" && c.would_queue) return false;
     return true;
   });
 
-  const onRequest = m => { if (m.credits === 0) { setOutModal(m); return; } setMatchModal(m); };
   const selStyle = active => ({ padding: "8px 12px", borderRadius: 10, border: "none", background: active ? T.orange : "rgba(255,255,255,0.12)", color: "#fff", fontSize: 13, fontFamily: "'DM Sans',sans-serif", cursor: "pointer", outline: "none", fontWeight: 600 });
-  const clearFilters = () => setFilters({ assetType: "All Types", channel: "Any Channel", format: "Any Format", plan: "All Plans", credits: "Any Credits", search: "" });
 
   return (
     <div style={{ background: T.cream, minHeight: "100vh" }}>
@@ -39,11 +126,18 @@ export default function BrowsePage() {
               <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 30, fontWeight: 900, color: "#fff", margin: 0 }}>Browse & Request Matches</h1>
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ fontSize: isMobile ? 11 : 13, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>Credits left</div>
-              <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#fff" }}>{ME.browseTotal - ME.browseUsed}<span style={{ fontSize: 13, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", fontWeight: 400 }}> / {ME.browseTotal}</span></div>
+              <div style={{ fontSize: isMobile ? 11 : 13, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", marginBottom: 2 }}>Browse credits left</div>
+              <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 28, fontWeight: 800, color: "#fff" }}>{Math.max(quota.limit - quota.used, 0)}<span style={{ fontSize: 13, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", fontWeight: 400 }}> / {quota.limit}</span></div>
             </div>
           </div>
           <div style={{ background: "rgba(255,255,255,0.07)", borderRadius: "16px 16px 0 0", padding: "18px 22px", display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5, fontFamily: "'DM Sans',sans-serif" }}>Offering</div>
+              <select value={offeringAssetId || ""} onChange={e => setOfferingAssetId(e.target.value)} style={selStyle(true)}>
+                {myActiveAssets.length === 0 && <option value="">No active assets</option>}
+                {myActiveAssets.map(a => <option key={a.id} value={a.id} style={{ background: T.brown, color: "#fff" }}>{a.name}</option>)}
+              </select>
+            </div>
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5, fontFamily: "'DM Sans',sans-serif" }}>Search</div>
               <div style={{ position: "relative" }}>
@@ -51,7 +145,7 @@ export default function BrowsePage() {
                 <input value={filters.search} onChange={e => sf("search", e.target.value)} placeholder="Name or asset..." style={{ padding: "8px 10px 8px 30px", borderRadius: 10, border: "none", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 13, fontFamily: "'DM Sans',sans-serif", outline: "none", width: 155, boxSizing: "border-box" }} />
               </div>
             </div>
-            {[["Asset Type", "assetType", ASSET_TYPES], ["Profile Channel", "channel", CHANNELS], ["Feedback Format", "format", FB_FORMATS], ["Plan", "plan", PLAN_OPTS], ["Credits", "credits", CREDIT_OPTS]].map(([label, key, opts]) => (
+            {[["Asset Type", "assetType", ASSET_TYPES], ["Channel", "channel", CHANNELS], ["Feedback Format", "format", FB_FORMATS], ["Plan", "plan", PLAN_OPTS], ["Credits", "credits", CREDIT_OPTS]].map(([label, key, opts]) => (
               <div key={key}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5, fontFamily: "'DM Sans',sans-serif" }}>{label}</div>
                 <select value={filters[key]} onChange={e => sf(key, e.target.value)} style={selStyle(filters[key] !== opts[0])}>
@@ -65,82 +159,78 @@ export default function BrowsePage() {
       </div>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "16px 16px" : "24px 32px" }}>
+        {myActiveAssets.length === 0 && !loading && (
+          <div style={{ padding: "16px 20px", background: T.orangeP, borderRadius: 14, marginBottom: 18, fontSize: 14, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>
+            You need at least one active asset before you can browse for matches. <a href="/assets/new" style={{ color: T.orange, fontWeight: 700 }}>Add an asset →</a>
+          </div>
+        )}
+        {loadError && <div style={{ padding: "16px 20px", background: "#FFE5E5", borderRadius: 14, marginBottom: 18, fontSize: 14, color: "#C0392B", fontFamily: "'DM Sans',sans-serif" }}>⚠️ {loadError}</div>}
+
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{shown.length} member{shown.length !== 1 ? "s" : ""} shown</span>
-          {/* Legend — hidden on mobile to save space */}
+          <span style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{loading ? "Loading…" : `${shown.length} candidate${shown.length !== 1 ? "s" : ""} shown`}</span>
           {!isMobile && (
             <div style={{ display: "flex", gap: 16, marginLeft: "auto", flexWrap: "wrap" }}>
-              {[[T.green, "Has credits, new match"], [T.gold, "⚡ Re-match eligible (diff channels)"], [T.brownL, "Previously matched"], [T.red, "Out of credits"]].map(([c, l]) => (
+              {[[T.green, "Available now"], [T.gold, "Near their monthly limit"], [T.brownL, "Previously matched"], [T.red, "Match in progress"]].map(([c, l]) => (
                 <div key={l} style={{ display: "flex", gap: 6, alignItems: "center" }}><div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0 }} /><span style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{l}</span></div>
               ))}
             </div>
           )}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)", gap: isMobile ? 14 : 18 }}>
-          {shown.map(m => {
-            const noCredits = m.credits === 0;
-            const hasPrev = !!m.prev;
-            const semiOk = m.prev?.semiOk;
-            const dimmed = hasPrev && !semiOk;
-            const barColor = noCredits ? T.red : semiOk ? T.gold : hasPrev ? "#C8BFB5" : T.green;
+          {shown.map(c => {
+            const hasPrev = c.prior_match_count > 0;
+            const blocked = c.has_active_match;
+            const dimmed = blocked || hasPrev;
+            const barColor = blocked ? T.red : hasPrev ? "#C8BFB5" : c.would_queue ? T.gold : T.green;
+            const rating = c.profile?.feedback_rating_avg || 0;
+            const exchanges = c.profile?.feedback_rating_count || 0;
+            const memberSince = c.profile?.created_at ? new Date(c.profile.created_at).toLocaleString("default", { month: "short", year: "numeric" }) : "—";
             return (
-              <Card key={m.id} dim={dimmed} sx={{ padding: 0, overflow: "hidden", border: `2px solid ${dimmed ? "#E8E0D8" : barColor + "55"}` }}>
+              <Card key={`${c.candidate_user_id}-${c.candidate_asset_id}`} dim={dimmed} sx={{ padding: 0, overflow: "hidden", border: `2px solid ${dimmed ? "#E8E0D8" : barColor + "55"}` }}>
                 <div style={{ height: 4, background: barColor }} />
                 <div style={{ padding: "20px 22px", overflow: "hidden" }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 12 }}>
-                    <Av txt={m.avatar} color={dimmed ? "#B0A0A0" : m.color} size={48} />
+                    <Av txt={initials(c.candidate_display_name)} color={dimmed ? "#B0A0A0" : colorForUser(c.candidate_user_id)} size={48} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Name row — plan pill left, View Profile right */}
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: dimmed ? T.brownL : T.brown, flex: 1, minWidth: 0 }}>{m.name}</span>
-                        <PlanPill plan={m.plan} planName={m.planName} />
-                        <Btn sz="sm" v="ghost" sx={{ flexShrink: 0, padding: "5px 12px", fontSize: 12 }}>View Profile</Btn>
+                        <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: dimmed ? T.brownL : T.brown, flex: 1, minWidth: 0 }}>{c.candidate_display_name}</span>
+                        <PlanPill plan={c.candidate_plan_code === "sprout" ? "free" : "paid"} planName={c.candidate_plan_code} />
                       </div>
-                      <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>📍 {m.loc} · Member since {m.since}</div>
-                      {/* Simplified rating row: ⭐ 4.8 · 12 Exchanges */}
+                      <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>📍 {c.profile?.location_text || "—"} · Member since {memberSince}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
                         <span style={{ fontSize: 13 }}>⭐</span>
-                        <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{m.rating} · {m.exchanges} Exchanges</span>
+                        <span style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{rating.toFixed(1)} · {exchanges} rated exchanges</span>
                       </div>
                     </div>
                   </div>
-                  <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, marginBottom: 14, fontStyle: "italic" }}>&ldquo;{m.bio}&rdquo;</p>
+                  {c.profile?.bio && <p style={{ fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.55, marginBottom: 14, fontStyle: "italic" }}>&ldquo;{c.profile.bio}&rdquo;</p>}
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Assets Available for Review</div>
-                    {m.assets.map((a, i) => (
-                      <div key={i} style={{ padding: "10px 12px", background: dimmed ? "#F0EAE3" : T.cream, borderRadius: 10, marginBottom: 7 }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: dimmed ? T.brownL : T.brown, fontFamily: "'DM Sans',sans-serif", flex: 1 }}>{a.name}</span>
-                          <Pill color={a.type.includes("Advisory") ? T.purple : T.teal} bg={a.type.includes("Advisory") ? T.purpleP : T.tealP} sx={{ fontSize: 9 }}>{a.type.replace(" / Consulting", "").replace("Digital Product / ", "")}</Pill>
-                        </div>
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                          {a.channels.map(ch => { const blocked = semiOk && m.prev?.blocked?.includes(ch); return <span key={ch} style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", background: blocked ? "#FFE5E5" : "#fff", color: blocked ? T.red : T.brownM, border: `1px solid ${blocked ? T.red + "44" : "#DDD4C8"}`, textDecoration: blocked ? "line-through" : "none" }}>{blocked ? "🚫 " : ""}{ch}</span>; })}
-                        </div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Asset Available for Review</div>
+                    <div style={{ padding: "10px 12px", background: dimmed ? "#F0EAE3" : T.cream, borderRadius: 10 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: dimmed ? T.brownL : T.brown, fontFamily: "'DM Sans',sans-serif", flex: 1 }}>{c.candidate_asset_name}</span>
+                        <Pill color={c.candidate_asset_type === "advisory_skills" ? T.purple : T.teal} bg={c.candidate_asset_type === "advisory_skills" ? T.purpleP : T.tealP} sx={{ fontSize: 9 }}>{c.typeLabel}</Pill>
                       </div>
-                    ))}
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                        {c.channels.map(ch => <span key={ch} style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", background: "#fff", color: T.brownM, border: "1px solid #DDD4C8" }}>{ch}</span>)}
+                      </div>
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
-                    {m.formats.map(f => <Pill key={f} color={T.brownL} bg={T.cream} sx={{ fontSize: 9 }}>{f}</Pill>)}
+                    {c.formats.map(f => <Pill key={f} color={T.brownL} bg={T.cream} sx={{ fontSize: 9 }}>{f}</Pill>)}
                   </div>
-                  {hasPrev && (
-                    <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: semiOk ? T.goldL + "33" : "#F0EAE3", border: `1px solid ${semiOk ? T.gold + "55" : "#DDD4C8"}` }}>
-                      {semiOk ? <div style={{ fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}><span style={{ color: T.gold, fontWeight: 700 }}>⚡ Re-match eligible</span><span style={{ color: T.brownL }}> · Prev matched {m.prev.date} on {m.prev.channel}</span><div style={{ color: T.brownM, marginTop: 4, fontWeight: 600, fontSize: 11 }}>Strikethrough channels are blocked this round — both sides must use different channels.</div></div>
-                        : <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>🔁 Previously matched · {m.prev.date}{m.prev.channel ? ` · Posted to ${m.prev.channel}` : " · No review posted"}</div>}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <span style={{ fontSize: 12, fontFamily: "'DM Sans',sans-serif" }}><span style={{ color: noCredits ? T.red : T.green, fontWeight: 700 }}>{noCredits ? "0 credits" : `${m.credits} credits`}</span><span style={{ color: T.brownL }}> left this month</span></span>
-                    <div style={{ display: "flex", gap: 3 }}>{Array.from({ length: Math.min(m.creditsTotal, 12) }).map((_, i) => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i < m.credits ? T.green : "#E0D5CC" }} />)}</div>
-                  </div>
-                  <Btn sz="sm" v={noCredits ? "ghost" : semiOk ? "gold" : "primary"} sx={{ width: "100%", justifyContent: "center" }} onClick={() => onRequest(m)}>
-                    {noCredits ? "💾 Save for Next Month" : semiOk ? "⚡ Request Re-Match" : "Request Match →"}
+                  {blocked && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: "#F0EAE3", border: "1px solid #DDD4C8", fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>🔁 A match with this member is already in progress.</div>}
+                  {!blocked && hasPrev && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: "#F0EAE3", border: "1px solid #DDD4C8", fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>🔁 Previously matched · re-matching is coming soon.</div>}
+                  {!blocked && !hasPrev && c.would_queue && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, background: T.goldL + "33", border: `1px solid ${T.gold}55`, fontSize: 12, color: T.brownM, fontFamily: "'DM Sans',sans-serif" }}>⏳ This member is near their monthly match limit — your request may be declined.</div>}
+                  <Btn sz="sm" v={dimmed ? "ghost" : "primary"} disabled={dimmed} sx={{ width: "100%", justifyContent: "center" }} onClick={() => setMatchModal(c)}>
+                    {blocked ? "Match In Progress" : hasPrev ? "Previously Matched" : "Request Match →"}
                   </Btn>
                 </div>
               </Card>
             );
           })}
         </div>
-        {shown.length === 0 && (
+        {!loading && shown.length === 0 && candidates.length > 0 && (
           <div style={{ textAlign: "center", padding: "60px 32px" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
             <div style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, marginBottom: 8 }}>No members match your filters</div>
@@ -149,75 +239,56 @@ export default function BrowsePage() {
         )}
       </div>
 
-      {outModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "#fff", borderRadius: 24, padding: "36px 40px", maxWidth: 420, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>📅</div>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>This member is out of credits this month.</h2>
-            <p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 28 }}><strong>{outModal.name}</strong> has used all their matches for {new Date().toLocaleString("default", { month: "long" })}. Save this match to kick off automatically next month?</p>
-            <div style={{ display: "flex", gap: 12 }}><Btn v="ghost" sx={{ flex: 1, justifyContent: "center" }} onClick={() => setOutModal(null)}>Cancel</Btn><Btn v="teal" sx={{ flex: 1, justifyContent: "center" }} onClick={() => { setSavedModal(outModal); setOutModal(null); }}>📌 Save</Btn></div>
-          </div>
-        </div>
-      )}
-
-      {savedModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "#fff", borderRadius: 24, padding: "36px 40px", maxWidth: 380, width: "100%", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 14 }}>✅</div>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Match Saved!</h2>
-            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We&rsquo;ll kick off your match with <strong>{savedModal.name}</strong> on the 1st of next month. No credits deducted from either of you this month.</p>
-            <Btn onClick={() => setSavedModal(null)} sx={{ width: "100%", justifyContent: "center" }}>Got It</Btn>
-          </div>
-        </div>
-      )}
-
-      {matchModal && <RequestMatchModal member={matchModal} onClose={() => setMatchModal(null)} />}
+      {matchModal && <RequestMatchModal candidate={matchModal} myAssetId={offeringAssetId} myAssetName={myActiveAssets.find(a => a.id === offeringAssetId)?.name} onClose={() => setMatchModal(null)} />}
     </div>
   );
 }
 
-function RequestMatchModal({ member, onClose }) {
+function RequestMatchModal({ candidate, myAssetId, myAssetName, onClose }) {
   const isMobile = useIsMobile();
-  const [myAsset, setMyAsset] = useState(null);
-  const [theirAsset, setTheirAsset] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
-  const semi = member.prev?.semiOk;
+
+  const send = async () => {
+    setSending(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      await requestMatch(supabase, { otherUserId: candidate.candidate_user_id, myAssetId, theirAssetId: candidate.candidate_asset_id });
+      setSent(true);
+    } catch (err) {
+      setError(err.message || "Could not send this match request.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "24px 18px" : "32px 36px", maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
+      <div style={{ background: "#fff", borderRadius: 28, padding: isMobile ? "24px 18px" : "32px 36px", maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {!sent ? (
           <>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, marginBottom: 6 }}>Request Match with {member.name}</h2>
-            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 20 }}>Choose which assets you&rsquo;ll each review in this exchange.</p>
-            {semi && <div style={{ padding: "12px 16px", background: T.goldL + "44", borderRadius: 12, border: `1.5px solid ${T.gold}55`, marginBottom: 18, fontSize: 13, fontFamily: "'DM Sans',sans-serif", color: T.brownM }}>⚡ <strong>Semi-duplicate match.</strong> You must use different review channels this round. Blocked channels are struck through below.</div>}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, fontFamily: "'DM Sans',sans-serif" }}>Which of YOUR assets to review?</div>
-              {ME.assets.map(a => (
-                <div key={a.id} onClick={() => setMyAsset(a.id)} style={{ padding: "12px 16px", borderRadius: 12, marginBottom: 8, border: `2px solid ${myAsset === a.id ? T.orange : "#E8DDD5"}`, background: myAsset === a.id ? T.orangeP : "#fff", cursor: "pointer", transition: "all 0.15s" }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}><span style={{ fontSize: 18 }}>{a.img}</span><div><div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{a.name}</div><div style={{ fontSize: 11, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>{a.type}</div></div></div>
-                </div>
-              ))}
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, marginBottom: 6 }}>Request Match with {candidate.candidate_display_name}</h2>
+            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", marginBottom: 20 }}>You&rsquo;ll each review one another&rsquo;s asset.</p>
+            <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+              <div style={{ flex: 1, padding: "12px 16px", borderRadius: 12, border: `2px solid ${T.orange}`, background: T.orangeP }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.brownL, textTransform: "uppercase", marginBottom: 4 }}>You&rsquo;re offering</div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{myAssetName}</div>
+              </div>
+              <div style={{ flex: 1, padding: "12px 16px", borderRadius: 12, border: `2px solid ${T.teal}`, background: T.tealP }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.brownL, textTransform: "uppercase", marginBottom: 4 }}>You&rsquo;ll review</div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown }}>{candidate.candidate_asset_name}</div>
+              </div>
             </div>
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.brownL, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, fontFamily: "'DM Sans',sans-serif" }}>Which of {member.name.split(" ")[0]}&rsquo;s assets to review?</div>
-              {member.assets.map((a, i) => (
-                <div key={i} onClick={() => setTheirAsset(i)} style={{ padding: "12px 16px", borderRadius: 12, marginBottom: 8, border: `2px solid ${theirAsset === i ? T.teal : "#E8DDD5"}`, background: theirAsset === i ? T.tealP : "#fff", cursor: "pointer", transition: "all 0.15s" }}>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 14, color: T.brown, marginBottom: 6 }}>{a.name}</div>
-                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                    {a.channels.map(ch => { const bl = semi && member.prev?.blocked?.includes(ch); return <span key={ch} style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: bl ? "#FFE5E5" : T.cream, color: bl ? T.red : T.brownM, fontFamily: "'DM Sans',sans-serif", textDecoration: bl ? "line-through" : "none" }}>{bl ? "🚫 " : ""}{ch}</span>; })}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Btn onClick={() => myAsset !== null && theirAsset !== null && setSent(true)} sx={{ width: "100%", justifyContent: "center" }} disabled={myAsset === null || theirAsset === null}>Send Match Request →</Btn>
+            {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 16 }}>⚠️ {error}</div>}
+            <Btn onClick={send} disabled={sending} sx={{ width: "100%", justifyContent: "center" }}>{sending ? "Sending…" : "Send Match Request →"}</Btn>
           </>
         ) : (
-          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 52, marginBottom: 16 }}>🤝</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Match Request Sent!</h2><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We&rsquo;ve notified <strong>{member.name}</strong>. Once they accept, you&rsquo;ll both get instructions to experience each other&rsquo;s work. 1 browse credit used.</p><Btn onClick={onClose}>Done</Btn></div>
+          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 52, marginBottom: 16 }}>🤝</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Match Request Sent!</h2><p style={{ fontSize: 15, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>We&rsquo;ve notified <strong>{candidate.candidate_display_name}</strong>. Once feedback is exchanged, you&rsquo;ll both see it on your Dashboard.</p><Btn onClick={onClose}>Done</Btn></div>
         )}
       </div>
     </div>
   );
 }
-
-

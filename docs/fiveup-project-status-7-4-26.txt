@@ -1,0 +1,301 @@
+Source Reviewed
+supabase/migrations/ — 6 files, all read in full (20260307123000_initial_schema.sql, 20260307124500_rpc_functions.sql, 20260307131500_usage_quotas_and_review_post_workflow.sql, 20260307143000_member_graph_and_candidate_rpc.sql, 20260308110000_add_proof_lab_listing_gate.sql, 20260308113000_fix_create_match_actual_separation_degree.sql)
+supabase/tests/ — 3 files (graph_matching_seed.sql, graph_matching_smoke_test.sql, graph_matching_rpc_smoke_test.sql) — only exercise already-known tables, no hidden schema
+src/lib/supabase/ — env.js, proxy.js, server.js (connection plumbing only, no schema/types)
+src/lib/fivestarz/ — mock-data.js, theme.js (UI mock data only — not backed by the DB; includes a "Proof Lab Listings" mock array that has no corresponding table)
+No generated database.types.ts/supabase-types file exists anywhere in the repo.
+Also found and cross-checked the actual PRD at docs/ProofSignals-Specs/ProofSignals_Master_PRD.md §15 — its entity list and setting names match exactly what you supplied.
+Core Entities: Status
+PRD Entity	Status	Actual Table / Notes
+users	EXISTS (via Supabase Auth)	auth.users (Supabase-managed) + trigger handle_new_auth_user() auto-creates a profile row
+profiles	EXISTS (renamed)	public.user_profiles — display_name, avatar_url, bio, location_text, plan_code, degrees_of_separation, feedback_rating_avg/count
+plans	PARTIAL	No plans table; plan tiers are just an enum plan_code ('sprout','bloom','flourish') plus a plan_feature_gates table (plan_code, feature_key, enabled, limit_int, config) driving feature/quota gating. No dedicated pricing/plan metadata table.
+assets	EXISTS	public.assets (owner_user_id, name, public_url, asset_type, description, is_client_asset, client_name, status, require_star_rating, require_star_plus_one_other)
+asset_media	MISSING (partial substitute)	No generic media table. Only public.asset_screenshots (storage_path, sort_order) exists — screenshots only, no video/other media types
+asset_visibility_settings	MISSING	No table and no columns implementing private/member_only/public visibility (see settings section below)
+feedback_requests	MISSING	No standalone request entity — feedback flow is implicit in matches (status enum drives it: matched → feedback_pending → awaiting_post → posted/completed)
+matches	EXISTS	public.matches (member_a/b_user_id, member_a/b_asset_id, source, status, feedback_due_at, is_semi_duplicate, previous_match_id, separation_degree_used)
+feedback_submissions	EXISTS	public.feedback_submissions (stars, written_feedback, structured_feedback jsonb, media_url)
+feedback_ratings	EXISTS (renamed)	public.member_feedback_ratings — this rates the reviewer's feedback quality (rater/rated + stars), not a rating of the asset itself
+reviewer_specialties	MISSING	No table, no columns anywhere
+marketplace_listings	MISSING	No table. Only a plan feature-gate flag proof_lab_listings_enabled (bool, in plan_feature_gates) exists to gate the feature; no listings data model. UI mock data (ME_PROOF_LISTINGS in mock-data.js) exists client-side only, unconnected to any backend table.
+profile_public_settings	MISSING	No table/columns for public profile visibility toggles at all
+public_feedback_permissions	MISSING	No table
+moderation_flags	MISSING	No table
+moderation_actions	MISSING	No table
+warnings	MISSING	No table
+video_feedback	PARTIAL	feedback_format enum includes 'video_audio' and asset_feedback_formats lets an asset declare it accepts video/audio; feedback_submissions.media_url can hold a link. But there is no dedicated video_feedback table (states, moderation, duration, etc.)
+external_links	PARTIAL	public.asset_channels (channel_name, channel_url) serves an overlapping purpose — links an asset to review platforms/channels — but is asset-scoped, not a generic external-links entity
+review_platform_links	PARTIAL/duplicate of above	Same asset_channels table plus public.review_post_requests (requested_channel_name, status, posted_url) tracks the ask-for-a-public-review workflow. No distinct "review platform" catalog/entity exists — channel names are free-text, not normalized to a platform registry.
+Summary count
+Exists (possibly renamed): users, profiles(user_profiles), assets, matches, feedback_submissions, feedback_ratings(member_feedback_ratings) — 6
+Partial: plans, asset_media, video_feedback, external_links, review_platform_links — 5
+Missing entirely: asset_visibility_settings, feedback_requests, reviewer_specialties, marketplace_listings, profile_public_settings, public_feedback_permissions, moderation_flags, moderation_actions, warnings — 9
+Specific Profile Settings (PRD §15)
+None of these exist anywhere in the schema or codebase (confirmed by direct grep across src/ and all migrations):
+
+profile_public_enabled — MISSING
+searchable_public_profile — MISSING
+show_logo — MISSING
+show_feedback_excerpts — MISSING
+show_public_videos — MISSING
+show_marketplace_offers — MISSING
+show_stats — MISSING
+user_profiles currently has no is_public/visibility-related column of any kind — the entire "Public Profile System (Phase 2+)" data layer from PRD §7.7 is unbuilt.
+
+Specific Asset Settings (PRD §15)
+asset_visibility (private | member_only | public) — MISSING. The closest analog is assets.status which is a workflow-state enum ('draft' | 'pending_verification' | 'active' | 'archived'), not a visibility/audience enum. RLS on assets only supports a binary owner-vs-everyone-else model (see below), with no member-only tier at all.
+brand_visibility (visible | hidden_until_feedback_complete) — MISSING entirely; no column, no enum, no related logic anywhere.
+Additional Tables Not in the PRD List (extras)
+user_roles — admin role assignment (user_id, role enum 'admin')
+plan_feature_gates — per-plan feature/quota config (feature flags, limits, jsonb config) — this is effectively the real "plans" implementation instead of a plans table
+asset_channels — per-asset external review channel (name + URL), used for both browse-blocking and review-post-request targeting
+asset_feedback_formats — join table: which feedback formats (stars|written|structured|video_audio) an asset accepts
+asset_screenshots — asset media (screenshots only)
+match_blocked_channels — tracks which channels are excluded from a given match (to prevent duplicate reviews on a channel)
+review_post_requests — workflow for the feedback-recipient to request the reviewer post their feedback publicly to a specific channel (pending/accepted/declined/posted + posted_url)
+user_monthly_usage — per-user/month quota counters (total_matches_started, browse_matches_initiated)
+member_graph_state — singleton row tracking a graph "version" counter for cache invalidation
+member_match_edges — denormalized undirected graph edge per user-pair (match history/counts, used for degrees-of-separation)
+member_separation_cache — cached shortest-path degree between user pairs, keyed to graph_version
+These last four (user_monthly_usage, member_graph_state, member_match_edges, member_separation_cache) are a fairly sophisticated matching/quota subsystem that has no mention at all in the PRD's conceptual data model — worth flagging as "built but undocumented in PRD" if your gap analysis goes both directions.
+
+RLS / Privacy-Visibility Findings
+RLS is enabled on every table in the initial schema and in later migrations (user_monthly_usage, member_graph_state, member_match_edges, member_separation_cache). Key policy patterns:
+
+assets: assets_select_visible uses owner_user_id = auth.uid() or status = 'active'. This is a binary model — any authenticated member can see any 'active' asset belonging to anyone. There is no private | member_only | public tiering; today "active" effectively equals "public to all authenticated users," and "draft/pending_verification/archived" equals "owner-only." The PRD's three-tier asset visibility concept (with a distinct "member_only" tier gating public/anonymous visitors) is not represented in RLS at all.
+Same binary pattern is repeated on asset_channels, asset_feedback_formats, asset_screenshots (all gate on the parent asset's owner-or-active status).
+user_profiles: profiles_select_authenticated — using (true) for any authenticated user. There is no public/anonymous-visitor policy at all (no to anon policies exist anywhere), meaning there is currently no way for a non-member/public visitor to see any profile or asset data via RLS — the "Public Profile System" and "public proof" pages described in PRD §7.7/§12 have no backing RLS support yet (no anon-role SELECT policies exist in any migration).
+matches, feedback_submissions, member_feedback_ratings, review_post_requests: all scoped to participants only (auth.uid() in (...)), plus admin-override policies via public.is_admin(). This is consistent with "private feedback exchange" requirements.
+member_match_edges / member_separation_cache: scoped to the two users involved or admin — reasonable given they encode relationship/graph data.
+No moderation-related RLS exists because there are no moderation tables (moderation_flags, moderation_actions, warnings are all missing, so there's nothing to write policies for).
+No policies exist for anon role anywhere in the codebase — confirmed via full read of all 6 migrations. This is the most significant privacy-model gap relative to the PRD: the whole "public profile / public proof page / marketplace browsing without login" strategy (PRD §12, §7.7, §7.8) currently has zero database-level support for unauthenticated access.
+Read 20260307124500_rpc_functions.sql
+Database survey is done. Waiting on the two other agents (routes/nav and business logic) before I write up the full gap analysis.
+
+Read 20260307143000_member_graph_and_candidate_rpc.sql
+I have enough to write the full gap analysis now.
+
+Route-by-route comparison
+Spec route	Status	Actual
+/ homepage	Exists	src/app/page.jsx — but it renders a raw Supabase-auth test banner ("Supabase auth is now wired up for testing") stacked on top of HomePageContent from src/components/fivestarz/HomePage.jsx. Looks like dev/test scaffolding was never removed.
+/pricing	Exists	src/app/pricing/page.jsx → PricingPage.jsx
+/community	Exists	src/app/community/page.jsx → CommunityPage.jsx
+/safety	Exists	src/app/safety/page.jsx → SafetyPage.jsx
+/market (marketplace landing)	Different path	Implemented as /proof-lab (src/app/proof-lab/page.jsx → ProofLabPage.jsx), branded "The Proof Lab," not /market.
+/u/[username] (public profile)	Missing	No dynamic route dirs exist anywhere under src/app (find ... -type d -name "[*]" returned nothing). Only a private "Profile" tab inside the dashboard (DashboardPage.jsx, tab profile), no public/shareable profile route.
+/a/[slug] (public asset page)	Missing	No public asset page/route. Assets are only manageable at /assets/new (create) and viewed as private cards in the dashboard's Assets tab.
+/app authenticated shell	Missing / different	No /app route group. Authenticated pages are flat top-level routes instead: /dashboard, /assets/new, /browse, /account.
+/app/dashboard	Different path	/dashboard (src/app/dashboard/page.jsx → DashboardPage.jsx) — tabs: Matches, Assets, History, Profile, Proof Lab.
+/app/assets	Different path	Only /assets/new (create-asset wizard, AssetPage.jsx). No /assets index/list route — asset listing lives inline in the Dashboard's "Assets" tab.
+/app/matches	Missing as own route	No standalone matches route; matches are a tab in /dashboard and requesting matches happens on /browse (BrowsePage.jsx, "Browse & Request Matches").
+/app/profile	Missing as own route	Only the "Profile" tab inside /dashboard; not a route of its own, and not public.
+/app/marketplace	Different path	/proof-lab again serves this role (member marketplace of service deals), but it's public (not under an /app authenticated shell) and named differently.
+/app/settings/privacy	Missing	No settings route at all found (no /account/settings, no /dashboard settings tab). /account (src/app/account/page.jsx) is just a minimal Supabase-auth test page showing the signed-in email and a sign-out link — no privacy controls.
+Other routes present but not in the spec: /login, /signup, /how-it-works, /browse, /account, /auth/actions.js + /auth/confirm/route.js (Supabase auth handlers), /api/beta-signup/route.js.
+
+Nav comparison
+Public nav — actual (src/components/fivestarz/SiteNav.jsx, SLIDE_NAV_LINKS, lines 19-28): My Dashboard, Add Asset +, Browse Members, Proof Lab, How It Works, Pricing, Community Rules, Trust & Safety — plus a "Get Early Access" CTA button and Log In / Sign Up links in the drawer footer.
+
+Spec wants: How It Works, Features, Marketplace, Pricing, Community Rules, Sign In, Get Started.
+
+Match: How It Works, Pricing, Community Rules, Sign In (Log In), Get Started (Get Early Access / Sign Up).
+Missing: a "Features" nav item (no page/content section dedicated to product features separately from How It Works).
+"Marketplace" is present but named "Proof Lab" and links to /proof-lab, not /market.
+Extra items not in spec's public nav: "My Dashboard," "Add Asset +," "Browse Members," "Trust & Safety" are all mixed into one single nav list — there's no separation between public-visitor nav and authenticated-member nav. The same SLIDE_NAV_LINKS array is shown regardless of auth state (SiteNav has no auth-based branching logic for which links to show).
+Member app nav — spec wants: Dashboard, My Assets, Find Feedback, Matches, Marketplace, Profile, Settings. Actual: no separate "member app" nav exists — same SiteNav renders "My Dashboard," "Add Asset +," "Browse Members," "Proof Lab" for everyone. There's no "Find Feedback," no standalone "Matches," no "Profile," and no "Settings" nav entries at all.
+
+Public profile nav (About / Public Feedback / Public Clips / Asset Highlights / Services-Offers) — entirely absent, since there's no public profile page/route to attach this sub-nav to.
+
+Homepage section comparison
+src/components/fivestarz/HomePage.jsx sections found: Hero, "How It Works" (HOW_STEPS), "Proof Lab Marketplace" (member marketplace), "Pricing" (PLANS), closing beta-signup CTA. That's it — 5 sections total.
+
+Spec section	Present?
+How it works	Yes (lines 75-124)
+AI Asset Builder	No — not mentioned anywhere on the homepage
+Human feedback formats	No — no dedicated section (formats only referenced inside dashboard/asset-creation UI, not on homepage)
+Reputation/trust signals	No — no dedicated homepage section (some trust info shows only in the hero's mock match card, not a real section)
+Marketplace	Yes, as "The Proof Lab" (lines 126-184)
+Optional public profiles	No — not mentioned on homepage at all
+Safety and community rules	No — no homepage section; this content only exists on separate /safety and /community pages, not surfaced on the homepage
+Pricing	Yes (lines 186-216)
+So 3 of 8 recommended homepage sections exist (How it works, Marketplace, Pricing); 5 are missing (AI Asset Builder, Human feedback formats, Reputation/trust signals, Optional public profiles, Safety and community rules).
+
+Key missing features
+Matching/matches feature: Present but not spec-shaped. BrowsePage.jsx implements browse + "Request Match" flow with credits, filters, semi-duplicate detection, etc. DashboardPage.jsx has a "Matches" tab (MATCHES mock data) with accept/leave-feedback/request-post actions. However, there is no standalone /matches or /app/matches route — it's a tab embedded in /dashboard.
+Marketplace feature: Present, functional in the UI sense (browsable listing carousel on homepage, dedicated /proof-lab page with ProofLabPage.jsx, and a "My Proof Lab Listings" management tab in DashboardPage.jsx with plan-tier listing limits). It's a real feature, just named "Proof Lab" instead of "Marketplace" and routed at /proof-lab instead of /market or /app/marketplace.
+Public profile page ([username]-style route): Absent. Confirmed via find src/app -type d -name "[*]" returning nothing — there are zero Next.js dynamic route segments anywhere in the app. The only "profile" is the private Profile tab in DashboardPage.jsx (lines 190-252), which is not publicly viewable and has no shareable URL/slug.
+Public asset page ([slug]-style route): Absent. Same evidence — no dynamic routes exist. Assets are created via the /assets/new wizard (AssetPage.jsx) and only viewable privately in the dashboard's Assets tab; there is no public, shareable asset page.
+Video feedback recording/upload UI: Absent as real functionality, present only as text/labels and future-roadmap mentions:
+AssetPage.jsx line 12: FBTYPES includes "Video / Audio Upload" as a selectable checkbox option when configuring an asset's allowed feedback formats — but there's no actual recording/upload widget anywhere (the feedback-submission FeedbackModal in DashboardPage.jsx, lines 332-386, only implements star rating, category sliders, and a text <textarea> — no video/audio capture UI).
+SafetyPage.jsx line 33 references "Video feedback" only as a privacy-default label ("Private — explicit approval to share"), not a feature.
+HowPage.jsx line 137 explicitly lists "Video review support: Record and submit short video testimonials" under a "🗓️ Planned (Q3 2025)" roadmap phase, confirming it is roadmapped, not built.
+No Mux integration found: grep -rn "mux" package.json and across src/ returned nothing (the only "mux" isn't even present as a substring hit besides the FBTYPES/PricingPage word "profile" false-positive matches, which were unrelated).
+Routes/nav survey is done too. Still waiting on the business logic agent (AI Asset Builder, matching, moderation, reputation, video, marketplace, plan gating) before writing the final gap analysis.
+
+Read 20260308113000_fix_create_match_actual_separation_degree.sql
+Bash Check test files size and preview
+IN
+wc -l /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/tests/*.sql; echo "---"; head -60 /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/tests/graph_matching_rpc_smoke_test.sql
+
+OUT
+     303 /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/tests/graph_matching_rpc_smoke_test.sql
+     240 /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/tests/graph_matching_seed.sql
+     161 /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/tests/graph_matching_smoke_test.sql
+     704 total
+---
+-- Authenticated smoke test for graph-aware RPCs.
+-- Run after graph_matching_seed.sql, then refresh graph edges.
+-- Safe to run in the Supabase SQL editor; the transaction rolls back.
+
+begin;
+
+set local role authenticated;
+
+select public.refresh_all_member_match_edges() as refreshed_edge_rows;
+
+create or replace function pg_temp.impersonate_seed_user(p_user_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claim.sub', p_user_id::text, true);
+  perform set_config('request.jwt.claims', json_build_object('sub', p_user_id::text, 'role', 'authenticated')::text, true);
+end;
+$$;
+
+create or replace function pg_temp.run_candidate_query(
+  p_auth_user_id uuid,
+  p_my_asset_id uuid,
+  p_limit integer default 50,
+  p_offset integer default 0
+)
+returns table (
+  candidate_user_id uuid,
+  candidate_asset_id uuid,
+  candidate_display_name text,
+  candidate_plan_code public.plan_code,
+  candidate_asset_name text,
+  candidate_asset_type public.asset_type,
+  shortest_path_degree integer,
+  respects_separation_preference boolean,
+  prior_match_count integer,
+  has_active_match boolean,
+  would_queue boolean
+)
+language plpgsql
+as $$
+begin
+  perform pg_temp.impersonate_seed_user(p_auth_user_id);
+
+  return query
+  select *
+  from public.eligible_match_candidates(p_my_asset_id, p_limit, p_offset);
+end;
+$$;
+
+create or replace function pg_temp.try_create_match(
+  p_auth_user_id uuid,
+  p_other_user_id uuid,
+  p_my_asset_id uuid,
+  p_their_asset_id uuid,
+  p_source text default 'browse',
+  p_previous_match_id uuid default null
+)
+returns table (
+  ok boolean,
+ProofSignals ("fivestarz") — Gap Analysis: PRD Core Modules vs. Implemented Code
+Overarching finding (read this first)
+The codebase has two disconnected layers:
+
+Frontend (src/app, src/components/fivestarz, src/lib/fivestarz/mock-data.js) — a pure client-side UI demo. Every "data" screen (Dashboard, Browse, Proof Lab, Asset creation) reads from hardcoded arrays in /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/src/lib/fivestarz/mock-data.js and mutates only local useState. Actions like "Create Asset & Start Matching," "Submit Feedback," "Send Match Request," and "Activate Listing" do not write to Supabase or call any API — they just flip local component state (setDone(true), etc.). Only two flows hit a real backend endpoint: BetaModal.jsx and ProofLabPage.jsx's request modal, both of which just POST to /api/beta-signup (an email-via-Resend notifier, not app logic).
+Database (supabase/migrations/*.sql) — a surprisingly sophisticated, real backend (schema + PL/pgSQL RPCs + RLS + triggers) implementing a chunk of the Matching Engine, quota gating, and feedback workflow. But grep -rn "\.rpc(" src returns zero results — none of this SQL logic is ever invoked from the app. It is fully built but completely orphaned.
+This distinction matters for every module below.
+
+1. AI Asset Builder — NOT IMPLEMENTED
+src/components/fivestarz/AssetPage.jsx is a manual 4-step form (name/URL/type → channels → feedback settings → confirm). The user manually picks category/type/channels/formats from static option lists (TYPES, CHNLS, FBTYPES defined at top of file) — there is no AI-generated title, summary, audience framing, "feedback lens," or readiness warning anywhere.
+Screenshot upload (handleFiles) only runs FileReader.readAsDataURL() for a local image preview — files are never sent to a server, an AI API, or storage, despite a public.asset_screenshots table existing in the DB schema.
+No AI/LLM SDK exists in the project: package.json has no openai, @anthropic-ai/sdk, or any LLM client; grep -ril "openai|anthropic" across src/ returned nothing.
+src/components/fivestarz/SafetyPage.jsx contains AI_ALLOWED/AI_BLOCKED arrays (lines 8–26) describing what AI is/isn't supposed to do — these are static marketing copy only, not enforced code, and not connected to any AI call since none exists.
+"Create Asset & Start Matching" button just sets done = true locally (AssetPage.jsx:146) — no persistence to the real public.assets table.
+2. Matching Engine — PARTIALLY IMPLEMENTED (real logic exists but is orphaned/unused)
+Real, tested logic in SQL, not reachable from the app:
+
+/Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/migrations/20260307143000_member_graph_and_candidate_rpc.sql — a genuine graph engine: member_match_edges/member_separation_cache tables, a recursive-CTE BFS (member_shortest_path_degree), pair_respects_separation_preferences(), and eligible_match_candidates() RPC that ranks candidates by shortest path, prior match count, plan/quota status.
+/Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/migrations/20260307131500_usage_quotas_and_review_post_workflow.sql + .../20260308113000_fix_create_match_actual_separation_degree.sql — create_match() RPC enforces real monthly auto/browse quotas per plan, semi-duplicate match rules (allow_semi_duplicate_matches, allow_semi_duplicate_with_free), degrees-of-separation gating, and queuing when a party is at their limit. Verified by supabase/tests/graph_matching_rpc_smoke_test.sql.
+Gaps vs. PRD:
+
+No reviewer specialty, niche overlap, prior-helpfulness score, availability, recency freshness, or competitor-category-avoidance logic exists anywhere (grep -i "competitor|niche|helpful|availability|specialty|freshness" across supabase/ and src/ returns nothing).
+The app never uses any of this. src/components/fivestarz/BrowsePage.jsx matches by doing a plain client-side .filter() over the static MEMBERS array from mock-data.js; "Request Match" only opens a local modal and sets sent = true — no create_match RPC call, no DB write.
+3. Feedback Request Modes — PARTIALLY IMPLEMENTED (DB), STUBBED-ONLY (frontend)
+DB has a real feedback_format enum (stars, written, structured, video_audio), a feedback_submissions table (stars/written_feedback/structured_feedback jsonb/media_url), and submit_feedback() RPC in /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/migrations/20260307124500_rpc_functions.sql with an enforced trigger requiring at least one format (validate_feedback_submission).
+No "live consult/call" mode exists at all — not in the enum, not in the UI, not mentioned anywhere in code.
+Frontend FeedbackModal in src/components/fivestarz/DashboardPage.jsx (lines 332–386) collects stars + a fixed 3-item rubric (quality/value/communication — not tied to any PRD concept) + free text, but "Submit Feedback" just calls local setDone(true); it never calls submit_feedback. Data is discarded on modal close.
+4. Internal Reputation System — PARTIALLY IMPLEMENTED, and materially narrower than spec
+Real, working aggregate logic exists: public.member_feedback_ratings (single 1–5 star rating of "how good was the feedback"), with sync_profile_feedback_ratings trigger and refresh_profile_feedback_rating() maintaining user_profiles.feedback_rating_avg/feedback_rating_count — in /Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/migrations/20260307123000_initial_schema.sql.
+None of the 9 PRD dimensions (clarity, honesty, specificity, actionability, professionalism, kindness, relevance, expertise fit, follow-through) exist anywhere — zero hits in SQL or JS.
+Frontend's RateFeedbackWidget (DashboardPage.jsx lines 11–38) is a single star-rating UI with local state (saved/rating), never calling the real rate_member_feedback RPC.
+5. Video Feedback — STUBBED-ONLY / effectively NOT IMPLEMENTED
+DB has only a media_url text column and a video_audio enum label — no video-specific table, no processing pipeline.
+No Mux (or any video service) integration exists anywhere: no mux package, no upload endpoint, no browser recording component in src/components. AssetPage.jsx's "Video / Audio Upload" is just a selectable checkbox label (FBTYPES array) with no functionality behind it.
+"Private by default, approval-gated public publishing" is described only as copy in SafetyPage.jsx's PRIVACY_DEFAULTS array — not enforced by code specific to video. The DB's generic review_post_requests approval workflow (request_review_post/respond_review_post_request/mark_review_posted in 20260307131500_usage_quotas_and_review_post_workflow.sql) is real and could serve this purpose for any feedback type, but it isn't video-specific and, like everything else, is never called from the frontend.
+6. Marketplace (Proof Lab) — STUBBED-ONLY (mock only)
+PROOF_LISTINGS in mock-data.js (lines 100–123) is a hardcoded array of 22 fake listings with fake sellers, prices, and badges — explicitly call this out as mock data, not real marketplace inventory.
+src/components/fivestarz/ProofLabPage.jsx filters/renders this static array; "Request This Deal" sends an email via the real /api/beta-signup route (src/app/api/beta-signup/route.js, using Resend) — i.e., a manual lead-notification email, not an order/transaction.
+DashboardPage.jsx's ProofLabListingsTab (lines 268–330) shows Edit/Activate/De-activate buttons with no onClick handlers at all — pure non-functional UI chrome.
+No Stripe or any payment integration exists (package.json has no stripe; grep -ri stripe across the whole repo returns nothing).
+The DB has a proof_lab_listings_enabled plan-gate flag (/Users/davidsparrow/Documents/_appDevelopment/Dev/fiveup/supabase/migrations/20260308110000_add_proof_lab_listing_gate.sql) but no proof_lab_listings (or similar) table exists in the schema at all — so even the backend has no real marketplace data model, just an unused feature flag.
+7. Trust & Safety / Moderation — NOT IMPLEMENTED
+SafetyPage.jsx's "Automatic phrase detection" claim ("Hard-blocked and soft-flagged language patterns prevent review-swap solicitation...", line 114) and the RULES do/don't array in mock-data.js (lines 83–92) are entirely static marketing/informational copy.
+Exhaustive search for the PRD's example phrases ("please upvote us", "vote for us", "review swap", "trade reviews", "support our launch", "show some love") and for moderation-adjacent code terms (hard.block, soft.flag, suspend, warning, moderation) across both src/ and supabase/ found zero implementation — no keyword list, no content-scanning function/trigger, no flags/reports table, no enforcement or suspension logic anywhere in the schema.
+8. Free vs. Paid Plan Gating — PARTIALLY IMPLEMENTED (DB only), NOT IMPLEMENTED (app)
+Real, seeded, enforced logic exists in the DB: public.plan_feature_gates (in 20260307123000_initial_schema.sql) defines per-plan (sprout/bloom/flourish) flags/limits for auto_matches_per_month, browse_matches_per_month, max_assets, max_channels_per_asset, advisory_assets_enabled, client_assets_enabled, require_specific_feedback_types, degrees_of_separation_control, semi_duplicate_matching, team_seats, and (later) proof_lab_listings_enabled. create_match() genuinely enforces monthly auto/browse quotas and semi-duplicate opt-in rules server-side, verified by supabase/tests/graph_matching_rpc_smoke_test.sql.
+No billing/subscription integration exists — no Stripe or any payment provider in package.json or anywhere in the repo. user_profiles.plan_code defaults to 'sprout' via the handle_new_auth_user() trigger at signup, and no code path ever changes it — there is no way for a real user to actually become "paid" in this system today.
+All plan-gated UI in the app (ME.plan, match/browse counters, PlanPill, Proof Lab listing caps) reads from the hardcoded ME object in mock-data.js, never from Supabase. PricingPage.jsx's "Start Free" / "Start 14-Day Trial" / "Talk to Us" buttons (line 87) only call openBeta() (opens the beta-request modal) — no checkout, no plan change.
+Summary table
+Module	Status	Where the real logic (if any) lives
+1. AI Asset Builder	NOT IMPLEMENTED	none — AssetPage.jsx is a manual form
+2. Matching Engine	PARTIAL (real but orphaned)	supabase/migrations/20260307143000_*.sql, 20260307131500_*.sql; unused by BrowsePage.jsx
+3. Feedback Request Modes	PARTIAL (DB), STUBBED (UI)	submit_feedback RPC in 20260307124500_rpc_functions.sql; unused by DashboardPage.jsx FeedbackModal
+4. Internal Reputation System	PARTIAL, narrower than spec	member_feedback_ratings + triggers in 20260307123000_initial_schema.sql; single star only, no 9 dimensions
+5. Video Feedback	STUBBED-ONLY	media_url column + enum label only; no Mux, no recording UI
+6. Marketplace	STUBBED-ONLY (mock only)	PROOF_LISTINGS array in mock-data.js; no listings table, no payments
+7. Trust & Safety / Moderation	NOT IMPLEMENTED	SafetyPage.jsx copy only; no phrase-detection or enforcement code anywhere
+8. Free vs Paid Gating	PARTIAL (DB), NOT IMPLEMENTED (app)	plan_feature_gates table + create_match() checks; no billing integration, no frontend wiring
+All three surveys are complete. Let me pull the critical file evidence together before writing this up.
+
+ProofSignals — Gap Analysis vs. Specs
+Bottom line: This is a polished frontend prototype sitting on top of a partially-built, disconnected backend. Almost nothing the UI does actually persists to the database — buttons flip local useState, not real records. The database itself has some genuinely sophisticated logic (a full matching/graph engine, quota enforcement) that the app never calls. Two entire PRD modules (AI Asset Builder, Trust & Safety moderation) have zero code, only static marketing copy describing them.
+
+1. Data model (PRD §15) — supabase/migrations/
+Exists	Partial	Missing entirely
+users, profiles (user_profiles), assets, matches, feedback_submissions, feedback_ratings (member_feedback_ratings)	plans (enum + plan_feature_gates, no real plans table), asset_media (screenshots only, no video), video_feedback (just a media_url column + enum label), external_links/review_platform_links (asset_channels, not normalized)	asset_visibility_settings, feedback_requests, reviewer_specialties, marketplace_listings, profile_public_settings, public_feedback_permissions, moderation_flags, moderation_actions, warnings
+Notable: there's no anon-role RLS policy anywhere in the schema — the entire "public profile / public proof page" concept (PRD §7.7, §12) has zero database support for unauthenticated visitors today. assets visibility is binary (owner-vs-everyone-authenticated), not the private/member-only/public three-tier model the spec calls for.
+
+Extras that exist but aren't in the PRD (a real, tested matching subsystem): member_graph_state, member_match_edges, member_separation_cache, user_monthly_usage.
+
+2. Site architecture & routes (spec 03-site-architecture-and-url-strategy.md)
+No /app authenticated shell — routes are flat (/dashboard, /browse, /assets/new, /account).
+No /u/[username] public profile route and no /a/[slug] public asset route exist at all — confirmed zero dynamic route segments anywhere in src/app. Profile is only a private tab inside the dashboard.
+Marketplace is real as a UI concept but lives at /proof-lab, not /market or /app/marketplace.
+No /app/settings/privacy — no privacy/publishing controls exist anywhere in the app.
+Nav doesn't distinguish public-visitor vs. member nav (spec wants two different navs); SiteNav.jsx shows the same links to everyone regardless of auth state.
+Homepage has 3 of the 8 recommended sections (How it Works, Marketplace, Pricing). Missing: AI Asset Builder, Human feedback formats, Reputation/trust signals, Optional public profiles, Safety & community rules.
+src/app/page.jsx still has a leftover Supabase-auth test banner ("Supabase auth is now wired up for testing") on the live homepage.
+3. Core product modules (PRD §7)
+Module	Status
+AI Asset Builder	Not implemented. AssetPage.jsx is a fully manual form; no LLM client in package.json; screenshots are read via FileReader for local preview only, never uploaded/analyzed.
+Matching Engine	Built but orphaned. Real graph/degrees-of-separation/quota logic in SQL RPCs (eligible_match_candidates, create_match) — but grep "\.rpc(" across src/ returns nothing. BrowsePage.jsx just filters a hardcoded mock array.
+Feedback Request Modes	DB has real formats/RPC (submit_feedback); no "live consult/call" mode anywhere. Frontend FeedbackModal in DashboardPage.jsx discards submissions locally instead of calling the RPC.
+Internal Reputation	Only a single star average is real (member_feedback_ratings). None of the 9 PRD dimensions (clarity, honesty, specificity, etc.) exist anywhere.
+Video Feedback	Stub only. No Mux/video service integration, no recording UI; PRD's own docs list this as "Planned Q3 2025" in HowPage.jsx.
+Marketplace (Proof Lab)	Mock only. 22 hardcoded fake listings in mock-data.js; no marketplace_listings table; Dashboard's Edit/Activate buttons have no handlers; no Stripe/payments anywhere.
+Trust & Safety / Moderation	Not implemented at all. SafetyPage.jsx is static copy describing hard-block/soft-flag phrases; no keyword scanning, flags table, or enforcement code exists anywhere in the repo.
+Free/Paid Plan Gating	Real quota enforcement exists in SQL (plan_feature_gates, create_match), but no billing integration (no Stripe), and the frontend reads plan/quota state from the mock ME object, not Supabase — so no real user can actually become "paid."
+4. What this means against the PRD's own MVP scope (§17)
+The PRD's declared MVP list is: sign up/login, profile basics, AI Asset Builder, listing creation, category/lens selection, limited matching, written feedback, helpfulness ratings, plan gating, moderation phrase blocking, external links, internal reputation.
+
+Of those, auth/login and the DB schema for listings/matching/feedback are the only pieces with real, working backend logic — and even those aren't wired to the frontend. Everything else on the MVP list (AI Asset Builder, actual matching, real feedback submission, real plan gating, moderation) is either missing or disconnected mock UI.
+
+Since this was an analysis request rather than a code change, I haven't written anything to disk beyond reading files. Let me know if you'd like me to turn this into a prioritized implementation plan (e.g., "wire the existing matching RPCs to BrowsePage/Dashboard first" would be the highest-leverage next step, since that backend logic already exists and is just unused).
+
