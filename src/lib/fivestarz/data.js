@@ -323,12 +323,23 @@ export async function getProofLabCategories(supabase) {
   return data;
 }
 
+export async function getCharities(supabase) {
+  const { data, error } = await supabase
+    .from("charities")
+    .select("id, name, url, logo_emoji")
+    .eq("active", true)
+    .order("sort_order");
+
+  if (error) throw error;
+  return data;
+}
+
 // Active listings visible to all members (RLS enforces active-or-owner).
 export async function listProofLabListings(supabase, { categorySlug } = {}) {
   let query = supabase
     .from("proof_lab_listings")
     .select(
-      "*, seller:user_profiles!seller_user_id(display_name), category:proof_lab_categories!category_slug(label), asset:assets!asset_id(name)",
+      "*, seller:user_profiles!seller_user_id(display_name), category:proof_lab_categories!category_slug(label), asset:assets!asset_id(name), charity:charities!charity_id(name, logo_emoji)",
     )
     .eq("status", "active")
     .order("created_at", { ascending: false });
@@ -343,7 +354,7 @@ export async function listProofLabListings(supabase, { categorySlug } = {}) {
 export async function listMyProofLabListings(supabase, sellerId) {
   const { data, error } = await supabase
     .from("proof_lab_listings")
-    .select("*, category:proof_lab_categories!category_slug(label)")
+    .select("*, category:proof_lab_categories!category_slug(label), charity:charities!charity_id(name, logo_emoji)")
     .eq("seller_user_id", sellerId)
     .order("created_at", { ascending: false });
 
@@ -361,6 +372,8 @@ export async function createProofLabListing(supabase, form) {
     p_price_unit: form.priceUnit || null,
     p_badge: form.badge || null,
     p_asset_id: form.assetId || null,
+    p_donation_percent: form.donationPercent ?? null,
+    p_charity_id: form.charityId || null,
   });
 
   if (error) throw error;
@@ -378,6 +391,8 @@ export async function updateProofLabListing(supabase, listingId, form) {
     p_price_unit: form.priceUnit || null,
     p_badge: form.badge || null,
     p_asset_id: form.assetId || null,
+    p_donation_percent: form.donationPercent ?? null,
+    p_charity_id: form.charityId || null,
   });
 
   if (error) throw error;
@@ -457,4 +472,13 @@ export async function markProofLabDealFulfilled(supabase, dealId) {
 export async function confirmProofLabDeal(supabase, dealId) {
   const { error } = await supabase.rpc("confirm_proof_lab_deal", { p_deal_id: dealId });
   if (error) throw error;
+}
+
+// Per-seller pledged-donation totals over completed deals (optionally since a date).
+export async function getFundraiserLeaderboard(supabase, since = null) {
+  const { data, error } = await supabase.rpc("proof_lab_fundraiser_leaderboard", {
+    p_since: since,
+  });
+  if (error) throw error;
+  return data;
 }
