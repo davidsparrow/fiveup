@@ -507,3 +507,47 @@ export async function getProofLabReviewsForSeller(supabase, sellerId) {
   if (error) throw error;
   return data;
 }
+
+// ── Trust & Safety / moderation (Phase 7) ──────────────────────────────────
+
+// Whether the caller may access the moderation console (admin OR moderator)
+// and, separately, whether they hold the higher admin role (some ops actions
+// stay admin-only).
+export async function getModerationAccess(supabase) {
+  const [{ data: isModerator, error: mErr }, { data: isAdmin, error: aErr }] = await Promise.all([
+    supabase.rpc("is_moderator"),
+    supabase.rpc("is_admin"),
+  ]);
+  if (mErr) throw mErr;
+  if (aErr) throw aErr;
+  return { isModerator: !!isModerator, isAdmin: !!isAdmin };
+}
+
+// Moderation queue — flags joined to a rendered snippet of the offending text.
+export async function listModerationQueue(supabase, status = "pending") {
+  const { data, error } = await supabase.rpc("list_moderation_queue", {
+    p_status: status || null,
+  });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Act on a flag: dismiss | remove_content | warn_user | suspend_user | reinstate_user.
+export async function resolveFlag(supabase, { flagId, action, notes }) {
+  const { error } = await supabase.rpc("resolve_flag", {
+    p_flag_id: flagId,
+    p_action: action,
+    p_notes: notes || null,
+  });
+  if (error) throw error;
+}
+
+// Admin-only ops flag: fulfilled Proof Lab deals stuck awaiting one-sided
+// confirmation (homeless since Phase 6b.2 — surfaced in the console).
+export async function listDealsAwaitingConfirmation(supabase, staleDays = 14) {
+  const { data, error } = await supabase.rpc("proof_lab_deals_awaiting_confirmation", {
+    p_stale_days: staleDays,
+  });
+  if (error) throw error;
+  return data ?? [];
+}
