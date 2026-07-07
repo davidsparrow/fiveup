@@ -1,0 +1,59 @@
+import { notFound } from "next/navigation";
+
+import PageShell from "@/components/fivestarz/PageShell";
+import PublicAssetPage from "@/components/fivestarz/PublicAssetPage";
+import { createClient } from "@/lib/supabase/server";
+
+/**
+ * Resolve a public asset by slug. Returns null unless the slug maps to a
+ * public, moderation-clean asset whose owner is not suspended/removed — the
+ * RPC ANDs in every gate, so an empty result is authoritative (→ 404).
+ * Gating is on the ASSET, independent of whether the owner's profile is public.
+ */
+async function fetchAsset(supabase, slug) {
+  const { data, error } = await supabase.rpc("get_public_asset", { p_slug: slug });
+  if (error) throw error;
+  return data && data.length > 0 ? data[0] : null;
+}
+
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  let asset = null;
+  try {
+    asset = await fetchAsset(supabase, slug);
+  } catch {
+    asset = null;
+  }
+
+  if (!asset) {
+    return {
+      title: "Asset not found | ProofSignals",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  // Asset SEO is a later phase — noindex for now.
+  return {
+    title: `${asset.name} | ProofSignals`,
+    description: asset.description ? asset.description.slice(0, 160) : undefined,
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function PublicAssetRoute({ params }) {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  const asset = await fetchAsset(supabase, slug);
+  if (!asset) {
+    notFound();
+  }
+
+  return (
+    <PageShell>
+      <PublicAssetPage asset={asset} />
+    </PageShell>
+  );
+}
