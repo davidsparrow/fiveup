@@ -1,0 +1,74 @@
+import { notFound } from "next/navigation";
+
+import PageShell from "@/components/fivestarz/PageShell";
+import PublicProfilePage from "@/components/fivestarz/PublicProfilePage";
+import { createClient } from "@/lib/supabase/server";
+
+/**
+ * Fetch the public profile projection for a handle. Returns null when the
+ * profile is not publishable (unpublished, suspended, removed, or no such
+ * handle) — the RPC already ANDs in every Phase-7 suppression rule, so an
+ * empty result is authoritative. 8c is strict-404: no owner preview.
+ */
+async function fetchProfile(supabase, username) {
+  const { data, error } = await supabase.rpc("get_public_profile", { p_username: username });
+  if (error) throw error;
+  return data && data.length > 0 ? data[0] : null;
+}
+
+export async function generateMetadata({ params }) {
+  const { username } = await params;
+  const supabase = await createClient();
+
+  let profile = null;
+  try {
+    profile = await fetchProfile(supabase, username);
+  } catch {
+    profile = null;
+  }
+
+  if (!profile) {
+    // Unresolvable handle: default to noindex, generic title.
+    return {
+      title: "Profile not found | ProofSignals",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  // Default to noindex; only searchable (paid + opted-in) profiles are indexed.
+  const searchable = Boolean(profile.searchable);
+  return {
+    title: `${profile.display_name} (@${profile.public_username}) | ProofSignals`,
+    description: profile.bio ? profile.bio.slice(0, 160) : undefined,
+    robots: { index: searchable, follow: searchable },
+  };
+}
+
+export default async function PublicProfileRoute({ params }) {
+  const { username } = await params;
+  const supabase = await createClient();
+
+  const profile = await fetchProfile(supabase, username);
+  if (!profile) {
+    notFound();
+  }
+
+  // The profile exists and is public — fetch the rest of the approved
+  // projection in parallel. Each RPC re-applies the same publishability gate.
+  const [feedbackRes, assetsRes, offersRes] = await Promise.all([
+    supabase.rpc("get_public_feedback", { p_username: username }),
+    supabase.rpc("get_public_assets", { p_username: username }),
+    supabase.rpc("get_public_offers", { p_username: username }),
+  ]);
+
+  return (
+    <PageShell>
+      <PublicProfilePage
+        profile={profile}
+        feedback={feedbackRes.data ?? []}
+        assets={assetsRes.data ?? []}
+        offers={offersRes.data ?? []}
+      />
+    </PageShell>
+  );
+}
