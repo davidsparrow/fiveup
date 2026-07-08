@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import PageShell from "@/components/fivestarz/PageShell";
 import PublicAssetPage from "@/components/fivestarz/PublicAssetPage";
 import { createClient } from "@/lib/supabase/server";
+import { SITE_NAME } from "@/lib/fivestarz/site";
 
 /**
  * Resolve a public asset by slug. Returns null unless the slug maps to a
@@ -34,11 +35,19 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  // Asset SEO is a later phase — noindex for now.
+  // Asset pages stay noindex for now (see phase 9 doc: indexing them is a
+  // future enhancement). Canonical + OG still ship so shared links unfurl well.
+  const canonical = `/a/${asset.public_slug}`;
+  const title = `${asset.name} | ${SITE_NAME}`;
+  const description = asset.description ? asset.description.slice(0, 160) : `${asset.name} on ${SITE_NAME}.`;
   return {
-    title: `${asset.name} | ProofSignals`,
-    description: asset.description ? asset.description.slice(0, 160) : undefined,
+    title,
+    description,
+    alternates: { canonical },
     robots: { index: false, follow: false },
+    // og:image / twitter:image come from opengraph-image.jsx.
+    openGraph: { type: "article", title, description, url: canonical, siteName: SITE_NAME },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
@@ -51,9 +60,13 @@ export default async function PublicAssetRoute({ params }) {
     notFound();
   }
 
+  // Approved per-asset commentary (same asset-publishability gate re-applied
+  // inside the RPC). Reviewer stays anonymous — a coarse label renders instead.
+  const commentaryRes = await supabase.rpc("get_public_asset_feedback", { p_slug: slug });
+
   return (
     <PageShell>
-      <PublicAssetPage asset={asset} />
+      <PublicAssetPage asset={asset} commentary={commentaryRes.data ?? []} />
     </PageShell>
   );
 }
