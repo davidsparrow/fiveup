@@ -1,0 +1,234 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+
+import { T } from "@/lib/fivestarz/theme";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { createClient } from "@/lib/supabase/client";
+import { Card, Pill } from "@/components/fivestarz/ui";
+
+const FONT_SERIF = "'Fraunces',serif";
+const FONT_SANS = "'DM Sans',sans-serif";
+
+// show_* / searchable toggles. `feature` (when set) is the plan_feature_gates
+// key that must be enabled for the control to have a public effect.
+const TOGGLES = [
+  { key: "show_logo", param: "p_show_logo", label: "Show logo / avatar" },
+  { key: "show_location", param: "p_show_location", label: "Show location" },
+  { key: "show_stats", param: "p_show_stats", label: "Show stats & ratings" },
+  { key: "show_feedback_excerpts", param: "p_show_feedback_excerpts", label: "Show approved feedback excerpts", feature: "public_feedback_excerpts_enabled" },
+  { key: "show_public_videos", param: "p_show_public_videos", label: "Show public video clips", feature: "public_video_enabled" },
+  { key: "show_marketplace_offers", param: "p_show_marketplace_offers", label: "Show Proof Lab offers", feature: "proof_lab_listings_enabled" },
+  { key: "searchable_public_profile", param: "p_searchable_public_profile", label: "Allow search-engine indexing", feature: "public_profile_indexing_enabled" },
+];
+
+function Toggle({ checked, disabled, onChange }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => !disabled && onChange(!checked)}
+      style={{
+        width: 46,
+        height: 26,
+        borderRadius: 20,
+        border: "none",
+        flexShrink: 0,
+        cursor: disabled ? "not-allowed" : "pointer",
+        background: checked ? T.teal : "#D8CCC2",
+        opacity: disabled ? 0.5 : 1,
+        position: "relative",
+        transition: "background 0.18s",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: 3,
+          left: checked ? 23 : 3,
+          width: 20,
+          height: 20,
+          borderRadius: "50%",
+          background: "#fff",
+          transition: "left 0.18s",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+        }}
+      />
+    </button>
+  );
+}
+
+export default function PublicSettingsPage({ initialProfile = {}, features = {} }) {
+  const isMobile = useIsMobile();
+  const [profile, setProfile] = useState(initialProfile);
+  const [handle, setHandle] = useState("");
+  const [claiming, setClaiming] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const hasHandle = Boolean(profile.public_username);
+  const isPublic = Boolean(profile.profile_public_enabled);
+
+  async function saveField(param, value, key) {
+    setError("");
+    setNotice("");
+    const prev = profile[key];
+    setProfile((p) => ({ ...p, [key]: value })); // optimistic
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("update_publishing_settings", { [param]: value });
+      if (rpcErr) throw rpcErr;
+      setNotice("Saved.");
+    } catch (e) {
+      setProfile((p) => ({ ...p, [key]: prev })); // revert
+      setError(e.message || "Couldn't save — please try again.");
+    }
+  }
+
+  async function claim() {
+    const clean = handle.trim();
+    if (!clean) return;
+    setClaiming(true);
+    setError("");
+    setNotice("");
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("claim_public_username", { p_username: clean });
+      if (rpcErr) throw rpcErr;
+      setProfile((p) => ({ ...p, public_username: clean }));
+      setNotice("Handle claimed.");
+    } catch (e) {
+      setError(e.message || "Couldn't claim that handle — try another.");
+    } finally {
+      setClaiming(false);
+    }
+  }
+
+  const sectionPad = isMobile ? "24px 16px" : "32px 32px";
+
+  return (
+    <div style={{ background: T.cream, minHeight: "70vh" }}>
+      {/* Hero */}
+      <section style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: isMobile ? "40px 20px 32px" : "56px 32px 44px" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <Pill color={T.gold}>Public profile</Pill>
+          <h1 style={{ fontFamily: FONT_SERIF, fontSize: isMobile ? 30 : 40, fontWeight: 900, color: "#fff", margin: "12px 0 8px", letterSpacing: "-0.02em" }}>
+            Publishing settings
+          </h1>
+          <p style={{ fontFamily: FONT_SANS, fontSize: 15, color: "#C4A68A", margin: 0, maxWidth: 520, lineHeight: 1.6 }}>
+            Choose what the world sees. Everything is private until you turn it on.
+          </p>
+        </div>
+      </section>
+
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: sectionPad }}>
+        {(error || notice) && (
+          <div
+            style={{
+              marginBottom: 18,
+              padding: "12px 16px",
+              borderRadius: 12,
+              fontFamily: FONT_SANS,
+              fontSize: 14,
+              fontWeight: 600,
+              background: error ? "#FDECEC" : T.tealP,
+              color: error ? T.red : T.teal,
+            }}
+          >
+            {error || notice}
+          </div>
+        )}
+
+        {/* ── Handle ── */}
+        <Card sx={{ padding: isMobile ? 20 : 28, marginBottom: 18 }} hover={false}>
+          <h2 style={{ fontFamily: FONT_SERIF, fontSize: 20, fontWeight: 800, color: T.brown, margin: "0 0 6px" }}>Your handle</h2>
+          {hasHandle ? (
+            <div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 16, color: T.brown, fontWeight: 700 }}>@{profile.public_username}</div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate, marginTop: 4 }}>
+                Your handle is permanent.{" "}
+                {isPublic ? (
+                  <Link href={`/u/${profile.public_username}`} style={{ color: T.orange, fontWeight: 700 }}>
+                    View public profile →
+                  </Link>
+                ) : (
+                  <span>Turn on “Publish my profile” below to go live.</span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontFamily: FONT_SANS, fontSize: 14, color: T.slate, margin: "0 0 12px" }}>
+                Claim a public handle for your profile at <strong>/u/your-handle</strong>. This can only be set once.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value)}
+                  placeholder="your-handle"
+                  style={{ flex: "1 1 200px", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: FONT_SANS, color: T.brown, background: T.cream }}
+                />
+                <button
+                  type="button"
+                  onClick={claim}
+                  disabled={claiming || !handle.trim()}
+                  style={{ padding: "10px 22px", borderRadius: 10, border: "none", background: T.orange, color: "#fff", fontFamily: FONT_SANS, fontWeight: 700, fontSize: 14, cursor: claiming || !handle.trim() ? "not-allowed" : "pointer", opacity: claiming || !handle.trim() ? 0.5 : 1 }}
+                >
+                  {claiming ? "Claiming…" : "Claim handle"}
+                </button>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* ── Publish + visibility toggles ── */}
+        <Card sx={{ padding: isMobile ? 20 : 28 }} hover={false}>
+          <h2 style={{ fontFamily: FONT_SERIF, fontSize: 20, fontWeight: 800, color: T.brown, margin: "0 0 4px" }}>What’s public</h2>
+          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate, margin: "0 0 18px" }}>
+            {hasHandle ? "Publish your profile, then pick what appears on it." : "Claim a handle first to publish your profile."}
+          </p>
+
+          {/* master toggle */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "12px 0", borderBottom: "1px solid #F0E8E0" }}>
+            <div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 700, color: T.brown }}>Publish my profile</div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 12, color: T.slate }}>Makes /u/{profile.public_username || "your-handle"} visible to anyone.</div>
+            </div>
+            <Toggle
+              checked={isPublic}
+              disabled={!hasHandle}
+              onChange={(v) => saveField("p_profile_public_enabled", v, "profile_public_enabled")}
+            />
+          </div>
+
+          {TOGGLES.map((t) => {
+            const gated = Boolean(t.feature);
+            const enabledByPlan = !gated || features[t.feature];
+            const disabled = !hasHandle || !enabledByPlan;
+            return (
+              <div key={t.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "12px 0", borderBottom: "1px solid #F0E8E0" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 700, color: T.brown }}>{t.label}</span>
+                    {gated && !enabledByPlan ? <Pill color={T.gold} bg={`${T.gold}22`}>Paid</Pill> : null}
+                  </div>
+                  {gated && !enabledByPlan ? (
+                    <div style={{ fontFamily: FONT_SANS, fontSize: 12, color: T.slate }}>Upgrade your plan to enable this.</div>
+                  ) : null}
+                </div>
+                <Toggle
+                  checked={Boolean(profile[t.key])}
+                  disabled={disabled}
+                  onChange={(v) => saveField(t.param, v, t.key)}
+                />
+              </div>
+            );
+          })}
+        </Card>
+      </div>
+    </div>
+  );
+}
