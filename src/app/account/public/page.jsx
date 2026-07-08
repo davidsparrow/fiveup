@@ -47,9 +47,15 @@ export default async function PublicSettingsRoute() {
     .eq("plan_code", profile?.plan_code ?? "sprout");
   const features = Object.fromEntries((gates ?? []).map((g) => [g.feature_key, g.enabled]));
 
+  const { data: assets } = await supabase
+    .from("assets")
+    .select("id, name, visibility, moderation_status, public_slug")
+    .eq("owner_user_id", user.id)
+    .order("created_at", { ascending: false });
+
   return (
     <PageShell>
-      <PublicSettingsPage initialProfile={profile ?? {}} features={features} />
+      <PublicSettingsPage initialProfile={profile ?? {}} features={features} initialAssets={assets ?? []} />
     </PageShell>
   );
 }

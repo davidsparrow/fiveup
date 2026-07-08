@@ -61,9 +61,16 @@ function Toggle({ checked, disabled, onChange }) {
   );
 }
 
-export default function PublicSettingsPage({ initialProfile = {}, features = {} }) {
+const VISIBILITY_OPTIONS = [
+  { value: "private", label: "Private (only me)" },
+  { value: "member_only", label: "Members only" },
+  { value: "public", label: "Public" },
+];
+
+export default function PublicSettingsPage({ initialProfile = {}, features = {}, initialAssets = [] }) {
   const isMobile = useIsMobile();
   const [profile, setProfile] = useState(initialProfile);
+  const [assets, setAssets] = useState(initialAssets);
   const [handle, setHandle] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState("");
@@ -85,6 +92,29 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {} 
     } catch (e) {
       setProfile((p) => ({ ...p, [key]: prev })); // revert
       setError(e.message || "Couldn't save — please try again.");
+    }
+  }
+
+  async function setAssetVisibility(assetId, value) {
+    setError("");
+    setNotice("");
+    const prev = assets.find((a) => a.id === assetId)?.visibility;
+    setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, visibility: value } : a)));
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("set_asset_visibility", { p_asset_id: assetId, p_visibility: value });
+      if (rpcErr) throw rpcErr;
+      // Publishing assigns a public_slug server-side — pull it so we can link.
+      if (value === "public") {
+        const { data: row } = await supabase.from("assets").select("public_slug").eq("id", assetId).single();
+        if (row?.public_slug) {
+          setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, public_slug: row.public_slug } : a)));
+        }
+      }
+      setNotice("Saved.");
+    } catch (e) {
+      setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, visibility: prev } : a)));
+      setError(e.message || "Couldn't update that asset — please try again.");
     }
   }
 
@@ -227,6 +257,49 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {} 
               </div>
             );
           })}
+        </Card>
+
+        {/* ── Asset visibility ── */}
+        <Card sx={{ padding: isMobile ? 20 : 28, marginTop: 18 }} hover={false}>
+          <h2 style={{ fontFamily: FONT_SERIF, fontSize: 20, fontWeight: 800, color: T.brown, margin: "0 0 4px" }}>Your assets</h2>
+          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate, margin: "0 0 18px" }}>
+            Choose who can see each asset. Only <strong>Public</strong> assets appear at /a/… and on your public profile.
+          </p>
+
+          {assets.length === 0 ? (
+            <p style={{ fontFamily: FONT_SANS, fontSize: 14, color: T.slate, margin: 0 }}>You haven’t added any assets yet.</p>
+          ) : (
+            assets.map((a) => {
+              const removed = a.moderation_status !== "ok";
+              return (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid #F0E8E0", flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 700, color: T.brown }}>{a.name}</span>
+                      {removed ? <Pill color={T.red} bg={`${T.red}18`}>Removed</Pill> : null}
+                    </div>
+                    {a.visibility === "public" && a.public_slug ? (
+                      <Link href={`/a/${a.public_slug}`} style={{ fontFamily: FONT_SANS, fontSize: 12, color: T.orange, fontWeight: 700 }}>
+                        /a/{a.public_slug} →
+                      </Link>
+                    ) : null}
+                  </div>
+                  <select
+                    value={a.visibility}
+                    onChange={(e) => setAssetVisibility(a.id, e.target.value)}
+                    style={{ padding: "8px 12px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: FONT_SANS, color: T.brown, background: "#fff", cursor: "pointer" }}
+                  >
+                    {VISIBILITY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value} disabled={o.value === "public" && removed}>
+                        {o.label}
+                        {o.value === "public" && removed ? " (unavailable — removed)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })
+          )}
         </Card>
       </div>
     </div>
