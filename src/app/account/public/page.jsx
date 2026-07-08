@@ -53,9 +53,61 @@ export default async function PublicSettingsRoute() {
     .eq("owner_user_id", user.id)
     .order("created_at", { ascending: false });
 
+  // Received feedback the member can approve for public display, plus current
+  // approval state from public_feedback_permissions.
+  const [matchRes, engagedRes, permsRes] = await Promise.all([
+    supabase
+      .from("feedback_submissions")
+      .select("id, written_feedback, stars, media_url, submitted_at")
+      .eq("reviewee_user_id", user.id)
+      .eq("moderation_status", "ok")
+      .order("submitted_at", { ascending: false }),
+    supabase
+      .from("proof_lab_reviews")
+      .select("id, written_review, stars, created_at")
+      .eq("reviewee_user_id", user.id)
+      .eq("moderation_status", "ok")
+      .order("created_at", { ascending: false }),
+    supabase.from("public_feedback_permissions").select("source_type, source_id, approved").eq("owner_user_id", user.id),
+  ]);
+
+  const approved = new Set(
+    (permsRes.data ?? []).filter((p) => p.approved).map((p) => `${p.source_type}:${p.source_id}`),
+  );
+  const hasText = (s) => typeof s === "string" && s.trim().length > 0;
+  const feedback = [
+    ...(matchRes.data ?? [])
+      .filter((f) => hasText(f.written_feedback) || hasText(f.media_url))
+      .map((f) => ({
+        source_type: "match_feedback",
+        id: f.id,
+        body: f.written_feedback,
+        stars: f.stars,
+        media_url: f.media_url,
+        created_at: f.submitted_at,
+        approved: approved.has(`match_feedback:${f.id}`),
+      })),
+    ...(engagedRes.data ?? [])
+      .filter((r) => hasText(r.written_review))
+      .map((r) => ({
+        source_type: "engaged_review",
+        id: r.id,
+        body: r.written_review,
+        stars: r.stars,
+        media_url: null,
+        created_at: r.created_at,
+        approved: approved.has(`engaged_review:${r.id}`),
+      })),
+  ];
+
   return (
     <PageShell>
-      <PublicSettingsPage initialProfile={profile ?? {}} features={features} initialAssets={assets ?? []} />
+      <PublicSettingsPage
+        initialProfile={profile ?? {}}
+        features={features}
+        initialAssets={assets ?? []}
+        initialFeedback={feedback}
+      />
     </PageShell>
   );
 }
