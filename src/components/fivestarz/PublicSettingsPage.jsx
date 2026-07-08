@@ -67,10 +67,11 @@ const VISIBILITY_OPTIONS = [
   { value: "public", label: "Public" },
 ];
 
-export default function PublicSettingsPage({ initialProfile = {}, features = {}, initialAssets = [] }) {
+export default function PublicSettingsPage({ initialProfile = {}, features = {}, initialAssets = [], initialFeedback = [] }) {
   const isMobile = useIsMobile();
   const [profile, setProfile] = useState(initialProfile);
   const [assets, setAssets] = useState(initialAssets);
+  const [feedback, setFeedback] = useState(initialFeedback);
   const [handle, setHandle] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState("");
@@ -115,6 +116,26 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
     } catch (e) {
       setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, visibility: prev } : a)));
       setError(e.message || "Couldn't update that asset — please try again.");
+    }
+  }
+
+  async function setApproval(item, value) {
+    setError("");
+    setNotice("");
+    const match = (f) => f.source_type === item.source_type && f.id === item.id;
+    setFeedback((list) => list.map((f) => (match(f) ? { ...f, approved: value } : f)));
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("approve_public_feedback", {
+        p_source_type: item.source_type,
+        p_source_id: item.id,
+        p_approved: value,
+      });
+      if (rpcErr) throw rpcErr;
+      setNotice("Saved.");
+    } catch (e) {
+      setFeedback((list) => list.map((f) => (match(f) ? { ...f, approved: !value } : f)));
+      setError(e.message || "Couldn't update that feedback — please try again.");
     }
   }
 
@@ -299,6 +320,40 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
                 </div>
               );
             })
+          )}
+        </Card>
+
+        {/* ── Feedback approval ── */}
+        <Card sx={{ padding: isMobile ? 20 : 28, marginTop: 18 }} hover={false}>
+          <h2 style={{ fontFamily: FONT_SERIF, fontSize: 20, fontWeight: 800, color: T.brown, margin: "0 0 4px" }}>Public feedback</h2>
+          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate, margin: "0 0 18px" }}>
+            Approve which received feedback can appear publicly. Approved items show only when “Show approved feedback excerpts” (or clips) is on.
+          </p>
+
+          {feedback.length === 0 ? (
+            <p style={{ fontFamily: FONT_SANS, fontSize: 14, color: T.slate, margin: 0 }}>No feedback to review yet.</p>
+          ) : (
+            feedback.map((f) => (
+              <div key={`${f.source_type}:${f.id}`} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, padding: "14px 0", borderBottom: "1px solid #F0E8E0" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <Pill color={T.teal}>{f.source_type === "engaged_review" ? "Engaged review" : "Member feedback"}</Pill>
+                    {f.media_url ? <Pill color={T.purple} bg={T.purpleP}>Clip</Pill> : null}
+                  </div>
+                  {f.body ? (
+                    <p style={{ fontFamily: FONT_SERIF, fontSize: 15, fontStyle: "italic", color: T.brown, lineHeight: 1.5, margin: 0 }}>
+                      “{f.body}”
+                    </p>
+                  ) : null}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                  <Toggle checked={Boolean(f.approved)} onChange={(v) => setApproval(f, v)} />
+                  <span style={{ fontFamily: FONT_SANS, fontSize: 11, fontWeight: 700, color: f.approved ? T.teal : T.slate }}>
+                    {f.approved ? "Public" : "Hidden"}
+                  </span>
+                </div>
+              </div>
+            ))
           )}
         </Card>
       </div>
