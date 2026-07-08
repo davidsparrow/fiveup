@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Card, Pill } from "@/components/fivestarz/ui";
+import { Card, Pill, Stars } from "@/components/fivestarz/ui";
 
 const FONT_SERIF = "'Fraunces',serif";
 const FONT_SANS = "'DM Sans',sans-serif";
@@ -21,7 +21,7 @@ function formatDate(iso) {
  * 8d); it becomes a link to /u/[owner_username] only when the RPC returned a
  * username, i.e. the owner's own profile is public.
  */
-export default function PublicAssetPage({ asset }) {
+export default function PublicAssetPage({ asset, commentary = [] }) {
   const isMobile = useIsMobile();
   const assetType = asset.asset_type ? asset.asset_type.replace(/_/g, " ") : null;
   const published = formatDate(asset.created_at);
@@ -96,6 +96,50 @@ export default function PublicAssetPage({ asset }) {
             No description provided for this piece.
           </p>
         )}
+
+        {/* ── What people said (approved per-asset commentary) ── */}
+        {commentary.length > 0 ? (
+          <section style={{ marginTop: isMobile ? 36 : 48 }}>
+            <h2
+              style={{
+                fontFamily: FONT_SERIF,
+                fontSize: 24,
+                fontWeight: 800,
+                color: T.brown,
+                margin: "0 0 20px",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              What people said
+            </h2>
+            <div style={{ display: "grid", gap: 14 }}>
+              {commentary.map((c, i) => (
+                <Card key={`cm-${i}`} sx={{ padding: isMobile ? 20 : 26 }}>
+                  {c.stars ? (
+                    <div style={{ marginBottom: 12 }}>
+                      <Stars n={c.stars} size={16} />
+                    </div>
+                  ) : null}
+                  <p
+                    style={{
+                      fontFamily: FONT_SERIF,
+                      fontSize: 17,
+                      fontStyle: "italic",
+                      color: T.brown,
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}
+                  >
+                    “{c.body}”
+                  </p>
+                  <div style={{ marginTop: 14 }}>
+                    <Pill color={T.teal}>Verified member</Pill>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {asset.owner_username ? (
           <div style={{ marginTop: 28 }}>

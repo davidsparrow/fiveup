@@ -51,9 +51,13 @@ export default async function PublicAssetRoute({ params }) {
     notFound();
   }
 
+  // Approved per-asset commentary (same asset-publishability gate re-applied
+  // inside the RPC). Reviewer stays anonymous — a coarse label renders instead.
+  const commentaryRes = await supabase.rpc("get_public_asset_feedback", { p_slug: slug });
+
   return (
     <PageShell>
-      <PublicAssetPage asset={asset} />
+      <PublicAssetPage asset={asset} commentary={commentaryRes.data ?? []} />
     </PageShell>
   );
 }
