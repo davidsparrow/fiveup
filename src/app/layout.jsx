@@ -1,7 +1,10 @@
 /* eslint-disable @next/next/no-page-custom-font */
 import "./globals.css";
 
+import { getSiteUrl } from "@/lib/fivestarz/site";
+
 export const metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: "ProofSignals — Honest feedback from founders who actually get it.",
   description:
     "A trusted founder feedback network. Post your asset, get meaningful human feedback, build trust, and publish public proof only when you choose.",

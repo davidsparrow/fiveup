@@ -101,6 +101,10 @@ Built on the existing `searchable` flag. No new privacy surface — only *search
 
 **Decisions to lock:** sitemap scope (profiles only vs also public assets; flip assets to indexable?); OG images (static vs dynamic `ImageResponse`); which JSON-LD types; canonical host (env-driven base URL — confirm the production domain).
 
+**Locked (9c build):** searchable **profiles only** in the sitemap; asset pages stay `noindex`. OG images are **dynamic per-page** (`next/og`). Base URL via `NEXT_PUBLIC_SITE_URL` + `metadataBase`.
+
+> **Future enhancement (deferred):** make public **asset pages** indexable too — flip `/a/[slug]` from `noindex` to indexable and add them to the sitemap (needs an asset-listing RPC + a per-asset indexable signal). Do this if users ask for their public case studies to be search-discoverable. The asset SEO plumbing (canonical + OG image) already ships in 9c, so this is mostly a robots/sitemap flip later.
+
 ## Verification (per slice, live)
 
 - **9a:** anon `fetch('/a/<slug>')` shows only approved, clean commentary for *that* asset; unapproved / moderation-removed / other-asset feedback never appears; suspended/removed owner still 404s the whole page.
@@ -116,6 +120,10 @@ Drive HTTP checks as Phase 8 did: `PORT=3210 npm run dev`, then a Node harness f
 - **Marketplace transactions / listing bodies to anon** — listings stay member-gated.
 - **Username/slug changes, vanity redirects** — claim-once stands.
 - **Rich link unfurling / oEmbed** for external links — plain anchors only in 9b.
+
+## Follow-up (flagged, not yet scheduled)
+
+- **Member publishing-settings UI.** Phase 8/9 built the public-profile publishing **backend** but no member-facing UI drives it: `claim_public_username`, `update_publishing_settings` (toggles incl. `show_external_links`), `set_asset_visibility`, `approve_public_feedback`, and 9b's `add_/remove_/reorder_external_link` are all reachable only programmatically. `src/app/account/page.jsx` wires none of them. A settings page (start at `/account`) is needed before members can actually publish. Flagged during 9b.
 
 ## Decisions to lock before building (summary)
 
