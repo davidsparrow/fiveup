@@ -77,7 +77,16 @@ function StatTile({ value, label, sub }) {
   );
 }
 
-export default function PublicProfilePage({ profile, feedback = [], assets = [], offers = [] }) {
+function linkText(link) {
+  if (link.label) return link.label;
+  try {
+    return new URL(link.url).hostname.replace(/^www\./, "");
+  } catch {
+    return link.url;
+  }
+}
+
+export default function PublicProfilePage({ profile, feedback = [], assets = [], offers = [], links = [] }) {
   const isMobile = useIsMobile();
 
   const excerpts = feedback.filter((f) => f.kind === "excerpt");
@@ -161,6 +170,38 @@ export default function PublicProfilePage({ profile, feedback = [], assets = [],
       </section>
 
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
+        {/* ── External links ── */}
+        {links.length > 0 ? (
+          <section style={{ padding: isMobile ? "28px 16px 8px" : "36px 32px 8px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {links.map((link, i) => (
+                <a
+                  key={`link-${i}`}
+                  href={link.url}
+                  target="_blank"
+                  rel="nofollow noopener noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 16px",
+                    borderRadius: 20,
+                    border: "1.5px solid #F0E8E0",
+                    background: "#fff",
+                    color: T.brown,
+                    fontFamily: FONT_SANS,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  🔗 {linkText(link)}
+                </a>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {/* ── About ── */}
         {profile.bio ? (
           <section style={{ padding: sectionPad }}>

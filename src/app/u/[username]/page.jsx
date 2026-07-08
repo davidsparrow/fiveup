@@ -55,10 +55,11 @@ export default async function PublicProfileRoute({ params }) {
 
   // The profile exists and is public — fetch the rest of the approved
   // projection in parallel. Each RPC re-applies the same publishability gate.
-  const [feedbackRes, assetsRes, offersRes] = await Promise.all([
+  const [feedbackRes, assetsRes, offersRes, linksRes] = await Promise.all([
     supabase.rpc("get_public_feedback", { p_username: username }),
     supabase.rpc("get_public_assets", { p_username: username }),
     supabase.rpc("get_public_offers", { p_username: username }),
+    supabase.rpc("get_public_links", { p_username: username }),
   ]);
 
   return (
@@ -68,6 +69,7 @@ export default async function PublicProfileRoute({ params }) {
         feedback={feedbackRes.data ?? []}
         assets={assetsRes.data ?? []}
         offers={offersRes.data ?? []}
+        links={linksRes.data ?? []}
       />
     </PageShell>
   );
