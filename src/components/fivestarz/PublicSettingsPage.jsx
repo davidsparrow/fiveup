@@ -67,11 +67,17 @@ const VISIBILITY_OPTIONS = [
   { value: "public", label: "Public" },
 ];
 
-export default function PublicSettingsPage({ initialProfile = {}, features = {}, initialAssets = [], initialFeedback = [] }) {
+const MAX_LINKS = 5;
+
+export default function PublicSettingsPage({ initialProfile = {}, features = {}, initialAssets = [], initialFeedback = [], initialLinks = [] }) {
   const isMobile = useIsMobile();
   const [profile, setProfile] = useState(initialProfile);
   const [assets, setAssets] = useState(initialAssets);
   const [feedback, setFeedback] = useState(initialFeedback);
+  const [links, setLinks] = useState(initialLinks);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
+  const [addingLink, setAddingLink] = useState(false);
   const [handle, setHandle] = useState("");
   const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState("");
@@ -136,6 +142,64 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
     } catch (e) {
       setFeedback((list) => list.map((f) => (match(f) ? { ...f, approved: !value } : f)));
       setError(e.message || "Couldn't update that feedback — please try again.");
+    }
+  }
+
+  async function addLink() {
+    const url = linkUrl.trim();
+    const label = linkLabel.trim();
+    if (!url || links.length >= MAX_LINKS) return;
+    setAddingLink(true);
+    setError("");
+    setNotice("");
+    try {
+      const supabase = createClient();
+      const { data: id, error: rpcErr } = await supabase.rpc("add_external_link", { p_url: url, p_label: label || null });
+      if (rpcErr) throw rpcErr;
+      const nextOrder = links.reduce((m, l) => Math.max(m, l.sort_order ?? 0), -1) + 1;
+      setLinks((list) => [...list, { id, url, label: label || null, sort_order: nextOrder, moderation_status: "ok" }]);
+      setLinkUrl("");
+      setLinkLabel("");
+      setNotice("Link added.");
+    } catch (e) {
+      setError(e.message || "Couldn't add that link — please try again.");
+    } finally {
+      setAddingLink(false);
+    }
+  }
+
+  async function removeLink(id) {
+    setError("");
+    setNotice("");
+    const prev = links;
+    setLinks((list) => list.filter((l) => l.id !== id));
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("remove_external_link", { p_id: id });
+      if (rpcErr) throw rpcErr;
+      setNotice("Link removed.");
+    } catch (e) {
+      setLinks(prev); // revert
+      setError(e.message || "Couldn't remove that link — please try again.");
+    }
+  }
+
+  async function moveLink(index, dir) {
+    const target = index + dir;
+    if (target < 0 || target >= links.length) return;
+    const prev = links;
+    const reordered = [...links];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setLinks(reordered);
+    setError("");
+    setNotice("");
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("reorder_external_links", { p_ids: reordered.map((l) => l.id) });
+      if (rpcErr) throw rpcErr;
+    } catch (e) {
+      setLinks(prev); // revert
+      setError(e.message || "Couldn't reorder — please try again.");
     }
   }
 
@@ -354,6 +418,79 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
                 </div>
               </div>
             ))
+          )}
+        </Card>
+
+        {/* ── External links ── */}
+        <Card sx={{ padding: isMobile ? 20 : 28, marginTop: 18 }} hover={false}>
+          <h2 style={{ fontFamily: FONT_SERIF, fontSize: 20, fontWeight: 800, color: T.brown, margin: "0 0 4px" }}>External links</h2>
+          <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate, margin: "0 0 16px" }}>
+            Add up to {MAX_LINKS} links (your site, socials). They appear on your public profile when the toggle below is on.
+          </p>
+
+          {/* master show toggle */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "12px 0", borderBottom: "1px solid #F0E8E0" }}>
+            <div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 700, color: T.brown }}>Show links on my public profile</div>
+              <div style={{ fontFamily: FONT_SANS, fontSize: 12, color: T.slate }}>Links open in a new tab with no-follow.</div>
+            </div>
+            <Toggle
+              checked={Boolean(profile.show_external_links)}
+              disabled={!hasHandle}
+              onChange={(v) => saveField("p_show_external_links", v, "show_external_links")}
+            />
+          </div>
+
+          {/* existing links */}
+          {links.map((l, i) => {
+            const removed = l.moderation_status !== "ok";
+            return (
+              <div key={l.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid #F0E8E0", flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0, flex: "1 1 200px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontFamily: FONT_SANS, fontSize: 14, fontWeight: 700, color: T.brown, wordBreak: "break-all" }}>{l.label || l.url}</span>
+                    {removed ? <Pill color={T.red} bg={`${T.red}18`}>Removed</Pill> : null}
+                  </div>
+                  {l.label ? <div style={{ fontFamily: FONT_SANS, fontSize: 12, color: T.slate, wordBreak: "break-all" }}>{l.url}</div> : null}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <button type="button" aria-label="Move up" onClick={() => moveLink(i, -1)} disabled={i === 0}
+                    style={{ border: "1.5px solid #E8DDD5", background: "#fff", borderRadius: 8, width: 30, height: 30, cursor: i === 0 ? "not-allowed" : "pointer", color: T.brownM, opacity: i === 0 ? 0.4 : 1 }}>↑</button>
+                  <button type="button" aria-label="Move down" onClick={() => moveLink(i, 1)} disabled={i === links.length - 1}
+                    style={{ border: "1.5px solid #E8DDD5", background: "#fff", borderRadius: 8, width: 30, height: 30, cursor: i === links.length - 1 ? "not-allowed" : "pointer", color: T.brownM, opacity: i === links.length - 1 ? 0.4 : 1 }}>↓</button>
+                  <button type="button" onClick={() => removeLink(l.id)}
+                    style={{ border: "none", background: `${T.red}14`, color: T.red, borderRadius: 8, padding: "0 12px", height: 30, fontFamily: FONT_SANS, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Remove</button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* add form */}
+          {links.length < MAX_LINKS ? (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
+              <input
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://your-site.com"
+                style={{ flex: "1 1 220px", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: FONT_SANS, color: T.brown, background: T.cream }}
+              />
+              <input
+                value={linkLabel}
+                onChange={(e) => setLinkLabel(e.target.value)}
+                placeholder="Label (optional)"
+                style={{ flex: "1 1 140px", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: FONT_SANS, color: T.brown, background: T.cream }}
+              />
+              <button
+                type="button"
+                onClick={addLink}
+                disabled={addingLink || !linkUrl.trim()}
+                style={{ padding: "10px 22px", borderRadius: 10, border: "none", background: T.orange, color: "#fff", fontFamily: FONT_SANS, fontWeight: 700, fontSize: 14, cursor: addingLink || !linkUrl.trim() ? "not-allowed" : "pointer", opacity: addingLink || !linkUrl.trim() ? 0.5 : 1 }}
+              >
+                {addingLink ? "Adding…" : "Add link"}
+              </button>
+            </div>
+          ) : (
+            <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate, marginTop: 16 }}>You’ve reached the {MAX_LINKS}-link limit. Remove one to add another.</p>
           )}
         </Card>
       </div>

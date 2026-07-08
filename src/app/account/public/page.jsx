@@ -53,6 +53,12 @@ export default async function PublicSettingsRoute() {
     .eq("owner_user_id", user.id)
     .order("created_at", { ascending: false });
 
+  const { data: links } = await supabase
+    .from("profile_external_links")
+    .select("id, url, label, sort_order, moderation_status")
+    .eq("user_id", user.id)
+    .order("sort_order", { ascending: true });
+
   // Received feedback the member can approve for public display, plus current
   // approval state from public_feedback_permissions.
   const [matchRes, engagedRes, permsRes] = await Promise.all([
@@ -107,6 +113,7 @@ export default async function PublicSettingsRoute() {
         features={features}
         initialAssets={assets ?? []}
         initialFeedback={feedback}
+        initialLinks={links ?? []}
       />
     </PageShell>
   );
