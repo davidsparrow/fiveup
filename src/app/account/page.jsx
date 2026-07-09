@@ -44,6 +44,10 @@ export default async function AccountPage() {
           <p style={styles.infoMono}>{user.id}</p>
         </div>
 
+        <Link href="/account/public" style={styles.settingsLink}>
+          Manage public profile & publishing →
+        </Link>
+
         <form action={signOut}>
           <button type="submit" style={styles.primaryButton}>
             Sign out
@@ -81,4 +85,5 @@ const styles = {
   infoValue: { margin: "8px 0 0", color: "#3d2b1f", fontSize: 18, fontWeight: 700 },
   infoMono: { margin: "8px 0 0", color: "#4a5568", fontSize: 14, fontFamily: "monospace", wordBreak: "break-all" },
   primaryButton: { marginTop: 10, border: "none", borderRadius: 12, padding: "14px 18px", background: "#ff6b35", color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 10px 24px rgba(255,107,53,0.25)" },
+  settingsLink: { display: "block", textAlign: "center", margin: "4px 0 18px", padding: "13px 18px", borderRadius: 12, background: "#1a9e8f", color: "#fff", fontSize: 15, fontWeight: 700, textDecoration: "none" },
 };
