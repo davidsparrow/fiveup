@@ -35,16 +35,17 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  // Asset pages stay noindex for now (see phase 9 doc: indexing them is a
-  // future enhancement). Canonical + OG still ship so shared links unfurl well.
+  // Indexable only when the owner opted this asset in AND has the paid indexing
+  // feature (get_public_asset computes `indexable`). Canonical + OG always ship.
   const canonical = `/a/${asset.public_slug}`;
   const title = `${asset.name} | ${SITE_NAME}`;
   const description = asset.description ? asset.description.slice(0, 160) : `${asset.name} on ${SITE_NAME}.`;
+  const indexable = Boolean(asset.indexable);
   return {
     title,
     description,
     alternates: { canonical },
-    robots: { index: false, follow: false },
+    robots: { index: indexable, follow: indexable },
     // og:image / twitter:image come from opengraph-image.jsx.
     openGraph: { type: "article", title, description, url: canonical, siteName: SITE_NAME },
     twitter: { card: "summary_large_image", title, description },

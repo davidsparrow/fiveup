@@ -16,18 +16,29 @@ export default async function sitemap() {
   }));
 
   let profiles = [];
+  let assets = [];
   try {
     const supabase = await createClient();
-    const { data } = await supabase.rpc("list_searchable_profiles");
-    profiles = (data ?? []).map((p) => ({
+    const [profRes, assetRes] = await Promise.all([
+      supabase.rpc("list_searchable_profiles"),
+      supabase.rpc("list_searchable_assets"),
+    ]);
+    profiles = (profRes.data ?? []).map((p) => ({
       url: `${base}/u/${p.public_username}`,
       lastModified: p.updated_at ? new Date(p.updated_at) : undefined,
       changeFrequency: "weekly",
       priority: 0.8,
     }));
+    assets = (assetRes.data ?? []).map((a) => ({
+      url: `${base}/a/${a.public_slug}`,
+      lastModified: a.updated_at ? new Date(a.updated_at) : undefined,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    }));
   } catch {
     profiles = [];
+    assets = [];
   }
 
-  return [...staticRoutes, ...profiles];
+  return [...staticRoutes, ...profiles, ...assets];
 }
