@@ -49,7 +49,7 @@ export default async function PublicSettingsRoute() {
 
   const { data: assets } = await supabase
     .from("assets")
-    .select("id, name, visibility, moderation_status, public_slug, brand_visibility")
+    .select("id, name, visibility, moderation_status, public_slug, brand_visibility, searchable_public")
     .eq("owner_user_id", user.id)
     .order("created_at", { ascending: false });
 

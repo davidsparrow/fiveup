@@ -220,6 +220,22 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
     }
   }
 
+  async function setAssetSearchable(assetId, value) {
+    setError("");
+    setNotice("");
+    const prev = assets.find((a) => a.id === assetId)?.searchable_public;
+    setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, searchable_public: value } : a)));
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("set_asset_searchable", { p_asset_id: assetId, p_value: value });
+      if (rpcErr) throw rpcErr;
+      setNotice("Saved.");
+    } catch (e) {
+      setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, searchable_public: prev } : a)));
+      setError(e.message || "Couldn't update that asset — please try again.");
+    }
+  }
+
   async function claim() {
     const clean = handle.trim();
     if (!clean) return;
@@ -375,6 +391,7 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
               const removed = a.moderation_status !== "ok";
               const isPublic = a.visibility === "public";
               const brandGated = !features.brand_visibility_enabled;
+              const indexGated = !features.public_profile_indexing_enabled;
               return (
                 <div key={a.id} style={{ padding: "12px 0", borderBottom: "1px solid #F0E8E0" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -405,16 +422,29 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
 
                   {/* Public-only controls */}
                   {isPublic ? (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 10, paddingLeft: 2 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate }}>Hide my identity until I reveal it</span>
-                        {brandGated ? <Pill color={T.gold} bg={`${T.gold}22`}>Paid</Pill> : null}
+                    <div style={{ marginTop: 10, paddingLeft: 2 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate }}>Hide my identity until I reveal it</span>
+                          {brandGated ? <Pill color={T.gold} bg={`${T.gold}22`}>Paid</Pill> : null}
+                        </div>
+                        <Toggle
+                          checked={a.brand_visibility === "hidden_until_feedback_complete"}
+                          disabled={brandGated}
+                          onChange={(v) => setAssetBrandHidden(a.id, v)}
+                        />
                       </div>
-                      <Toggle
-                        checked={a.brand_visibility === "hidden_until_feedback_complete"}
-                        disabled={brandGated}
-                        onChange={(v) => setAssetBrandHidden(a.id, v)}
-                      />
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate }}>Allow search-engine indexing</span>
+                          {indexGated ? <Pill color={T.gold} bg={`${T.gold}22`}>Paid</Pill> : null}
+                        </div>
+                        <Toggle
+                          checked={Boolean(a.searchable_public)}
+                          disabled={indexGated}
+                          onChange={(v) => setAssetSearchable(a.id, v)}
+                        />
+                      </div>
                     </div>
                   ) : null}
                 </div>
