@@ -64,10 +64,11 @@ export default function PublicAssetPage({ asset, commentary = [] }) {
           >
             {asset.name}
           </h1>
-          {(owner || published) && (
+          {(owner || published || asset.owner_hidden) && (
             <div style={{ fontFamily: FONT_SANS, fontSize: 15, color: "#C4A68A", marginTop: 14 }}>
               {owner ? <>by {owner}</> : null}
-              {owner && published ? <span style={{ margin: "0 8px" }}>·</span> : null}
+              {asset.owner_hidden ? <span style={{ fontStyle: "italic" }}>Shared anonymously</span> : null}
+              {(owner || asset.owner_hidden) && published ? <span style={{ margin: "0 8px" }}>·</span> : null}
               {published ? <>Published {published}</> : null}
             </div>
           )}
