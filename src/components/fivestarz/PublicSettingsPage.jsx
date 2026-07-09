@@ -203,6 +203,23 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
     }
   }
 
+  async function setAssetBrandHidden(assetId, hidden) {
+    setError("");
+    setNotice("");
+    const value = hidden ? "hidden_until_feedback_complete" : "visible";
+    const prev = assets.find((a) => a.id === assetId)?.brand_visibility;
+    setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, brand_visibility: value } : a)));
+    try {
+      const supabase = createClient();
+      const { error: rpcErr } = await supabase.rpc("set_asset_brand_visibility", { p_asset_id: assetId, p_value: value });
+      if (rpcErr) throw rpcErr;
+      setNotice("Saved.");
+    } catch (e) {
+      setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, brand_visibility: prev } : a)));
+      setError(e.message || "Couldn't update that asset — please try again.");
+    }
+  }
+
   async function claim() {
     const clean = handle.trim();
     if (!clean) return;
@@ -356,31 +373,50 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
           ) : (
             assets.map((a) => {
               const removed = a.moderation_status !== "ok";
+              const isPublic = a.visibility === "public";
+              const brandGated = !features.brand_visibility_enabled;
               return (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: "1px solid #F0E8E0", flexWrap: "wrap" }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 700, color: T.brown }}>{a.name}</span>
-                      {removed ? <Pill color={T.red} bg={`${T.red}18`}>Removed</Pill> : null}
+                <div key={a.id} style={{ padding: "12px 0", borderBottom: "1px solid #F0E8E0" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontFamily: FONT_SANS, fontSize: 15, fontWeight: 700, color: T.brown }}>{a.name}</span>
+                        {removed ? <Pill color={T.red} bg={`${T.red}18`}>Removed</Pill> : null}
+                      </div>
+                      {isPublic && a.public_slug ? (
+                        <Link href={`/a/${a.public_slug}`} style={{ fontFamily: FONT_SANS, fontSize: 12, color: T.orange, fontWeight: 700 }}>
+                          /a/{a.public_slug} →
+                        </Link>
+                      ) : null}
                     </div>
-                    {a.visibility === "public" && a.public_slug ? (
-                      <Link href={`/a/${a.public_slug}`} style={{ fontFamily: FONT_SANS, fontSize: 12, color: T.orange, fontWeight: 700 }}>
-                        /a/{a.public_slug} →
-                      </Link>
-                    ) : null}
+                    <select
+                      value={a.visibility}
+                      onChange={(e) => setAssetVisibility(a.id, e.target.value)}
+                      style={{ padding: "8px 12px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: FONT_SANS, color: T.brown, background: "#fff", cursor: "pointer" }}
+                    >
+                      {VISIBILITY_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value} disabled={o.value === "public" && removed}>
+                          {o.label}
+                          {o.value === "public" && removed ? " (unavailable — removed)" : ""}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    value={a.visibility}
-                    onChange={(e) => setAssetVisibility(a.id, e.target.value)}
-                    style={{ padding: "8px 12px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: FONT_SANS, color: T.brown, background: "#fff", cursor: "pointer" }}
-                  >
-                    {VISIBILITY_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value} disabled={o.value === "public" && removed}>
-                        {o.label}
-                        {o.value === "public" && removed ? " (unavailable — removed)" : ""}
-                      </option>
-                    ))}
-                  </select>
+
+                  {/* Public-only controls */}
+                  {isPublic ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 10, paddingLeft: 2 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate }}>Hide my identity until I reveal it</span>
+                        {brandGated ? <Pill color={T.gold} bg={`${T.gold}22`}>Paid</Pill> : null}
+                      </div>
+                      <Toggle
+                        checked={a.brand_visibility === "hidden_until_feedback_complete"}
+                        disabled={brandGated}
+                        onChange={(v) => setAssetBrandHidden(a.id, v)}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               );
             })
