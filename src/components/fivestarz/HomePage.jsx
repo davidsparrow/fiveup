@@ -36,38 +36,52 @@ export default function HomePageContent() {
                 </div>
               ))}
             </div>
+            {/* Hero CTAs */}
+            <div style={{ marginTop: 30, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Btn onClick={openBeta}>✦ Request Beta Access</Btn>
+              <Btn v="ghost" onClick={() => router.push("/demo")}>See it in action →</Btn>
+            </div>
           </div>
           {/* Right: mock match card */}
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", top: -12, left: isMobile ? 8 : -16, right: isMobile ? -8 : 16, bottom: 12, background: T.gold + "30", borderRadius: 28, transform: "rotate(-2deg)" }} />
+            <div
+              onClick={() => router.push("/demo")}
+              role="link"
+              tabIndex={0}
+              aria-label="See a real match like this in the live demo"
+              onKeyDown={(e) => { if (e.key === "Enter") router.push("/demo"); }}
+              style={{ cursor: "pointer" }}
+            >
             <Card sx={{ padding: isMobile ? 20 : 28, position: "relative" }} hover={false}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 14 : 20 }}>
                 <div>
                   <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 16 : 18, fontWeight: 700, color: T.brown }}>New Match!</div>
-                  <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Jordan, meet Alex →</div>
+                  <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Maya, meet Diego →</div>
                 </div>
                 <Pill color={T.orange}>Auto-matched</Pill>
               </div>
               {/* Exchange cards — stack vertically on mobile */}
               <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? 8 : 16, padding: "14px 0", borderTop: `1.5px dashed ${T.orangeP}`, borderBottom: `1.5px dashed ${T.orangeP}`, marginBottom: isMobile ? 14 : 20 }}>
                 <div style={{ flex: 1, background: T.cream, borderRadius: 14, padding: isMobile ? 12 : 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: T.brownL, marginBottom: 5, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>You&rsquo;re reviewing</div>
-                  <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Alex&rsquo;s UX Studio</div>
-                  <div style={{ fontSize: 11, color: T.slate, marginTop: 3 }}>alexdesign.co</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: T.brownL, marginBottom: 5, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>Maya reviews</div>
+                  <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Diego&rsquo;s Landing Page</div>
+                  <div style={{ fontSize: 11, color: T.slate, marginTop: 3 }}>launchboard.example</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{isMobile ? "↕" : "⇄"}</div>
                 <div style={{ flex: 1, background: T.tealP, borderRadius: 14, padding: isMobile ? 12 : 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: T.teal, marginBottom: 5, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>Alex reviews</div>
-                  <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Your Consulting</div>
-                  <div style={{ fontSize: 11, color: T.slate, marginTop: 3 }}>revflow.co</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: T.teal, marginBottom: 5, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>Diego reviews</div>
+                  <div style={{ fontSize: isMobile ? 14 : 15, fontWeight: 700, color: T.brown, fontFamily: "'DM Sans',sans-serif" }}>Maya&rsquo;s Email Course</div>
+                  <div style={{ fontSize: 11, color: T.slate, marginTop: 3 }}>inbox-engine.example</div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <Btn sz="sm" sx={{ flex: 1, justifyContent: "center" }}>Accept</Btn>
-                <Btn sz="sm" v="ghost" sx={{ flex: 1, justifyContent: "center" }}>Profile</Btn>
+                <Btn sz="sm" sx={{ flex: 1, justifyContent: "center" }} onClick={(e) => { e.stopPropagation(); router.push("/demo"); }}>Take the tour →</Btn>
+                <Btn sz="sm" v="ghost" sx={{ flex: 1, justifyContent: "center" }} onClick={(e) => { e.stopPropagation(); router.push("/u/demo-maya"); }}>View a profile</Btn>
               </div>
               <div style={{ marginTop: 12, padding: "8px 12px", background: T.greenP, borderRadius: 10, fontSize: 11, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>✓ No prior connection · Separation: 2°</div>
             </Card>
+            </div>
           </div>
         </div>
       </section>
@@ -222,6 +236,9 @@ export default function HomePageContent() {
           <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 42, fontWeight: 800, color: "#fff", margin: "0 0 14px", letterSpacing: "-0.02em" }}>Join the beta. Earn trust<br /><span style={{ color: T.gold }}>the honest way.</span></h2>
           <p style={{ color: "#C4A68A", fontSize: isMobile ? 15 : 17, lineHeight: 1.6, fontFamily: "'DM Sans',sans-serif", marginBottom: isMobile ? 24 : 32 }}>First 500 members get free access to Bloom plan for 90 days. Human feedback only — no fake reviews, no engagement swaps.</p>
           <Btn sz="lg" v="gold" onClick={openBeta}>✦ Request Beta Access →</Btn>
+          <div style={{ marginTop: 16 }}>
+            <Link href="/demo" style={{ color: T.goldL, fontSize: 14, fontFamily: "'DM Sans',sans-serif", fontWeight: 600, textDecoration: "underline" }}>or take the 3-minute tour →</Link>
+          </div>
         </div>
       </section>
     </div>

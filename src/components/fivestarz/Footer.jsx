@@ -11,6 +11,7 @@ const FOOTER_LINKS = [
   { label: "Browse Members", href: "/browse" },
   { label: "Proof Lab", href: "/proof-lab" },
   { label: "How It Works", href: "/how-it-works" },
+  { label: "Live Demo", href: "/demo" },
   { label: "Pricing", href: "/pricing" },
   { label: "Community Rules", href: "/community" },
   { label: "Trust & Safety", href: "/safety" },
