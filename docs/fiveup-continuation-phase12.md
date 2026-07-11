@@ -97,7 +97,7 @@ container, so `window.scrollTo` is a no-op — reset `document.body.scrollTop`.
 - `sitemap.js`: `/demo` added to static routes (robots.js needed no change).
 - **Verify (`verify-phase12c.mjs`, 9 checks):** all of the above over HTTP.
 
-## Bugs found while seeding (pre-existing, NOT fixed in this phase)
+## Bugs found while seeding (pre-existing — all three FIXED in Phase 13)
 
 1. **`create_match` 4°-separation crash:** the RPC stores the actual shortest
    path degree, but `matches.separation_degree_used` has `check (between 1 and

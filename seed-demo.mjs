@@ -275,7 +275,7 @@ async function seed() {
     const id = created.user.id;
 
     const { error: planErr } = await admin.from('user_profiles')
-      .update({ plan_code: p.plan, created_at: daysAgo(p.memberDays) }).eq('user_id', id);
+      .update({ plan_code: p.plan, is_demo: true, created_at: daysAgo(p.memberDays) }).eq('user_id', id);
     if (planErr) die(`plan(${p.handle}): ${planErr.message}`);
 
     const client = createClient(URL_, ANON, { auth: { persistSession: false } });
@@ -316,31 +316,14 @@ async function seed() {
   log('\n[2/5] matches + feedback');
   for (const m of MATCHES) {
     const me = world[m.by], them = world[m.other];
-    let matchId;
-    const { data: rpcMatchId, error: matchErr } = await me.client.rpc('create_match', {
+    // The demo web is a 5-cycle whose final pair sits at exactly 4° — the
+    // Phase 13 create_match fix (degree capped at 3 on insert) makes this
+    // work through the real RPC.
+    const matchId = await rpc(me.client, 'create_match', {
       p_other_user_id: them.id,
       p_my_asset_id: me.assets[m.myAsset],
       p_their_asset_id: them.assets[m.theirAsset],
-    });
-    if (matchErr) {
-      // The demo web is a 5-cycle, so the final pair sits at exactly 4° —
-      // which create_match computes but the separation_degree_used check
-      // constraint (1–3) rejects. Known app bug (flagged in the phase doc);
-      // fall back to a service-role insert the way the auto-matcher would.
-      if (!/separation_degree_used/.test(matchErr.message)) {
-        die(`${m.by}: create_match → ${matchErr.message}`);
-      }
-      const { data: row, error: insErr } = await admin.from('matches').insert({
-        member_a_user_id: me.id, member_b_user_id: them.id,
-        member_a_asset_id: me.assets[m.myAsset], member_b_asset_id: them.assets[m.theirAsset],
-        source: 'auto', status: 'matched', separation_degree_used: 3,
-      }).select('id').single();
-      if (insErr) die(`${m.by}: fallback match insert → ${insErr.message}`);
-      matchId = row.id;
-      log(`  ⚠ ${m.by} ⇄ ${m.other}: create_match hit the 4° check-constraint bug; seeded via service role`);
-    } else {
-      matchId = rpcMatchId;
-    }
+    }, m.by);
     await admin.from('matches').update({ created_at: daysAgo(m.matchDays) }).eq('id', matchId);
 
     for (const f of m.feedback) {

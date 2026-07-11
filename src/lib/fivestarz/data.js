@@ -335,15 +335,29 @@ export async function getCharities(supabase) {
 }
 
 // Active listings visible to all members (RLS enforces active-or-owner).
+// Demo members' listings are shown only to demo viewers — real members never
+// transact with the seeded demo cast (the anonymous teaser still counts them).
 export async function listProofLabListings(supabase, { categorySlug } = {}) {
+  let viewerIsDemo = false;
+  const { data: { user } = {} } = await supabase.auth.getUser();
+  if (user) {
+    const { data: me } = await supabase
+      .from("user_profiles")
+      .select("is_demo")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    viewerIsDemo = !!me?.is_demo;
+  }
+
   let query = supabase
     .from("proof_lab_listings")
     .select(
-      "*, seller:user_profiles!seller_user_id(display_name, proof_lab_rating_avg, proof_lab_rating_count), category:proof_lab_categories!category_slug(label), asset:assets!asset_id(name), charity:charities!charity_id(name, logo_emoji)",
+      "*, seller:user_profiles!seller_user_id!inner(display_name, proof_lab_rating_avg, proof_lab_rating_count, is_demo), category:proof_lab_categories!category_slug(label), asset:assets!asset_id(name), charity:charities!charity_id(name, logo_emoji)",
     )
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
+  if (!viewerIsDemo) query = query.eq("seller.is_demo", false);
   if (categorySlug) query = query.eq("category_slug", categorySlug);
 
   const { data, error } = await query;
