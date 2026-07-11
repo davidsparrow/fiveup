@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function sitemap() {
   const base = getSiteUrl();
 
-  const staticRoutes = ["", "/how-it-works", "/pricing", "/community", "/safety", "/proof-lab"].map((route) => ({
+  const staticRoutes = ["", "/how-it-works", "/pricing", "/community", "/safety", "/proof-lab", "/demo"].map((route) => ({
     url: `${base}${route}`,
     changeFrequency: "weekly",
     priority: route === "" ? 1 : 0.6,
