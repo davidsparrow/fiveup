@@ -77,12 +77,13 @@ const { error: fbErr } = await sam.rpc('submit_feedback', {
 if (fbErr) throw new Error(`sam feedback: ${fbErr.message}`);
 
 // Temp visitor: unconnected bloom member with one asset, so the whole demo
-// cast shows up as eligible browse candidates.
+// cast shows up as eligible browse candidates. Must be is_demo — since Phase
+// 13, demo members are only visible to demo callers.
 const { data: visitor, error: vErr } = await admin.auth.admin.createUser({
   email: 'demo-shot-visitor@proofsignals.net', password: PASSWORD, email_confirm: true,
 });
 if (vErr) throw new Error(`visitor: ${vErr.message}`);
-await admin.from('user_profiles').update({ plan_code: 'bloom', display_name: 'Jordan Rivera' }).eq('user_id', visitor.user.id);
+await admin.from('user_profiles').update({ plan_code: 'bloom', display_name: 'Jordan Rivera', is_demo: true }).eq('user_id', visitor.user.id);
 const vc = await memberClient('demo-shot-visitor@proofsignals.net');
 await vc.rpc('create_asset', {
   p_name: 'RevFlow — Consulting Site', p_public_url: 'https://example.com/revflow',
