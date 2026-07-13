@@ -248,11 +248,33 @@ export default function PublicProfilePage({ profile, feedback = [], assets = [],
             <div style={{ display: "grid", gap: 14 }}>
               {excerpts.map((f, i) => (
                 <Card key={`ex-${i}`} sx={{ padding: isMobile ? 20 : 26 }}>
-                  {f.stars ? (
-                    <div style={{ marginBottom: 12 }}>
-                      <Stars n={f.stars} size={16} />
-                    </div>
-                  ) : null}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      marginBottom: 14,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: FONT_SANS,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: T.brown,
+                        lineHeight: 1.35,
+                        minWidth: 0,
+                      }}
+                    >
+                      {f.product_name || "Reviewed product"}
+                    </span>
+                    {f.stars ? (
+                      <span style={{ flexShrink: 0, marginTop: 1 }}>
+                        <Stars n={f.stars} size={16} />
+                      </span>
+                    ) : null}
+                  </div>
                   <p
                     style={{
                       fontFamily: FONT_SERIF,
