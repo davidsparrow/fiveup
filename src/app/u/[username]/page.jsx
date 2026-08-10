@@ -4,7 +4,6 @@ import DemoBanner from "@/components/fivestarz/DemoBanner";
 import PageShell from "@/components/fivestarz/PageShell";
 import PublicProfilePage from "@/components/fivestarz/PublicProfilePage";
 import { createClient } from "@/lib/supabase/server";
-import { isDemoHandle } from "@/lib/fivestarz/demo";
 import { getSiteUrl, SITE_NAME } from "@/lib/fivestarz/site";
 
 /**
@@ -83,7 +82,7 @@ export default async function PublicProfileRoute({ params }) {
 
   return (
     <PageShell>
-      {isDemoHandle(profile.public_username) && <DemoBanner />}
+      {profile.is_demo && <DemoBanner />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

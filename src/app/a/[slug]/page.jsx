@@ -4,7 +4,6 @@ import DemoBanner from "@/components/fivestarz/DemoBanner";
 import PageShell from "@/components/fivestarz/PageShell";
 import PublicAssetPage from "@/components/fivestarz/PublicAssetPage";
 import { createClient } from "@/lib/supabase/server";
-import { isDemoHandle } from "@/lib/fivestarz/demo";
 import { SITE_NAME } from "@/lib/fivestarz/site";
 
 /**
@@ -69,7 +68,7 @@ export default async function PublicAssetRoute({ params }) {
 
   return (
     <PageShell>
-      {isDemoHandle(asset.owner_username) && <DemoBanner />}
+      {asset.owner_is_demo && <DemoBanner />}
       <PublicAssetPage asset={asset} commentary={commentaryRes.data ?? []} />
     </PageShell>
   );

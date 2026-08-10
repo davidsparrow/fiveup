@@ -37,11 +37,14 @@ const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 const args = process.argv.slice(2);
 const TEARDOWN_ONLY = args.includes('--teardown');
 const pwFlag = args.indexOf('--password');
-const PASSWORD = pwFlag >= 0 ? args[pwFlag + 1] : (process.env.DEMO_SEED_PASSWORD || `Demo!${randomUUID()}`);
-
 const daysAgo = (n) => new Date(Date.now() - n * 86400e3).toISOString();
 const log = (m) => console.log(m);
 const die = (m) => { console.error(`✗ ${m}`); process.exit(1); };
+
+if (pwFlag >= 0 && (!args[pwFlag + 1] || args[pwFlag + 1].startsWith('--'))) {
+  die('--password requires a value (e.g. --password \'Pw123!\')');
+}
+const PASSWORD = pwFlag >= 0 ? args[pwFlag + 1] : (process.env.DEMO_SEED_PASSWORD || `Demo!${randomUUID()}`);
 
 // Every RPC call in the seed must succeed — fail loudly, never seed half a world.
 async function rpc(client, fn, params, who) {
@@ -244,8 +247,13 @@ async function teardown() {
   if (error) die(`teardown lookup: ${error.message}`);
   for (const r of byHandle ?? []) ids.add(r.user_id);
 
-  // Also catch half-seeded users that never claimed a handle (fixed emails).
-  const emails = new Set(DEMO_HANDLES.map((h) => `${h}@proofsignals.net`));
+  // Also catch half-seeded users that never claimed a handle (fixed emails),
+  // plus capture-demo-shots.mjs's temp browse visitor in case a crashed
+  // capture run orphaned it (it would otherwise block the next capture).
+  const emails = new Set([
+    ...DEMO_HANDLES.map((h) => `${h}@proofsignals.net`),
+    'demo-shot-visitor@proofsignals.net',
+  ]);
   for (let page = 1; page <= 20; page++) {
     const { data, error: lErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     if (lErr) die(`teardown listUsers: ${lErr.message}`);

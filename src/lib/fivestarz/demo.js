@@ -1,11 +1,14 @@
-// Demo-world constants shared by the seed script (seed-demo.mjs), the /demo
-// tour page, and the demo banner on public pages. Pure JS — no Next.js or
-// React imports — so the root .mjs scripts can import it directly.
+// Demo-world constants shared by the seed script (seed-demo.mjs) and the
+// /demo tour page. Pure JS — no Next.js or React imports — so the root .mjs
+// scripts can import it directly.
 //
 // Demo personas are ordinary member accounts (paid plans, publishing toggles
-// on) whose handles all start with "demo-". They are never searchable
+// on) with user_profiles.is_demo = true — the DB column is the single source
+// of truth: the DemoBanner on public pages keys off is_demo/owner_is_demo
+// returned by the public-read RPCs, and claim_public_username reserves the
+// demo- handle prefix for demo accounts. They are never searchable
 // (searchable_public_profile stays false), so their pages stay noindex and
-// out of the sitemap; the on-page DemoBanner discloses the sample data.
+// out of the sitemap.
 
 export const DEMO_HANDLES = [
   "demo-maya",
@@ -14,10 +17,6 @@ export const DEMO_HANDLES = [
   "demo-sam",
   "demo-noor",
 ];
-
-export function isDemoHandle(handle) {
-  return !!handle && DEMO_HANDLES.includes(String(handle).toLowerCase());
-}
 
 // Public slugs are pinned by the seed script (the default slug generator
 // appends a random id fragment; the seeder overwrites it with these stable

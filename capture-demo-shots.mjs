@@ -8,7 +8,10 @@
 //
 // Stages temp state via service role (an in-flight maya↔sam match so the
 // "Leave Feedback" / rate / request-post UI renders, plus a temp browse
-// visitor so the whole demo cast shows as candidates) and cleans it up.
+// visitor so the whole demo cast shows as candidates) and cleans it up —
+// staging runs inside the same try/finally as the shoot, so a failure at any
+// point still removes whatever was created (and seed-demo.mjs's teardown
+// sweeps the temp visitor as a backstop).
 //
 // Gotcha: PageShell makes <body> the scroll container — window.scrollTo is a
 // no-op; reset document.body.scrollTop instead.
@@ -53,64 +56,72 @@ async function memberClient(email) {
   return c;
 }
 
-// ── Stage temp state ────────────────────────────────────────────────────────
 const mayaId = await handleId('demo-maya');
 const samId = await handleId('demo-sam');
 const mayaCourse = await assetOf(mayaId, 'Inbox Engine');
 const samCoaching = await assetOf(samId, 'Founder Clarity Coaching');
 
-// Fresh in-flight match for the story (maya ↔ sam are 2° apart, so insert the
-// way the auto-matcher would rather than via create_match).
-const { data: tempMatch, error: mErr } = await admin.from('matches').insert({
-  member_a_user_id: mayaId, member_b_user_id: samId,
-  member_a_asset_id: mayaCourse, member_b_asset_id: samCoaching,
-  source: 'auto', status: 'matched', separation_degree_used: 2,
-}).select('id').single();
-if (mErr) throw new Error(`temp match: ${mErr.message}`);
-
-// Sam leaves feedback first, so once Maya submits hers the rate/request-post UI shows.
-const sam = await memberClient('demo-sam@proofsignals.net');
-const { error: fbErr } = await sam.rpc('submit_feedback', {
-  p_match_id: tempMatch.id, p_stars: 5,
-  p_written_feedback: 'Took the first module over a weekend. The welcome-sequence teardown is worth the price alone — I rewrote my onboarding email mid-lesson. Module 3 could be tighter, but this is the most actionable course I have reviewed here.',
-});
-if (fbErr) throw new Error(`sam feedback: ${fbErr.message}`);
-
-// Temp visitor: unconnected bloom member with one asset, so the whole demo
-// cast shows up as eligible browse candidates. Must be is_demo — since Phase
-// 13, demo members are only visible to demo callers.
-const { data: visitor, error: vErr } = await admin.auth.admin.createUser({
-  email: 'demo-shot-visitor@proofsignals.net', password: PASSWORD, email_confirm: true,
-});
-if (vErr) throw new Error(`visitor: ${vErr.message}`);
-await admin.from('user_profiles').update({ plan_code: 'bloom', display_name: 'Jordan Rivera', is_demo: true }).eq('user_id', visitor.user.id);
-const vc = await memberClient('demo-shot-visitor@proofsignals.net');
-await vc.rpc('create_asset', {
-  p_name: 'RevFlow — Consulting Site', p_public_url: 'https://example.com/revflow',
-  p_asset_type: 'service_consulting', p_description: 'Marketing consulting for early-stage teams.',
-  p_channels: ['LinkedIn'], p_feedback_formats: ['stars', 'written'],
-});
-
-// ── Shoot (1440×900 logical, 1.25 scale → 1800px-wide jpg) ─────────────────
-const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.25 });
-const page = await ctx.newPage();
-const scrollTop = () => page.evaluate(() => { document.body.scrollTop = 0; window.scrollTo(0, 0); });
-const shot = async (name) => {
-  await page.waitForTimeout(900);
-  await page.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 82 });
-  log(`  📸 ${name}`);
-};
-
-async function login(email) {
-  await ctx.clearCookies();
-  await page.goto(`${BASE}/login`);
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
-  await Promise.all([page.waitForURL('**/account**', { timeout: 30000 }), page.click('button[type="submit"]')]);
-}
+// Cleanup targets — assigned as staging proceeds so the finally block removes
+// whatever actually got created, even when a later staging step throws.
+let tempMatch;
+let visitor;
+let browser;
 
 try {
+  // ── Stage temp state ──────────────────────────────────────────────────────
+  // Fresh in-flight match for the story (maya ↔ sam are 2° apart, so insert
+  // the way the auto-matcher would rather than via create_match).
+  const { data: tm, error: mErr } = await admin.from('matches').insert({
+    member_a_user_id: mayaId, member_b_user_id: samId,
+    member_a_asset_id: mayaCourse, member_b_asset_id: samCoaching,
+    source: 'auto', status: 'matched', separation_degree_used: 2,
+  }).select('id').single();
+  if (mErr) throw new Error(`temp match: ${mErr.message}`);
+  tempMatch = tm;
+
+  // Sam leaves feedback first, so once Maya submits hers the rate/request-post UI shows.
+  const sam = await memberClient('demo-sam@proofsignals.net');
+  const { error: fbErr } = await sam.rpc('submit_feedback', {
+    p_match_id: tempMatch.id, p_stars: 5,
+    p_written_feedback: 'Took the first module over a weekend. The welcome-sequence teardown is worth the price alone — I rewrote my onboarding email mid-lesson. Module 3 could be tighter, but this is the most actionable course I have reviewed here.',
+  });
+  if (fbErr) throw new Error(`sam feedback: ${fbErr.message}`);
+
+  // Temp visitor: unconnected bloom member with one asset, so the whole demo
+  // cast shows up as eligible browse candidates. Must be is_demo — since Phase
+  // 13, demo members are only visible to demo callers.
+  const { data: created, error: vErr } = await admin.auth.admin.createUser({
+    email: 'demo-shot-visitor@proofsignals.net', password: PASSWORD, email_confirm: true,
+  });
+  if (vErr) throw new Error(`visitor: ${vErr.message}`);
+  visitor = created;
+  await admin.from('user_profiles').update({ plan_code: 'bloom', display_name: 'Jordan Rivera', is_demo: true }).eq('user_id', visitor.user.id);
+  const vc = await memberClient('demo-shot-visitor@proofsignals.net');
+  await vc.rpc('create_asset', {
+    p_name: 'RevFlow — Consulting Site', p_public_url: 'https://example.com/revflow',
+    p_asset_type: 'service_consulting', p_description: 'Marketing consulting for early-stage teams.',
+    p_channels: ['LinkedIn'], p_feedback_formats: ['stars', 'written'],
+  });
+
+  // ── Shoot (1440×900 logical, 1.25 scale → 1800px-wide jpg) ───────────────
+  browser = await chromium.launch();
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.25 });
+  const page = await ctx.newPage();
+  const scrollTop = () => page.evaluate(() => { document.body.scrollTop = 0; window.scrollTo(0, 0); });
+  const shot = async (name) => {
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${OUT}/${name}.jpg`, type: 'jpeg', quality: 82 });
+    log(`  📸 ${name}`);
+  };
+
+  const login = async (email) => {
+    await ctx.clearCookies();
+    await page.goto(`${BASE}/login`);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await Promise.all([page.waitForURL('**/account**', { timeout: 30000 }), page.click('button[type="submit"]')]);
+  };
+
   // ── create-asset deck (as maya) ──
   await login('demo-maya@proofsignals.net');
   await page.goto(`${BASE}/assets/new`);
@@ -198,9 +209,16 @@ try {
   if (await plTab.isVisible().catch(() => false)) { await plTab.click(); await page.waitForTimeout(2000); }
   await shot('prooflab-02'); // priya's listings dashboard
 } finally {
-  await browser.close();
-  await admin.auth.admin.deleteUser(visitor.user.id);
-  await admin.from('matches').delete().eq('id', tempMatch.id);
-  log('cleaned up temp visitor + temp match — run seed-demo.mjs to restore the pristine world');
+  // Best-effort cleanup: each step runs even if an earlier one fails.
+  if (browser) await browser.close().catch((e) => log(`  ! browser.close: ${e.message}`));
+  if (visitor) {
+    const { error } = await admin.auth.admin.deleteUser(visitor.user.id);
+    if (error) log(`  ! delete temp visitor: ${error.message}`);
+  }
+  if (tempMatch) {
+    const { error } = await admin.from('matches').delete().eq('id', tempMatch.id);
+    if (error) log(`  ! delete temp match: ${error.message}`);
+  }
+  log('cleaned up temp state — run seed-demo.mjs to restore the pristine world');
 }
 log('done');

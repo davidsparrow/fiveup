@@ -8,6 +8,10 @@
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { DEMO_ASSET_SLUGS } from './src/lib/fivestarz/demo.js';
+import {
+  SLIDES_CREATE_ASSET, SLIDES_MATCHING, SLIDES_FEEDBACK,
+  SLIDES_RATE_AND_REQUEST, SLIDES_PROOF_LAB,
+} from './src/lib/fivestarz/demo-slides.js';
 
 const env = Object.fromEntries(
   readFileSync(new URL('./.env.local', import.meta.url), 'utf8')
@@ -59,9 +63,15 @@ try {
   }
 
   console.log('\n[slideshow screenshots]');
-  for (const deck of ['create-asset-01', 'matching-01', 'feedback-01', 'rate-01', 'prooflab-01']) {
-    const res = await get(`/demo/${deck}.jpg`);
-    expect(`/demo/${deck}.jpg serves 200`, res.status === 200, `status=${res.status}`);
+  // Every slide the manifests reference must serve — a broken capture run
+  // (e.g. the conditional rate-02 shot) would otherwise 404 on the live tour.
+  const allSlides = [
+    ...SLIDES_CREATE_ASSET, ...SLIDES_MATCHING, ...SLIDES_FEEDBACK,
+    ...SLIDES_RATE_AND_REQUEST, ...SLIDES_PROOF_LAB,
+  ];
+  for (const src of [...new Set(allSlides.map((s) => s.src))]) {
+    const res = await get(src);
+    expect(`${src} serves 200`, res.status === 200, `status=${res.status}`);
   }
 
   console.log('\n[demo banner on demo pages]');
