@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { HOW_STEPS, PLANS, PROOF_LISTINGS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Av, Btn, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
+import { Av, Btn, ButtonLink, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
 import { useBetaModal } from "@/components/fivestarz/PageShell";
 
 export default function HomePageContent() {
@@ -39,20 +39,16 @@ export default function HomePageContent() {
             {/* Hero CTAs */}
             <div style={{ marginTop: 30, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Btn onClick={openBeta}>✦ Request Beta Access</Btn>
-              <Btn v="ghost" onClick={() => router.push("/demo")}>See it in action →</Btn>
+              <ButtonLink href="/demo" v="ghost">See it in action →</ButtonLink>
             </div>
           </div>
           {/* Right: mock match card */}
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", top: -12, left: isMobile ? 8 : -16, right: isMobile ? -8 : 16, bottom: 12, background: T.gold + "30", borderRadius: 28, transform: "rotate(-2deg)" }} />
-            <div
-              onClick={() => router.push("/demo")}
-              role="link"
-              tabIndex={0}
-              aria-label="See a real match like this in the live demo"
-              onKeyDown={(e) => { if (e.key === "Enter") router.push("/demo"); }}
-              style={{ cursor: "pointer" }}
-            >
+            {/* Mouse-only convenience click-through; keyboard/AT users get the
+                real links below (nesting buttons in a role="link" wrapper made
+                inner controls unreachable for some assistive tech). */}
+            <div onClick={() => router.push("/demo")} style={{ cursor: "pointer" }}>
             <Card sx={{ padding: isMobile ? 20 : 28, position: "relative" }} hover={false}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 14 : 20 }}>
                 <div>
@@ -76,8 +72,8 @@ export default function HomePageContent() {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <Btn sz="sm" sx={{ flex: 1, justifyContent: "center" }} onClick={(e) => { e.stopPropagation(); router.push("/demo"); }}>Take the tour →</Btn>
-                <Btn sz="sm" v="ghost" sx={{ flex: 1, justifyContent: "center" }} onClick={(e) => { e.stopPropagation(); router.push("/u/demo-maya"); }}>View a profile</Btn>
+                <ButtonLink href="/demo" sz="sm" sx={{ flex: 1, justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>Take the tour →</ButtonLink>
+                <ButtonLink href="/u/demo-maya" v="ghost" sz="sm" sx={{ flex: 1, justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>View a profile</ButtonLink>
               </div>
               <div style={{ marginTop: 12, padding: "8px 12px", background: T.greenP, borderRadius: 10, fontSize: 11, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>✓ No prior connection · Separation: 2°</div>
             </Card>
