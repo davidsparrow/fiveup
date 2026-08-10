@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import { T } from "@/lib/fivestarz/theme";
@@ -23,6 +23,13 @@ export default function AssetPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [uploadWarning, setUploadWarning] = useState("");
+
+  // Each wizard step should open at the top; the body (not the window) is the
+  // scroll container, so reset both.
+  useEffect(() => {
+    document.body.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }, [step]);
 
   const handleCreateAsset = async () => {
     setSaving(true);

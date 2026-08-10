@@ -334,7 +334,10 @@ export async function getCharities(supabase) {
   return data;
 }
 
-// Active listings visible to all members (RLS enforces active-or-owner).
+// Active listings visible to all members. RLS enforces active-or-owner AND
+// the demo/real wall server-side (demo sellers are visible only to demo
+// viewers, and vice versa) — no viewer lookup needed here. The anonymous
+// teaser still counts demo listings via its own SECURITY DEFINER RPCs.
 export async function listProofLabListings(supabase, { categorySlug } = {}) {
   let query = supabase
     .from("proof_lab_listings")

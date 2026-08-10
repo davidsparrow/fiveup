@@ -128,7 +128,11 @@ try {
   console.log('\n[settings page renders the searchable control]');
   {
     const html = await (await get('/account/public', { cookie: cookie(paid.session) })).text();
-    expect('renders the "Allow search-engine indexing" control', html.includes('Allow search-engine indexing'));
+    // The profile-level toggle uses the same label, so require one instance
+    // per public asset ON TOP of it (paid owner has 2 public assets → ≥3).
+    const labelCount = (html.match(/Allow search-engine indexing/g) || []).length;
+    expect('renders the per-asset "Allow search-engine indexing" controls', labelCount >= 3,
+      `found ${labelCount} instance(s) — per-asset toggles missing?`);
   }
 } catch (e) {
   bad('harness', e.stack || e.message);

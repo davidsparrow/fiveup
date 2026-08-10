@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import DemoBanner from "@/components/fivestarz/DemoBanner";
 import PageShell from "@/components/fivestarz/PageShell";
 import PublicAssetPage from "@/components/fivestarz/PublicAssetPage";
 import { createClient } from "@/lib/supabase/server";
@@ -67,6 +68,7 @@ export default async function PublicAssetRoute({ params }) {
 
   return (
     <PageShell>
+      {asset.owner_is_demo && <DemoBanner />}
       <PublicAssetPage asset={asset} commentary={commentaryRes.data ?? []} />
     </PageShell>
   );
