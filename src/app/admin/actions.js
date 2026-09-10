@@ -9,6 +9,7 @@ import { getModerationAccess, resolveFlag } from "@/lib/fivestarz/data";
 const VALID_ACTIONS = new Set([
   "dismiss",
   "remove_content",
+  "restore_content",
   "warn_user",
   "suspend_user",
   "reinstate_user",

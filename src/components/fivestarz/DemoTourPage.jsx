@@ -13,6 +13,7 @@ import {
   SLIDES_RATE_AND_REQUEST,
   SLIDES_PROOF_LAB,
 } from "@/lib/fivestarz/demo-slides";
+import { initials } from "@/lib/fivestarz/format";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -24,9 +25,6 @@ const CAST = [
   { handle: "demo-noor", name: "Noor Haddad", color: T.gold, goal: "Growing her small-batch spice shop" },
 ];
 
-function initials(name) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-}
 
 function Stop({ n, title, kicker, children, isMobile }) {
   return (

@@ -16,7 +16,6 @@ const FEATURE_TABLE = [
   { feature: "Advisory Skills asset type", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Manage client assets", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Degrees-of-separation control (1–3°)", sprout: "1° default", bloom: "1–3°", flourish: "1–3°" },
-  { feature: "Semi-duplicate match settings", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Internal signal reputation score", sprout: "✓", bloom: "✓", flourish: "✓" },
   { feature: "Public profile publishing", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Marketplace listing", sprout: "—", bloom: "✓", flourish: "✓" },

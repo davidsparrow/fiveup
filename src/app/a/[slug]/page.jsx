@@ -4,7 +4,7 @@ import DemoBanner from "@/components/fivestarz/DemoBanner";
 import PageShell from "@/components/fivestarz/PageShell";
 import PublicAssetPage from "@/components/fivestarz/PublicAssetPage";
 import { createClient } from "@/lib/supabase/server";
-import { SITE_NAME } from "@/lib/fivestarz/site";
+import { SITE_NAME, getSiteUrl } from "@/lib/fivestarz/site";
 
 /**
  * Resolve a public asset by slug. Returns null unless the slug maps to a
@@ -66,9 +66,42 @@ export default async function PublicAssetRoute({ params }) {
   // inside the RPC). Reviewer stays anonymous — a coarse label renders instead.
   const commentaryRes = await supabase.rpc("get_public_asset_feedback", { p_slug: slug });
 
+  // CreativeWork structured data, only for indexable assets (same flag as the
+  // robots meta — noindex pages get no JSON-LD). The creator is included only
+  // when the owner is not brand-hidden, and their profile URL only when a
+  // public username exists.
+  const jsonLd = asset.indexable
+    ? {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        name: asset.name,
+        url: `${getSiteUrl()}/a/${asset.public_slug}`,
+        ...(asset.description ? { description: asset.description } : {}),
+        ...(asset.created_at ? { dateCreated: asset.created_at } : {}),
+        ...(asset.updated_at ? { dateModified: asset.updated_at } : {}),
+        ...(!asset.owner_hidden && asset.owner_display_name
+          ? {
+              creator: {
+                "@type": "Person",
+                name: asset.owner_display_name,
+                ...(asset.owner_username
+                  ? { url: `${getSiteUrl()}/u/${asset.owner_username}` }
+                  : {}),
+              },
+            }
+          : {}),
+      }
+    : null;
+
   return (
     <PageShell>
       {asset.owner_is_demo && <DemoBanner />}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <PublicAssetPage asset={asset} commentary={commentaryRes.data ?? []} />
     </PageShell>
   );

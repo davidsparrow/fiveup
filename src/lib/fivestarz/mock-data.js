@@ -76,7 +76,7 @@ export const HOW_STEPS = [
 
 export const PLANS = [
   { name: "Sprout", price: "Free", sub: "forever", color: "#1A9E8F", features: ["4 auto-matches / month", "1 asset", "1 review channel per asset", "Text + star feedback", "Default 1° separation", "1 Proof Lab Marketplace Listing"] },
-  { name: "Bloom", price: "$29", sub: "/ month", color: "#FF6B35", badge: "Most Popular", features: ["6 auto + 6 browse matches", "Up to 5 assets", "Multiple channels per asset", "All feedback formats incl. Advisory Skills", "Set 1–3 degrees of separation", "3 Proof Lab Listings", "Require specific feedback types", "Control semi-duplicate match settings"] },
+  { name: "Bloom", price: "$29", sub: "/ month", color: "#FF6B35", badge: "Most Popular", features: ["6 auto + 6 browse matches", "Up to 5 assets", "Multiple channels per asset", "All feedback formats incl. Advisory Skills", "Set 1–3 degrees of separation", "3 Proof Lab Listings", "Require specific feedback types", "Semi-duplicate re-matching with channel blocking"] },
   { name: "Flourish", price: "$79", sub: "/ month", color: "#F4A832", features: ["Everything in Bloom", "Unlimited assets", "Priority matching", "Manage client assets", "White-label feedback forms", "Team seats (3 users)", "Dedicated support"] },
 ];
 

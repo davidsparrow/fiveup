@@ -70,13 +70,14 @@ try {
   console.log('\n[create_match 4° fix]');
   {
     // sam↔noor closes the 5-cycle at exactly 4°; the seed created it via the
-    // real RPC, so it must exist with the stored degree capped at 3.
+    // real RPC. Phase 13 capped the stored degree at 3; Phase 14 widened the
+    // column check to 1–4, so matches seeded since then store the actual 4.
     const { data: sam } = await admin.from('user_profiles').select('user_id').eq('public_username', 'demo-sam').single();
     const { data: noor } = await admin.from('user_profiles').select('user_id').eq('public_username', 'demo-noor').single();
     const { data: m } = await admin.from('matches').select('separation_degree_used, source')
       .or(`and(member_a_user_id.eq.${sam.user_id},member_b_user_id.eq.${noor.user_id}),and(member_a_user_id.eq.${noor.user_id},member_b_user_id.eq.${sam.user_id})`);
     expect('4°-separation match created via RPC', m?.length === 1 && m[0].source === 'browse', JSON.stringify(m));
-    expect('stored separation degree capped at 3', m?.[0]?.separation_degree_used === 3, `got ${m?.[0]?.separation_degree_used}`);
+    expect('stored separation degree is 3 (pre-Phase-14 cap) or 4 (actual)', [3, 4].includes(m?.[0]?.separation_degree_used), `got ${m?.[0]?.separation_degree_used}`);
   }
 
   console.log('\n[demo/real matching wall]');

@@ -110,7 +110,7 @@ export default async function AdminPage({ searchParams }) {
                     {f.reason ? <span>reason: {f.reason}</span> : null}
                   </div>
 
-                  {actionable ? (
+                  {actionable || status === "resolved" ? (
                     <form action={resolveFlagAction} style={S.actions}>
                       <input type="hidden" name="flagId" value={f.id} />
                       <input type="hidden" name="status" value={status} />
@@ -121,21 +121,29 @@ export default async function AdminPage({ searchParams }) {
                         style={S.notes}
                       />
                       <div style={S.btnRow}>
-                        <button name="action" value="dismiss" style={{ ...S.btn, ...S.btnNeutral }}>
-                          Dismiss
-                        </button>
-                        <button name="action" value="remove_content" style={{ ...S.btn, ...S.btnWarn }}>
-                          Remove content
-                        </button>
-                        <button name="action" value="warn_user" style={{ ...S.btn, ...S.btnWarn }}>
-                          Warn user
-                        </button>
-                        <button name="action" value="suspend_user" style={{ ...S.btn, ...S.btnDanger }}>
-                          Suspend user
-                        </button>
-                        <button name="action" value="reinstate_user" style={{ ...S.btn, ...S.btnNeutral }}>
-                          Reinstate user
-                        </button>
+                        {actionable ? (
+                          <>
+                            <button name="action" value="dismiss" style={{ ...S.btn, ...S.btnNeutral }}>
+                              Dismiss
+                            </button>
+                            <button name="action" value="remove_content" style={{ ...S.btn, ...S.btnWarn }}>
+                              Remove content
+                            </button>
+                            <button name="action" value="warn_user" style={{ ...S.btn, ...S.btnWarn }}>
+                              Warn user
+                            </button>
+                            <button name="action" value="suspend_user" style={{ ...S.btn, ...S.btnDanger }}>
+                              Suspend user
+                            </button>
+                            <button name="action" value="reinstate_user" style={{ ...S.btn, ...S.btnNeutral }}>
+                              Reinstate user
+                            </button>
+                          </>
+                        ) : (
+                          <button name="action" value="restore_content" style={{ ...S.btn, ...S.btnNeutral }}>
+                            Restore content
+                          </button>
+                        )}
                       </div>
                     </form>
                   ) : null}

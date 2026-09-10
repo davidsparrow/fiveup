@@ -324,9 +324,9 @@ async function seed() {
   log('\n[2/5] matches + feedback');
   for (const m of MATCHES) {
     const me = world[m.by], them = world[m.other];
-    // The demo web is a 5-cycle whose final pair sits at exactly 4° — the
-    // Phase 13 create_match fix (degree capped at 3 on insert) makes this
-    // work through the real RPC.
+    // The demo web is a 5-cycle whose final pair sits at exactly 4° — works
+    // through the real RPC (Phase 13 capped the stored degree at 3; since
+    // Phase 14 the actual 4 is stored).
     const matchId = await rpc(me.client, 'create_match', {
       p_other_user_id: them.id,
       p_my_asset_id: me.assets[m.myAsset],
