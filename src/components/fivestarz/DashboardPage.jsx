@@ -10,6 +10,7 @@ import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui"
 import { createClient } from "@/lib/supabase/client";
 import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard, createProofLabReview, getProofLabReviewsForSeller } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
+import { initials } from "@/lib/fivestarz/format";
 
 const DEAL_STATUS_META = {
   pending: { label: "Pending", color: T.gold, bg: T.goldL + "55" },
@@ -60,15 +61,6 @@ const ASSET_TYPE_EMOJI = {
   free_session_consultation: "🗓️",
   client_asset: "🤝",
 };
-function initials(name) {
-  return (name || "")
-    .split(" ")
-    .filter(Boolean)
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
 
 function RateFeedbackWidget({ feedbackSubmissionId, initialRating }) {
   const [rating, setRating] = useState(initialRating || 0);

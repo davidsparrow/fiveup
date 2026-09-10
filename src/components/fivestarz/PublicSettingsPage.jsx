@@ -102,27 +102,43 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
     }
   }
 
-  async function setAssetVisibility(assetId, value) {
+  // Shared optimistic path for the per-asset toggles: set the field, call the
+  // RPC, revert the field on failure. onSuccess runs after a successful RPC
+  // (before the "Saved." notice) for follow-up reads.
+  async function updateAssetField(assetId, key, value, rpc, params, onSuccess) {
     setError("");
     setNotice("");
-    const prev = assets.find((a) => a.id === assetId)?.visibility;
-    setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, visibility: value } : a)));
+    const prev = assets.find((a) => a.id === assetId)?.[key];
+    setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, [key]: value } : a)));
     try {
       const supabase = createClient();
-      const { error: rpcErr } = await supabase.rpc("set_asset_visibility", { p_asset_id: assetId, p_visibility: value });
+      const { error: rpcErr } = await supabase.rpc(rpc, params);
       if (rpcErr) throw rpcErr;
-      // Publishing assigns a public_slug server-side — pull it so we can link.
-      if (value === "public") {
-        const { data: row } = await supabase.from("assets").select("public_slug").eq("id", assetId).single();
-        if (row?.public_slug) {
-          setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, public_slug: row.public_slug } : a)));
-        }
-      }
+      if (onSuccess) await onSuccess(supabase);
       setNotice("Saved.");
     } catch (e) {
-      setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, visibility: prev } : a)));
+      setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, [key]: prev } : a)));
       setError(e.message || "Couldn't update that asset — please try again.");
     }
+  }
+
+  function setAssetVisibility(assetId, value) {
+    return updateAssetField(
+      assetId,
+      "visibility",
+      value,
+      "set_asset_visibility",
+      { p_asset_id: assetId, p_visibility: value },
+      async (supabase) => {
+        // Publishing assigns a public_slug server-side — pull it so we can link.
+        if (value === "public") {
+          const { data: row } = await supabase.from("assets").select("public_slug").eq("id", assetId).single();
+          if (row?.public_slug) {
+            setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, public_slug: row.public_slug } : a)));
+          }
+        }
+      }
+    );
   }
 
   async function setApproval(item, value) {
@@ -203,37 +219,13 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
     }
   }
 
-  async function setAssetBrandHidden(assetId, hidden) {
-    setError("");
-    setNotice("");
+  function setAssetBrandHidden(assetId, hidden) {
     const value = hidden ? "hidden_until_feedback_complete" : "visible";
-    const prev = assets.find((a) => a.id === assetId)?.brand_visibility;
-    setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, brand_visibility: value } : a)));
-    try {
-      const supabase = createClient();
-      const { error: rpcErr } = await supabase.rpc("set_asset_brand_visibility", { p_asset_id: assetId, p_value: value });
-      if (rpcErr) throw rpcErr;
-      setNotice("Saved.");
-    } catch (e) {
-      setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, brand_visibility: prev } : a)));
-      setError(e.message || "Couldn't update that asset — please try again.");
-    }
+    return updateAssetField(assetId, "brand_visibility", value, "set_asset_brand_visibility", { p_asset_id: assetId, p_value: value });
   }
 
-  async function setAssetSearchable(assetId, value) {
-    setError("");
-    setNotice("");
-    const prev = assets.find((a) => a.id === assetId)?.searchable_public;
-    setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, searchable_public: value } : a)));
-    try {
-      const supabase = createClient();
-      const { error: rpcErr } = await supabase.rpc("set_asset_searchable", { p_asset_id: assetId, p_value: value });
-      if (rpcErr) throw rpcErr;
-      setNotice("Saved.");
-    } catch (e) {
-      setAssets((list) => list.map((a) => (a.id === assetId ? { ...a, searchable_public: prev } : a)));
-      setError(e.message || "Couldn't update that asset — please try again.");
-    }
+  function setAssetSearchable(assetId, value) {
+    return updateAssetField(assetId, "searchable_public", value, "set_asset_searchable", { p_asset_id: assetId, p_value: value });
   }
 
   async function claim() {

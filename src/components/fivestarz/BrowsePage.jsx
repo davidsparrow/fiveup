@@ -8,21 +8,7 @@ import { Av, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
 import { getMyProfile, listMyAssets, getBrowseQuota, getEligibleCandidates, getChannelsAndFormatsForAssets, requestMatch, getPreviousMatches, getUsedChannelsForMatches } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, FEEDBACK_FORMAT_DB_TO_SHORT_LABEL } from "@/lib/fivestarz/enums";
-
-const AVATAR_COLORS = ["#7C3AED", "#1A9E8F", "#F4A832", "#FF6B35", "#6B4226", "#38A169", "#4A5568", "#A0644A"];
-function colorForUser(userId) {
-  const sum = Array.from(userId || "").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
-}
-function initials(name) {
-  return (name || "?")
-    .split(" ")
-    .filter(Boolean)
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+import { colorForUser, initials } from "@/lib/fivestarz/format";
 
 export default function BrowsePage({ userId }) {
   const isMobile = useIsMobile();

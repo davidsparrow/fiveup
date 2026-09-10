@@ -5,19 +5,11 @@ import Link from "next/link";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Card, Pill, Stars } from "@/components/fivestarz/ui";
+import { initials } from "@/lib/fivestarz/format";
 
 const FONT_SERIF = "'Fraunces',serif";
 const FONT_SANS = "'DM Sans',sans-serif";
 
-function initials(name) {
-  if (!name) return "?";
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 function formatMoney(cents) {
   if (cents == null) return null;
