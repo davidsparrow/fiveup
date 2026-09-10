@@ -48,6 +48,10 @@ export default async function AccountPage() {
           Manage public profile & publishing →
         </Link>
 
+        <Link href="/account/preferences" style={styles.settingsLink}>
+          Matching preferences →
+        </Link>
+
         <form action={signOut}>
           <button type="submit" style={styles.primaryButton}>
             Sign out
