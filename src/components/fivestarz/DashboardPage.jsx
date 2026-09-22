@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard, createProofLabReview, getProofLabReviewsForSeller } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
 import { initials } from "@/lib/fivestarz/format";
+import MatchPipeline from "@/components/fivestarz/MatchPipeline";
 
 const DEAL_STATUS_META = {
   pending: { label: "Pending", color: T.gold, bg: T.goldL + "55" },
@@ -247,6 +248,7 @@ export default function DashboardPage({ userId }) {
                           )}
                         </div>
                       </div>
+                      <MatchPipeline match={m} isMobile={isMobile} />
                     </Card>
                   );
                 })}
