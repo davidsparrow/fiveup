@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { getModerationAccess, resolveFlag } from "@/lib/fivestarz/data";
+import { sendModerationOutcomeEmail } from "@/lib/fivestarz/moderation-email";
 
 const VALID_ACTIONS = new Set([
   "dismiss",
@@ -43,6 +44,10 @@ export async function resolveFlagAction(formData) {
   } catch (err) {
     redirect(`/admin?status=${status}&error=${encodeURIComponent(err?.message ?? "action failed")}`);
   }
+
+  // Best-effort member notification — never blocks the moderation action
+  // (the helper catches its own failures and skips when unconfigured).
+  await sendModerationOutcomeEmail({ flagId, action });
 
   revalidatePath("/admin");
   redirect(`/admin?status=${status}&done=${action}`);
