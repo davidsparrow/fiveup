@@ -16,6 +16,7 @@ const FEATURE_TABLE = [
   { feature: "Advisory Skills asset type", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Manage client assets", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Degrees-of-separation control (1–3°)", sprout: "1° default", bloom: "1–3°", flourish: "1–3°" },
+  { feature: "Semi-duplicate match settings", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Internal signal reputation score", sprout: "✓", bloom: "✓", flourish: "✓" },
   { feature: "Public profile publishing", sprout: "—", bloom: "✓", flourish: "✓" },
   { feature: "Marketplace listing", sprout: "—", bloom: "✓", flourish: "✓" },
@@ -39,11 +40,10 @@ export default function PricingPage() {
   const { openBeta } = useBetaModal();
   const [openFaq, setOpenFaq] = useState(null);
 
-  // Mock Stripe handler — replace with real Stripe checkout session creation
-  const handleSubscribe = (planName) => {
-    if (planName === "Sprout") { openBeta(); return; }
-    // TODO: Replace with real Stripe checkout
-    alert(`Stripe checkout coming soon for ${planName}. Use the beta modal to get early access.`);
+  // No payment processing during the beta — every plan CTA routes to the
+  // beta-access modal. Billing (if ever) is a future product decision.
+  const handleSubscribe = () => {
+    openBeta();
   };
 
   return (

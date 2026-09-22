@@ -234,7 +234,10 @@ try {
       const pricing = await (await fetch(`${BASE}/pricing`)).text();
       expect('no stale "Q3 2025" label', !how.includes('Q3 2025') && !pricing.includes('Q3 2025'));
       expect('no "disable semi-duplicate matching in preferences" claim', !how.includes('disable semi-duplicate matching in preferences'));
-      expect('no "Semi-duplicate match settings" pricing row', !pricing.includes('Semi-duplicate match settings'));
+      // Phase 14 removed this row as an unbuilt claim; Phase 15 built the
+      // settings (update_match_preferences + /account/preferences) and
+      // restored it — presence is now the honest state.
+      expect('"Semi-duplicate match settings" pricing row restored by Phase 15', pricing.includes('Semi-duplicate match settings'));
     }
   }
 } catch (e) {
