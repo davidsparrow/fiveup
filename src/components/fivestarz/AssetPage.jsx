@@ -8,10 +8,11 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { Btn, Card, Pill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
 import { createAsset, uploadAssetScreenshot } from "@/lib/fivestarz/data";
+import { WIZARD_ASSET_TYPES, WIZARD_CHANNELS, WIZARD_FEEDBACK_FORMATS } from "@/lib/fivestarz/asset-wizard-options";
 
-const CHNLS = ["Google Business Profile", "Yelp", "Tripadvisor", "Amazon", "Shopify App Store", "Clutch.co", "Trustpilot", "Apple Podcasts", "Spotify", "Substack", "LinkedIn", "G2", "Capterra", "Gumroad", "Teachable"];
-const TYPES = ["Service / Consulting", "Advisory / Consulting Skills", "Physical Product", "Digital Product / SaaS", "Content / Podcast / Video", "E-commerce Store", "Free Session / Consultation", "Client Asset"];
-const FBTYPES = ["Star Rating (1–5)", "Written Review", "Structured Categories", "Video / Audio Upload"];
+const CHNLS = WIZARD_CHANNELS;
+const TYPES = WIZARD_ASSET_TYPES;
+const FBTYPES = WIZARD_FEEDBACK_FORMATS;
 
 export default function AssetPage() {
   const isMobile = useIsMobile();
@@ -23,6 +24,45 @@ export default function AssetPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [uploadWarning, setUploadWarning] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiNote, setAiNote] = useState("");
+  const [aiAvailable, setAiAvailable] = useState(true);
+
+  // AI Asset Builder: draft the wizard fields from the member's URL. Fills
+  // only what the member hasn't already typed/selected — never clobbers.
+  const draftWithAi = async () => {
+    setAiBusy(true);
+    setAiError("");
+    setAiNote("");
+    try {
+      const res = await fetch("/api/asset-builder", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: a.url }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 503) {
+        setAiAvailable(false);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "AI assist failed — try again.");
+      const s = data.suggestions;
+      setA((prev) => ({
+        ...prev,
+        name: prev.name || s.name || prev.name,
+        type: prev.type || s.asset_type || prev.type,
+        desc: prev.desc || s.description || prev.desc,
+        channels: prev.channels.length ? prev.channels : (s.channels ?? []).filter((c) => CHNLS.includes(c)),
+        fbTypes: prev.fbTypes.length ? prev.fbTypes : (s.feedback_formats ?? []).filter((f) => FBTYPES.includes(f)),
+      }));
+      setAiNote("Draft applied — review and edit anything before continuing. Suggested channels and feedback formats are pre-selected in the next steps.");
+    } catch (err) {
+      setAiError(err.message || "AI assist failed — try again.");
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   // Each wizard step should open at the top; the body (not the window) is the
   // scroll container, so reset both.
@@ -110,6 +150,20 @@ export default function AssetPage() {
               {[["name", "Asset Name *", "e.g. RevFlow Consulting, My Podcast, Advisory Skills..."], ["url", "Unique URL *", "yoursite.com/product or booking page URL"]].map(([k, l, p]) => (
                 <div key={k} style={{ marginBottom: 20 }}><label style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>{l}</label><input value={a[k]} onChange={e => setA(prev => ({ ...prev, [k]: e.target.value }))} placeholder={p} style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #E8DDD5", fontSize: 15, fontFamily: "'DM Sans',sans-serif", color: T.brown, background: T.cream, outline: "none", boxSizing: "border-box" }} /></div>
               ))}
+              {aiAvailable && (
+                <div style={{ marginBottom: 20, padding: "14px 16px", background: T.tealP, borderRadius: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <Btn sz="sm" v="teal" onClick={draftWithAi} disabled={!a.url || aiBusy}>
+                      {aiBusy ? "Drafting…" : "✨ Draft with AI from your URL"}
+                    </Btn>
+                    <span style={{ fontSize: 12, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>
+                      Reads your page and suggests a name, description, type, channels, and feedback formats. Fills only what you haven&rsquo;t set.
+                    </span>
+                  </div>
+                  {aiNote && <div style={{ marginTop: 10, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>{aiNote}</div>}
+                  {aiError && <div style={{ marginTop: 10, fontSize: 13, color: "#B42318", fontFamily: "'DM Sans',sans-serif" }}>{aiError}</div>}
+                </div>
+              )}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 10, fontFamily: "'DM Sans',sans-serif" }}>Asset Type *</label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10 }}>
