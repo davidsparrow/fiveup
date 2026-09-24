@@ -16,6 +16,24 @@ This note keeps the course plan in mind while Phases B–D of the refactor (`doc
 
 ## Where the value is (and what's free)
 
+### How the bot works: receptionist and back office
+
+There is **one** ProofSignals bot. "Thin" describes its architecture, not a smaller version:
+
+- **The bot is the receptionist.** A member types `/assist @maya helped with my landing page`. The bot checks the request really came from Discord (Ed25519 signature), passes it to the back office, and relays the answer, all within Discord's 3-second limit. It makes no decisions.
+- **The database is the back office** (Supabase RPCs). All the real work happens here: checking whether this member may award this assist, blocking self-awards and repeat awards, writing the points ledger, queuing admin approval, updating the member graph and matching, and forming squads.
+
+So "full vs. Lite" is about the size of the back office, not the bot:
+
+| | Bot (receptionist) | Back office |
+|---|---|---|
+| **ProofSignals** (private) | Thin | Full engine: points ledger, approvals, anti-gaming, member graph, matching, squads, redemptions |
+| **Lite** (free with course) | Thin, the same kind of bot | Simple: points table, basic approval, leaderboard. No matching, squads or graph |
+
+The two bots look almost identical. Everything worth protecting is behind them, which is why giving away the Lite bot costs nothing. This explanation doubles as course material.
+
+The plan also mentions an optional later **always-on listener** (discord.js) that only collects activity metrics (messages, voice time) and never awards points. It's a nice-to-have, not a "robust" bot.
+
 **The bot is free.** Buyers can't be charged for bot code, since AI can write a Discord bot in an afternoon. What they pay for:
 
 1. **The system design:** channel and role layout, the points economy (why an assist is worth more than a claim), approval rules, rules that stop members gaming the points, squads, weekly rituals, and how it all links back to Skool.
