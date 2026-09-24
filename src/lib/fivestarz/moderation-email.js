@@ -6,9 +6,9 @@ const CONTENT_LABELS = {
   profile_bio: "profile bio",
   feedback: "feedback submission",
   asset: "asset",
-  proof_lab_listing: "Proof Lab listing",
+  proof_lab_listing: "Proof Market listing",
   deal_note: "deal note",
-  proof_lab_review: "Proof Lab review",
+  proof_lab_review: "Proof Market review",
 };
 
 // Subject + body copy per moderation action. Returns null for actions the
@@ -108,7 +108,7 @@ export async function sendModerationOutcomeEmail({ flagId, action }) {
 
     const resend = new Resend(resendKey);
     await resend.emails.send({
-      from: "FiveStarz <noreply@bendersaas.ai>",
+      from: process.env.RESEND_FROM ?? "ProofSignals <noreply@notify.indieops.co>",
       to: [to],
       subject: email.subject,
       html: renderModerationEmailHtml(email),

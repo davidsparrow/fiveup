@@ -105,7 +105,11 @@ function RateFeedbackWidget({ feedbackSubmissionId, initialRating }) {
   );
 }
 
-export default function DashboardPage({ userId }) {
+// matchSurface / matchActions / discordInviteUrl come from the route
+// (src/app/dashboard/page.jsx), which reads the Phase A match_surface gate.
+// matchActions is the archived "+ Browse Members" entry point, passed in
+// only when the surface is web; on Discord the tab shows an invite notice.
+export default function DashboardPage({ userId, matchSurface = "web", matchActions = null, discordInviteUrl = null }) {
   const router = useRouter();
   const [tab, setTab] = useState("matches");
   const [fbModal, setFbModal] = useState(null);
@@ -193,7 +197,7 @@ export default function DashboardPage({ userId }) {
             ))}
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-            {[["matches", "🤝 Matches"], ["assets", "📦 Assets"], ["history", "📜 History"], ["profile", "👤 Profile"], ["prooflab", "🧪 Proof Lab"]].map(([id, lbl]) => (
+            {[["matches", "🤝 Matches"], ["assets", "📦 Assets"], ["history", "📜 History"], ["profile", "👤 Profile"], ["prooflab", "🧪 Proof Market"]].map(([id, lbl]) => (
               <button key={id} onClick={() => setTab(id)} style={{ padding: isMobile ? "10px 14px" : "12px 24px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: isMobile ? 13 : 14, borderRadius: "10px 10px 0 0", background: tab === id ? T.cream : "transparent", color: tab === id ? T.brown : "#C4A68A", transition: "all 0.2s", flex: isMobile ? "1 1 0" : "0 0 auto" }}>{lbl}</button>
             ))}
           </div>
@@ -206,12 +210,23 @@ export default function DashboardPage({ userId }) {
           <div>
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center", gap: isMobile ? 12 : 16, marginBottom: 20 }}>
               <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>Your Matches</h3>
-              <Btn sz="sm" v="teal" onClick={() => router.push("/browse")} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>+ Browse Members</Btn>
+              {matchSurface === "web" ? matchActions : (
+                discordInviteUrl
+                  ? <Btn sz="sm" v="teal" onClick={() => { window.location.href = discordInviteUrl; }} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Match in Discord →</Btn>
+                  : null
+              )}
             </div>
+            {matchSurface !== "web" && (
+              <div style={{ padding: "12px 16px", background: T.tealP, borderRadius: 12, marginBottom: 16, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif" }}>
+                New matches are made in the ProofSignals Discord. Your match history, feedback and ratings stay here.
+              </div>
+            )}
             {matchesLoading ? (
               <div style={{ padding: "40px 0", textAlign: "center", color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Loading your matches…</div>
             ) : matches.length === 0 ? (
-              <div style={{ padding: "40px 0", textAlign: "center", color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>No matches yet. Browse members to request your first one.</div>
+              <div style={{ padding: "40px 0", textAlign: "center", color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>
+                {matchSurface === "web" ? "No matches yet. Browse members to request your first one." : "No matches yet. Join the Discord to get your first one."}
+              </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {matches.map(m => {
@@ -384,7 +399,7 @@ export default function DashboardPage({ userId }) {
           </div>
         )}
 
-        {/* ── Proof Lab Listings Tab ── */}
+        {/* ── Proof Market Listings Tab ── */}
         {tab === "prooflab" && (
           <ProofLabListingsTab isMobile={isMobile} userId={userId} planCode={planCode} assets={assets} />
         )}
@@ -512,7 +527,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
     <div style={{ marginTop: 28 }}>
       <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 14px" }}>My Deal Requests {outgoing.length > 0 && <span style={{ fontSize: 14, color: T.orange }}>({outgoing.length})</span>}</h3>
       {outgoing.length === 0 ? (
-        <div style={{ padding: "20px 22px", background: T.cream, borderRadius: 14, fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>You haven&rsquo;t requested any deals yet. Browse the <a href="/proof-lab" style={{ color: T.teal, fontWeight: 700 }}>Proof Lab →</a></div>
+        <div style={{ padding: "20px 22px", background: T.cream, borderRadius: 14, fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>You haven&rsquo;t requested any deals yet. Browse the <a href="/proof-market" style={{ color: T.teal, fontWeight: 700 }}>Proof Market →</a></div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {outgoing.map(r => {
@@ -557,8 +572,8 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
       <div>
         <div style={{ padding: "28px 24px", background: T.orangeP, borderRadius: 16, textAlign: "center" }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🧪</div>
-          <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 8px" }}>Proof Lab listings are a paid feature</h3>
-          <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", maxWidth: 420, margin: "0 auto 18px" }}>Upgrade to Bloom or Flourish to offer members-only deals in the Proof Lab.</p>
+          <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 8px" }}>Proof Market listings are a paid feature</h3>
+          <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", maxWidth: 420, margin: "0 auto 18px" }}>Upgrade to Bloom or Flourish to offer members-only deals in the Proof Market.</p>
           <Btn v="teal" onClick={() => { window.location.href = "/pricing"; }}>See Plans →</Btn>
         </div>
         {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginTop: 16 }}>⚠️ {error}</div>}
@@ -570,7 +585,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>My Proof Lab Listings</h3>
+        <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: T.brown, margin: 0 }}>My Proof Market Listings</h3>
         <div style={{ position: "relative" }}>
           <Btn sz="sm" v={canAdd ? "teal" : "ghost"}
             onClick={() => canAdd ? setEditModal({}) : setAddMsg(v => !v)}
@@ -591,7 +606,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
 
       {listings.length === 0 && (
         <div style={{ padding: "28px 24px", background: T.cream, borderRadius: 16, textAlign: "center", marginBottom: 20 }}>
-          <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", margin: 0 }}>You haven&rsquo;t posted any deals yet. Add your first listing to appear in the Proof Lab.</p>
+          <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", margin: 0 }}>You haven&rsquo;t posted any deals yet. Add your first listing to appear in the Proof Market.</p>
         </div>
       )}
 
@@ -632,7 +647,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
       </div>
 
       <div style={{ marginTop: 20, padding: "14px 18px", background: T.tealP, borderRadius: 12, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>
-        🧪 {planName} Tier: {activeCnt} of {planLimit === null ? "∞" : planLimit} listings active · <a href="/proof-lab" style={{ color: T.teal, fontWeight: 700 }}>View them in the Proof Lab →</a>
+        🧪 {planName} Tier: {activeCnt} of {planLimit === null ? "∞" : planLimit} listings active · <a href="/proof-market" style={{ color: T.teal, fontWeight: 700 }}>View them in the Proof Market →</a>
       </div>
 
       <div style={{ marginTop: 28 }}>
@@ -677,7 +692,7 @@ function ProofLabListingsTab({ isMobile, userId, planCode, assets }) {
       {leaderboard.length > 0 && (
         <div style={{ marginTop: 28 }}>
           <h3 style={{ fontFamily: "'Fraunces',serif", fontSize: 20, fontWeight: 700, color: T.brown, margin: "0 0 6px" }}>🏆 Fundraiser Leaderboard</h3>
-          <p style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", margin: "0 0 14px" }}>Total pledged to charity across members&rsquo; completed Proof Lab deals.</p>
+          <p style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", margin: "0 0 14px" }}>Total pledged to charity across members&rsquo; completed Proof Market deals.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {leaderboard.map((row, i) => (
               <div key={row.seller_user_id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: i === 0 ? T.goldL + "33" : T.cream, borderRadius: 12, border: `1px solid ${i === 0 ? T.gold + "66" : "#EDE4DA"}` }}>
@@ -794,7 +809,7 @@ function ProofLabListingModal({ listing, categories, assets, charities, onClose,
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: "#fff", borderRadius: 24, padding: isMobile ? "24px 18px" : "30px 32px", maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(61,43,31,0.3)", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
-        <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, margin: "0 0 20px" }}>{isEdit ? "Edit Listing" : "New Proof Lab Listing"}</h2>
+        <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 800, color: T.brown, margin: "0 0 20px" }}>{isEdit ? "Edit Listing" : "New Proof Market Listing"}</h2>
 
         <div style={{ marginBottom: 14 }}><label style={labelStyle}>Title *</label><input value={form.title} onChange={e => set("title", e.target.value)} placeholder="e.g. Sales Page Copywriting" style={inputStyle} /></div>
         <div style={{ marginBottom: 14 }}><label style={labelStyle}>Description *</label><textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="What the buyer gets…" style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} /></div>

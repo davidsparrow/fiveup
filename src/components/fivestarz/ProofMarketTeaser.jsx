@@ -14,11 +14,11 @@ function formatDollars(cents) {
 }
 
 /**
- * Public, anonymous Proof Lab landing. Describes the marketplace in aggregate
+ * Public, anonymous Proof Market landing. Describes the marketplace in aggregate
  * only — category counts + headline totals from the anon RPCs. Individual
  * listings stay member-gated; the CTA routes to sign-in.
  */
-export default function ProofLabTeaser({ categories = [], stats = null }) {
+export default function ProofMarketTeaser({ categories = [], stats = null }) {
   const isMobile = useIsMobile();
 
   const totalListings = stats?.total_active_listings ?? 0;
@@ -47,7 +47,7 @@ export default function ProofLabTeaser({ categories = [], stats = null }) {
             lineHeight: 1.1,
           }}
         >
-          The Proof Lab
+          Proof Market
         </h1>
         <p
           style={{
@@ -102,7 +102,7 @@ export default function ProofLabTeaser({ categories = [], stats = null }) {
         )}
 
         <div style={{ marginTop: 32, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <ButtonLink href="/login?next=/proof-lab" v="gold" sz="lg">
+          <ButtonLink href="/login?next=/proof-market" v="gold" sz="lg">
             Sign in to browse deals
           </ButtonLink>
           <ButtonLink href="/signup" v="ghost" sz="lg" sx={{ color: "#fff", borderColor: "#ffffff44" }}>
@@ -166,7 +166,7 @@ export default function ProofLabTeaser({ categories = [], stats = null }) {
 
         <p style={{ fontFamily: FONT_SANS, fontSize: 14, color: T.slate, textAlign: "center", marginTop: 28 }}>
           Deal details and founder pricing are visible to members.{" "}
-          <a href="/login?next=/proof-lab" style={{ color: T.orange, fontWeight: 700 }}>
+          <a href="/login?next=/proof-market" style={{ color: T.orange, fontWeight: 700 }}>
             Sign in
           </a>{" "}
           to browse.
