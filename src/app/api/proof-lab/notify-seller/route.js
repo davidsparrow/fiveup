@@ -3,7 +3,7 @@ import { Resend } from "resend";
 
 import { PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
 
-// Emails the seller when a member requests one of their Proof Lab deals. Runs
+// Emails the seller when a member requests one of their Proof Market deals. Runs
 // with the service-role key so it can resolve the seller's auth email (never
 // exposed to the browser). Best-effort: the client treats failures as non-fatal.
 export async function POST(req) {
@@ -49,15 +49,15 @@ export async function POST(req) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: "FiveStarz <noreply@bendersaas.ai>",
+      from: process.env.RESEND_FROM ?? "ProofSignals <noreply@notify.indieops.co>",
       to: [sellerEmail],
-      subject: `New Proof Lab deal request — ${listingTitle}`,
+      subject: `New Proof Market deal request — ${listingTitle}`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #3D2B1F;">
           <div style="background: #3D2B1F; padding: 28px 32px; border-radius: 16px 16px 0 0;">
             <span style="font-size: 24px;">🧪</span>
             <span style="font-size: 20px; font-weight: 800; color: #fff; margin-left: 8px;">
-              five<span style="color: #FF6B35;">starz</span> Proof Lab
+              five<span style="color: #FF6B35;">starz</span> Proof Market
             </span>
           </div>
           <div style="background: #fff; padding: 32px; border-radius: 0 0 16px 16px; border: 1.5px solid #F0E8E0;">
@@ -79,7 +79,7 @@ export async function POST(req) {
 
     return Response.json({ ok: true });
   } catch (err) {
-    console.error("Proof Lab notify-seller error:", err);
+    console.error("Proof Market notify-seller error:", err);
     return Response.json({ error: "Failed to notify seller." }, { status: 500 });
   }
 }

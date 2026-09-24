@@ -160,14 +160,14 @@ export default function DemoTourPage() {
       </Stop>
 
       {/* ── Stop 7: proof lab ── */}
-      <Stop n={7} title="The Proof Lab: deals with proof attached" kicker="A marketplace of vetted peers" isMobile={isMobile}>
+      <Stop n={7} title="Proof Market: deals with proof attached" kicker="A marketplace of vetted peers" isMobile={isMobile}>
         <Lead isMobile={isMobile}>
           Priya sells her positioning audit at member pricing; Noor hired her after their match and left an engaged
           review. Consultants earn proof, founders get vetted help — the loop feeds itself.
         </Lead>
-        <DemoSlideshow slides={SLIDES_PROOF_LAB} label="Proof Lab" />
+        <DemoSlideshow slides={SLIDES_PROOF_LAB} label="Proof Market" />
         <div style={{ marginTop: 24 }}>
-          <ButtonLink href="/proof-lab" v="ghost">See the public Proof Lab teaser →</ButtonLink>
+          <ButtonLink href="/proof-market" v="ghost">See the public Proof Market teaser →</ButtonLink>
         </div>
       </Stop>
 

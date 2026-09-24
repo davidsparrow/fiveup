@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 import PageShell from "@/components/fivestarz/PageShell";
-import MatchPreferencesPage from "@/components/fivestarz/MatchPreferencesPage";
+import MatchPreferencesPage from "@/archive/web-matching/MatchPreferencesPage";
+import { MATCH_SURFACE_WEB, getDiscordInviteUrl, resolveMatchSurface } from "@/lib/fivestarz/match-surface";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
@@ -9,8 +10,17 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+// Phase A: match preferences belong to the archived web matching surface.
+// Discord surface → redirect to the invite (no 404); web surface → the
+// archived page renders exactly as before.
 export default async function MatchPreferencesRoute() {
   const supabase = await createClient();
+
+  const surface = await resolveMatchSurface(supabase);
+  if (surface !== MATCH_SURFACE_WEB) {
+    redirect(getDiscordInviteUrl());
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();

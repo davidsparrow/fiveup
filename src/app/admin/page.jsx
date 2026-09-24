@@ -18,7 +18,7 @@ const CONTENT_LABEL = {
   profile_bio: "Profile bio",
   feedback: "Match feedback",
   asset: "Asset",
-  proof_lab_listing: "Proof Lab listing",
+  proof_lab_listing: "Proof Market listing",
   deal_note: "Deal request note",
   proof_lab_review: "Engaged-reviewer review",
 };
@@ -160,7 +160,7 @@ export default async function AdminPage({ searchParams }) {
               <span style={S.adminOnly}>admin only</span>
             </h2>
             <p style={S.opsHint}>
-              Fulfilled Proof Lab deals stuck &gt; 14 days with only one side confirmed.
+              Fulfilled Proof Market deals stuck &gt; 14 days with only one side confirmed.
             </p>
             {awaiting.length === 0 ? (
               <p style={S.empty}>Nothing stuck. 🎉</p>

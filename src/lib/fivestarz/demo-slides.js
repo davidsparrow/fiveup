@@ -85,14 +85,14 @@ export const SLIDES_RATE_AND_REQUEST = [
 export const SLIDES_PROOF_LAB = [
   {
     src: "/demo/prooflab-01.jpg",
-    alt: "The Proof Lab marketplace showing member deals from Priya and Sam",
+    alt: "Proof Market marketplace showing member deals from Priya and Sam",
     title: "Members-only deals from people you can verify",
     caption: "Priya lists her audit at founder pricing; Sam offers a free intro session. Every seller's feedback history is one click away.",
     notes: ["Real engagement reviews after completed deals", "Optional charity pledges on every listing"],
   },
   {
     src: "/demo/prooflab-02.jpg",
-    alt: "Priya's Proof Lab dashboard with her active listings",
+    alt: "Priya's Proof Market dashboard with her active listings",
     title: "Sell your services, earn engaged reviews",
     caption: "Priya manages listings and deal requests from her dashboard. Completed deals unlock engaged-buyer reviews — proof that compounds.",
   },

@@ -15,7 +15,7 @@ function formatPrice(cents) {
   return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
-export default function ProofLabPage({ userId }) {
+export default function ProofMarketPage({ userId }) {
   const isMobile = useIsMobile();
   const [cat, setCat] = useState("All");
   const [categories, setCategories] = useState([]);
@@ -55,7 +55,7 @@ export default function ProofLabPage({ userId }) {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ marginBottom: 24 }}>
             <Pill color={T.gold}>🧪 Members-Only Deals</Pill>
-            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 36, fontWeight: 900, color: "#fff", margin: "12px 0 8px", letterSpacing: "-0.02em" }}>The Proof Lab</h1>
+            <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 36, fontWeight: 900, color: "#fff", margin: "12px 0 8px", letterSpacing: "-0.02em" }}>Proof Market</h1>
             <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 16, color: "#C4A68A", margin: 0, maxWidth: 560 }}>Members offer exclusive deals on their best services — marketing, design, video, AI, ads, and more. Lock in founder-only pricing.</p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingBottom: 20 }}>
@@ -133,12 +133,12 @@ export default function ProofLabPage({ userId }) {
         </div>
       </div>
 
-      {reqModal && <ProofLabRequestModal listing={reqModal} onClose={() => setReqModal(null)} />}
+      {reqModal && <ProofMarketRequestModal listing={reqModal} onClose={() => setReqModal(null)} />}
     </div>
   );
 }
 
-function ProofLabRequestModal({ listing, onClose }) {
+function ProofMarketRequestModal({ listing, onClose }) {
   const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");

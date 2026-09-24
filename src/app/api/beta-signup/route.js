@@ -10,7 +10,7 @@ export async function POST(req) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
 
-      from: "FiveStarz <noreply@bendersaas.ai>",
+      from: process.env.RESEND_FROM ?? "ProofSignals <noreply@notify.indieops.co>",
       to: ["spasta+fivestarz@gmail.com"],
       subject: `New FiveStarz Beta Request — ${name}`,
       html: `
