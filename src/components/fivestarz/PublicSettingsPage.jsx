@@ -19,7 +19,7 @@ const TOGGLES = [
   { key: "show_stats", param: "p_show_stats", label: "Show stats & ratings" },
   { key: "show_feedback_excerpts", param: "p_show_feedback_excerpts", label: "Show approved feedback excerpts", feature: "public_feedback_excerpts_enabled" },
   { key: "show_public_videos", param: "p_show_public_videos", label: "Show public video clips", feature: "public_video_enabled" },
-  { key: "show_marketplace_offers", param: "p_show_marketplace_offers", label: "Show Proof Lab offers", feature: "proof_lab_listings_enabled" },
+  { key: "show_marketplace_offers", param: "p_show_marketplace_offers", label: "Show Proof Market offers", feature: "proof_lab_listings_enabled" },
   { key: "searchable_public_profile", param: "p_searchable_public_profile", label: "Allow search-engine indexing", feature: "public_profile_indexing_enabled" },
 ];
 

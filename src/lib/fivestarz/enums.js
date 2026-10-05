@@ -35,7 +35,7 @@ export const FEEDBACK_FORMAT_DB_TO_SHORT_LABEL = {
   video_audio: "Video / Audio",
 };
 
-// Proof Lab deal-request timeframes (public.proof_lab_timeframe enum). Order
+// Proof Market deal-request timeframes (public.proof_lab_timeframe enum). Order
 // matches the request modal's ASAP → Soon → No Rush slider.
 export const PROOF_LAB_TIMEFRAMES = [
   { value: "asap", label: "ASAP" },

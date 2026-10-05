@@ -200,14 +200,14 @@ try {
   await page.goto(`${BASE}/proof-lab`);
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(2000);
-  await shot('prooflab-01'); // member marketplace with demo listings
+  await shot('proofmarket-01'); // member marketplace with demo listings
 
   await login('demo-priya@proofsignals.net');
   await page.goto(`${BASE}/dashboard`);
   await page.waitForLoadState('networkidle');
   const plTab = page.getByRole('button', { name: /proof lab/i }).first();
   if (await plTab.isVisible().catch(() => false)) { await plTab.click(); await page.waitForTimeout(2000); }
-  await shot('prooflab-02'); // priya's listings dashboard
+  await shot('proofmarket-02'); // priya's listings dashboard
 } finally {
   // Best-effort cleanup: each step runs even if an earlier one fails.
   if (browser) await browser.close().catch((e) => log(`  ! browser.close: ${e.message}`));

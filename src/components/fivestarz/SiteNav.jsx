@@ -8,7 +8,7 @@ import { PiPlanetFill } from "react-icons/pi";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { T } from "@/lib/fivestarz/theme";
-import { useBetaModal } from "@/components/fivestarz/PageShell";
+import { useBetaModal, useMatchSurface } from "@/components/fivestarz/PageShell";
 
 import { Btn } from "./ui";
 
@@ -16,11 +16,13 @@ function isActive(pathname, href) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+// "Browse Members" belongs to the archived web matching surface (Phase A);
+// it is only shown when match_surface() = 'web'.
 const SLIDE_NAV_LINKS = [
   { label: "My Dashboard", href: "/dashboard" },
   { label: "Add Asset +", href: "/assets/new" },
-  { label: "Browse Members", href: "/browse" },
-  { label: "Proof Lab", href: "/proof-lab" },
+  { label: "Browse Members", href: "/browse", webMatchingOnly: true },
+  { label: "Proof Market", href: "/proof-market" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "Live Demo", href: "/demo" },
   { label: "Pricing", href: "/pricing" },
@@ -34,6 +36,8 @@ export default function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { openBeta } = useBetaModal();
+  const matchSurface = useMatchSurface();
+  const navLinks = SLIDE_NAV_LINKS.filter((l) => !l.webMatchingOnly || matchSurface === "web");
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -98,7 +102,7 @@ export default function SiteNav() {
 
         {/* Nav links */}
         <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
-          {SLIDE_NAV_LINKS.map(({ label, href }) => (
+          {navLinks.map(({ label, href }) => (
             <Link key={href + label} href={href} style={{ display: "block", width: "100%", textAlign: "left", padding: "15px 24px", background: isActive(pathname, href) && href !== "#" ? T.orangeP : "transparent", color: isActive(pathname, href) && href !== "#" ? T.orange : T.brown, fontFamily: "'DM Sans',sans-serif", fontWeight: 400, fontSize: 17, border: "none", borderLeft: isActive(pathname, href) && href !== "#" ? `4px solid ${T.orange}` : "4px solid transparent", textDecoration: "none", boxSizing: "border-box" }}>{label}</Link>
           ))}
         </div>

@@ -67,6 +67,17 @@ export async function listMyAssets(supabase, ownerId) {
   return data;
 }
 
+// ── Match surface gate (Phase A) ───────────────────────────────────────────
+
+// 'web' | 'discord' for the caller's plan (anon reads the sprout row). The
+// RPC itself falls back to 'web' when the gate row is missing.
+export async function getMatchSurface(supabase) {
+  const { data, error } = await supabase.rpc("match_surface");
+  if (error) throw error;
+  return data;
+}
+
+// ARCHIVED: web matching surface — see docs/archive/web-matching.md. Do not delete.
 export async function getBrowseQuota(supabase, planCode, userId) {
   const monthStart = new Date();
   monthStart.setUTCDate(1);
@@ -97,6 +108,7 @@ export async function getBrowseQuota(supabase, planCode, userId) {
   };
 }
 
+// ARCHIVED: web matching surface — see docs/archive/web-matching.md. Do not delete.
 export async function getEligibleCandidates(supabase, myAssetId, { limit = 50, offset = 0 } = {}) {
   const { data, error } = await supabase.rpc("eligible_match_candidates", {
     p_my_asset_id: myAssetId,
@@ -132,6 +144,7 @@ export async function getChannelsAndFormatsForAssets(supabase, assetIds) {
   return { channelsByAsset, formatsByAsset };
 }
 
+// ARCHIVED: web matching surface — see docs/archive/web-matching.md. Do not delete.
 export async function requestMatch(
   supabase,
   { otherUserId, myAssetId, theirAssetId, previousMatchId = null, myBlockedChannels = [], theirBlockedChannels = [] },
@@ -311,7 +324,7 @@ export async function requestReviewPost(supabase, { feedbackSubmissionId, channe
   return data;
 }
 
-// ── Proof Lab (marketplace) ────────────────────────────────────────────────
+// ── Proof Market (marketplace) ────────────────────────────────────────────────
 
 export async function getProofLabCategories(supabase) {
   const { data, error } = await supabase
@@ -545,7 +558,7 @@ export async function resolveFlag(supabase, { flagId, action, notes }) {
   if (error) throw error;
 }
 
-// Admin-only ops flag: fulfilled Proof Lab deals stuck awaiting one-sided
+// Admin-only ops flag: fulfilled Proof Market deals stuck awaiting one-sided
 // confirmation (homeless since Phase 6b.2 — surfaced in the console).
 export async function listDealsAwaitingConfirmation(supabase, staleDays = 14) {
   const { data, error } = await supabase.rpc("proof_lab_deals_awaiting_confirmation", {
