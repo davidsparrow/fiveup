@@ -66,8 +66,16 @@ at `4da1627`, the last commit before any refactor work.
   home page, demo tour, public profile, plan features, sitemap, page title,
   moderation-email labels, notify-seller subject/header/comments) is now
   "Proof Market". Tables, enums, RPCs, `proof_lab_*` identifiers, data.js
-  function names and the internal API route `src/app/api/proof-lab/` are
-  unchanged. `verify-phase16.mjs` updated for the label change.
+  function names are unchanged. `verify-phase16.mjs` updated for the label
+  change.
+- **No "proof-lab" a member could stumble on** (follow-up, so the name only
+  ever means the IndieOps Proof Lab Skool group): the notify-seller API route
+  moved to `src/app/api/proof-market/notify-seller` and the demo screenshots
+  to `public/demo/proofmarket-0{1,2}.jpg`. Only the `/proof-lab` redirect
+  remains.
+- **Email brand marks** — the "fivestarz" wordmark in the HTML header of the
+  notify-seller, moderation and beta-signup emails is now "ProofSignals"
+  (matching the site nav).
 - **Email sender** — `from:` in `notify-seller/route.js`,
   `moderation-email.js` and `beta-signup/route.js` is now
   `process.env.RESEND_FROM ?? "ProofSignals <noreply@notify.indieops.co>"`.
@@ -119,10 +127,11 @@ still passes. `npm run lint` and `npm run build` pass.
   differs.
 - **Footer** also hides "Browse Members" (handoff named SiteNav only).
 - **`beta-signup/route.js`** sender moved too (handoff listed two files;
-  there were three hard-coded senders). The email HTML brand marks
-  ("fivestarz") were left alone — only the `from:` display name changed.
-- **API route path kept** at `src/app/api/proof-lab/notify-seller` (the
-  handoff offered either).
+  there were three hard-coded senders).
+- **API route path renamed** to `src/app/api/proof-market/notify-seller`
+  (the handoff offered either). A browser holding a pre-deploy bundle would
+  hit the old path once and get a 404; the client already treats the seller
+  email as best-effort, so the deal request itself still saves.
 - **Internal component / function names** that mirror table names
   (`ProofLabListingsTab`, `listProofLabListings`, `PROOF_LAB_TIMEFRAMES`,
   tab id `prooflab`) were not renamed; only the two page components and
@@ -140,7 +149,6 @@ still passes. `npm run lint` and `npm run build` pass.
   role, but `create_match` still requires `auth.uid()`; Phase C/D adds the
   bot's own RPC.
 - `NAV_LINKS` in `theme.js` (unused table) only had its label/href renamed.
-- Renaming demo screenshot files under `public/demo/prooflab-*.jpg`.
 - Old phase docs under `docs/` still say "Proof Lab" (historical record).
 
 ## Open questions carried forward (handoff Section 5)

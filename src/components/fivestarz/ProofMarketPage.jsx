@@ -162,7 +162,7 @@ function ProofMarketRequestModal({ listing, onClose }) {
       });
       // Notify the seller out-of-band; a failed email shouldn't fail the request.
       try {
-        await fetch("/api/proof-lab/notify-seller", {
+        await fetch("/api/proof-market/notify-seller", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ dealRequestId }),

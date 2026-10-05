@@ -58,7 +58,7 @@ export function renderModerationEmailHtml({ heading, body }) {
     <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #3D2B1F;">
       <div style="background: #3D2B1F; padding: 28px 32px; border-radius: 16px 16px 0 0;">
         <span style="font-size: 20px; font-weight: 800; color: #fff;">
-          five<span style="color: #FF6B35;">starz</span>
+          Proof<span style="color: #FF6B35;">Signals</span>
         </span>
       </div>
       <div style="background: #fff; padding: 32px; border-radius: 0 0 16px 16px; border: 1.5px solid #F0E8E0;">

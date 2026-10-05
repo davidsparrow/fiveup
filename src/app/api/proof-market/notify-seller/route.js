@@ -57,7 +57,7 @@ export async function POST(req) {
           <div style="background: #3D2B1F; padding: 28px 32px; border-radius: 16px 16px 0 0;">
             <span style="font-size: 24px;">🧪</span>
             <span style="font-size: 20px; font-weight: 800; color: #fff; margin-left: 8px;">
-              five<span style="color: #FF6B35;">starz</span> Proof Market
+              Proof<span style="color: #FF6B35;">Signals</span> Proof Market
             </span>
           </div>
           <div style="background: #fff; padding: 32px; border-radius: 0 0 16px 16px; border: 1.5px solid #F0E8E0;">

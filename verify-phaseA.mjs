@@ -48,13 +48,16 @@ console.log('\n[A4 — Proof Market rename + redirect]');
     if (f === 'src/app/proof-lab/page.jsx') continue; // the redirect may name the old label in its comment
     const src = read(f);
     if (src.includes('Proof Lab')) offenders.push(`${f}: "Proof Lab"`);
-    const routeHits = src.replace(/\/api\/proof-lab/g, '').match(/\/proof-lab/g);
+    const routeHits = src.match(/\/proof-lab/g);
     if (routeHits) offenders.push(`${f}: "/proof-lab" route reference`);
   }
   expect('no remaining "Proof Lab" strings or /proof-lab links in src/components + src/app', offenders.length === 0, offenders.join('; '));
-  expect('internal API route path kept (src/app/api/proof-lab/notify-seller)', exists('src/app/api/proof-lab/notify-seller/route.js'));
+  expect('notify-seller API route renamed to src/app/api/proof-market/', exists('src/app/api/proof-market/notify-seller/route.js') && !exists('src/app/api/proof-lab'));
+  expect('demo screenshots renamed to proofmarket-*.jpg', exists('public/demo/proofmarket-01.jpg') && exists('public/demo/proofmarket-02.jpg') && !exists('public/demo/prooflab-01.jpg') && !read('src/lib/fivestarz/demo-slides.js').includes('prooflab'));
+  const emailHeaders = ['src/app/api/proof-market/notify-seller/route.js', 'src/lib/fivestarz/moderation-email.js', 'src/app/api/beta-signup/route.js'].map(read).join('\n');
+  expect('email headers say ProofSignals, not fivestarz', !/five<span/.test(emailHeaders) && /Proof<span style="color: #FF6B35;">Signals<\/span>/.test(emailHeaders));
   expect('sitemap lists /proof-market', read('src/app/sitemap.js').includes('"/proof-market"') && !read('src/app/sitemap.js').includes('"/proof-lab"'));
-  expect('notify-seller email copy says Proof Market', /New Proof Market deal request/.test(read('src/app/api/proof-lab/notify-seller/route.js')));
+  expect('notify-seller email copy says Proof Market', /New Proof Market deal request/.test(read('src/app/api/proof-market/notify-seller/route.js')));
   expect('moderation email labels say Proof Market', /proof_lab_listing:\s*"Proof Market listing"/.test(read('src/lib/fivestarz/moderation-email.js')));
   expect('proof_lab_* table/RPC identifiers are untouched in data.js', /from\("proof_lab_listings"\)/.test(read('src/lib/fivestarz/data.js')) && /rpc\("create_proof_lab_listing"/.test(read('src/lib/fivestarz/data.js')));
 }
@@ -144,7 +147,7 @@ console.log('\n[A3 — gated routes + nav]');
 
 console.log('\n[Section 4 — email sender]');
 {
-  const files = ['src/app/api/proof-lab/notify-seller/route.js', 'src/lib/fivestarz/moderation-email.js', 'src/app/api/beta-signup/route.js'];
+  const files = ['src/app/api/proof-market/notify-seller/route.js', 'src/lib/fivestarz/moderation-email.js', 'src/app/api/beta-signup/route.js'];
   for (const f of files) {
     expect(`${f} uses RESEND_FROM with the ProofSignals default`, /process\.env\.RESEND_FROM \?\? "ProofSignals <noreply@notify\.indieops\.co>"/.test(read(f)));
   }
