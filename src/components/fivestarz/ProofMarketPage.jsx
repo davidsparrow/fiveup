@@ -208,7 +208,7 @@ function ProofMarketRequestModal({ listing, onClose }) {
             </div>
             {error && <div style={{ padding: "10px 14px", background: "#FFF0F0", borderRadius: 10, fontSize: 13, color: T.red, fontFamily: "'DM Sans',sans-serif", marginBottom: 12 }}>{error}</div>}
             <Btn onClick={send} sx={{ width: "100%", justifyContent: "center" }} disabled={!email || loading}>{loading ? "Sending..." : "Send Request →"}</Btn>
-            <p style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.5, textAlign: "center", margin: "12px 0 0" }}>FiveStarz introduces members; deals and payment are arranged directly between you and the seller.</p>
+            <p style={{ fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.5, textAlign: "center", margin: "12px 0 0" }}>ProofSignals introduces members; deals and payment are arranged directly between you and the seller.</p>
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "20px 0" }}>

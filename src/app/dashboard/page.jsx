@@ -7,8 +7,8 @@ import { MATCH_SURFACE_WEB, getDiscordInviteUrl, resolveMatchSurface } from "@/l
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "Dashboard | FiveStarz",
-  description: "Manage your matches, assets, and feedback history on FiveStarz.",
+  title: "Dashboard | ProofSignals",
+  description: "Manage your matches, assets, and feedback history on ProofSignals.",
 };
 
 export default async function DashboardRoutePage() {

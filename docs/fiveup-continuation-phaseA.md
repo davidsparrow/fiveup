@@ -76,6 +76,11 @@ at `4da1627`, the last commit before any refactor work.
 - **Email brand marks** — the "fivestarz" wordmark in the HTML header of the
   notify-seller, moderation and beta-signup emails is now "ProofSignals"
   (matching the site nav).
+- **Old brand removed from the UI** — every remaining user-facing "FiveStarz"
+  (dashboard / add-asset / moderation tab titles, login and signup "Back to"
+  links, account fallback name, beta modal button, How page roadmap, Proof
+  Market disclaimer, charity-pledge note) now says "ProofSignals". The
+  `fivestarz` folder and import paths are internal and unchanged.
 - **Email sender** — `from:` in `notify-seller/route.js`,
   `moderation-email.js` and `beta-signup/route.js` is now
   `process.env.RESEND_FROM ?? "ProofSignals <noreply@notify.indieops.co>"`.

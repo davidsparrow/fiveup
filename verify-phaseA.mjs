@@ -55,6 +55,8 @@ console.log('\n[A4 — Proof Market rename + redirect]');
   expect('notify-seller API route renamed to src/app/api/proof-market/', exists('src/app/api/proof-market/notify-seller/route.js') && !exists('src/app/api/proof-lab'));
   expect('demo screenshots renamed to proofmarket-*.jpg', exists('public/demo/proofmarket-01.jpg') && exists('public/demo/proofmarket-02.jpg') && !exists('public/demo/prooflab-01.jpg') && !read('src/lib/fivestarz/demo-slides.js').includes('prooflab'));
   const emailHeaders = ['src/app/api/proof-market/notify-seller/route.js', 'src/lib/fivestarz/moderation-email.js', 'src/app/api/beta-signup/route.js'].map(read).join('\n');
+  const oldBrand = walk('src').filter((f) => read(f).split('\n').some((l) => /FiveStarz/.test(l) && !/^\s*import\b/.test(l)));
+  expect('no user-facing "FiveStarz" brand left in src', oldBrand.length === 0, oldBrand.join(', '));
   expect('email headers say ProofSignals, not fivestarz', !/five<span/.test(emailHeaders) && /Proof<span style="color: #FF6B35;">Signals<\/span>/.test(emailHeaders));
   expect('sitemap lists /proof-market', read('src/app/sitemap.js').includes('"/proof-market"') && !read('src/app/sitemap.js').includes('"/proof-lab"'));
   expect('notify-seller email copy says Proof Market', /New Proof Market deal request/.test(read('src/app/api/proof-market/notify-seller/route.js')));

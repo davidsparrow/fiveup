@@ -845,7 +845,7 @@ function ProofLabListingModal({ listing, categories, assets, charities, onClose,
               {charities.map(c => <option key={c.id} value={c.id}>{c.logo_emoji ? `${c.logo_emoji} ` : ""}{c.name}</option>)}
             </select>
           </div>
-          <p style={{ fontSize: 11, color: T.brownM, fontFamily: "'DM Sans',sans-serif", margin: "8px 0 0", lineHeight: 1.5 }}>Honor-system pledge based on the member price — FiveStarz doesn&rsquo;t process the donation.</p>
+          <p style={{ fontSize: 11, color: T.brownM, fontFamily: "'DM Sans',sans-serif", margin: "8px 0 0", lineHeight: 1.5 }}>Honor-system pledge based on the member price — ProofSignals doesn&rsquo;t process the donation.</p>
         </div>
 
         {error && <div style={{ padding: "10px 14px", background: "#FFE5E5", borderRadius: 10, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginBottom: 14 }}>⚠️ {error}</div>}

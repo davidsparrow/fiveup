@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }) {
     <main style={styles.page}>
       <section style={styles.card}>
         <Link href="/" style={styles.backLink}>
-          ← Back to FiveStarz
+          ← Back to ProofSignals
         </Link>
         <p style={styles.kicker}>Supabase auth test</p>
         <h1 style={styles.title}>Log in</h1>

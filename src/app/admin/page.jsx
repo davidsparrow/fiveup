@@ -10,7 +10,7 @@ import {
 import { resolveFlagAction } from "./actions";
 
 export const metadata = {
-  title: "Moderation console | FiveStarz",
+  title: "Moderation console | ProofSignals",
 };
 
 const STATUSES = ["pending", "reviewing", "resolved", "dismissed"];

@@ -14,7 +14,7 @@ export default async function AccountPage() {
     redirect("/login?next=/account");
   }
 
-  const name = user.user_metadata?.full_name || user.user_metadata?.name || "FiveStarz member";
+  const name = user.user_metadata?.full_name || user.user_metadata?.name || "ProofSignals member";
 
   return (
     <main style={styles.page}>
