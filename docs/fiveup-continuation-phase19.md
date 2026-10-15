@@ -111,44 +111,69 @@ group sizes, who can create a group, and whether a 1-on-1 gets a thread.
 The ask: explore extracting the Discord app architecture as a codebase that
 could be sold to other Skool groups, or to Skool itself.
 
-**Do this before writing D1–D3 code**, because the cheap insurance is a seam,
-and the seam is nearly free to build now and expensive to retrofit: the bot
-layer should never import Supabase directly. Have `src/lib/discord/*` depend
-on a narrow adapter interface (resolve identity, create group, add member,
-list recommendations, record interaction) with a ProofSignals implementation
-behind it. That one rule is the difference between "extract it" and
-"rewrite it", and it costs a day.
+**Extract the mechanism, not the Discord integration.** If Skool ever solves
+"my members want private, focused rooms", a company that positions itself
+*against* Discord and prizes being a monolith will ship native sub-rooms, not
+a blessed dependency on a competitor. So the durable asset is not the bot. It
+is the rules engine underneath: squad formation with anti-repeat separation
+logic, assist nomination that only the helped party can make and that is
+breadth-weighted, two-key unlocks, the corroboration rule. None of that is
+Discord-specific and none of it is obvious — it is the part that took months
+of thinking. Discord is just the cheapest place to prove the mechanism works
+with real people.
 
-What to work out:
+**That means two seams, not one.** Build both before D1–D3. They are nearly
+free now and a rewrite later.
+
+1. **The bot never imports Supabase.** `src/lib/discord/*` depends on a
+   narrow adapter — resolve identity, create group, add member, recommend,
+   record interaction — with a ProofSignals implementation behind it.
+2. **The rules engine never imports Discord.** Squad formation, caps, assist
+   validation and XP sit behind their own interface, with Discord as one
+   adapter. A Skool-native adapter (if they ever ship an API worth using), or
+   Slack, is then just another.
+
+Seam 2 is what makes this sellable to a buyer who does not want Discord at
+all — which, if the monolith read is right, is exactly the buyer. It also
+hedges the real risk: if Skool ships native private rooms, the market for a
+Discord bridge among Skool owners evaporates overnight, and the rules engine
+survives that and is arguably worth more afterwards.
+
+**Go-to-market constraint: the buyer has to be able to call it his own idea.**
+Founders of that type do not buy decks, they notice usage. The only pitch
+that lands is a visible cluster of Skool owners already running it — which is
+the right thing to build toward regardless. Practical consequence: keep the
+brand separable from the mechanism so there is nothing anyone has to credit,
+and do not sink brand equity into "Questmates" as the thing being sold.
+
+What still has to be worked out:
 
 - **What is actually generic?** Identity linking, thread-backed groups with
-  per-plan caps, an anti-repeat recommender, the HTTPS interactions pattern,
-  an assist ledger with an approval queue, leaderboards, a web record of it
-  all. What is *not*: assets, feedback submissions, stars, review
-  separation, the moderation blocklist. The sellable core is the community
-  operations layer, not the reputation product.
+  per-plan caps, the anti-repeat recommender, the HTTPS interactions pattern,
+  an assist ledger with an approval queue, leaderboards, a web record. What is
+  *not*: assets, feedback submissions, stars, review separation, the
+  moderation blocklist. The sellable core is the community operations layer,
+  not the reputation product.
 - **Who is the buyer?** Skool group owners who also run a Discord is the
   plausible market. Selling to Skool itself is probably a non-starter and
-  worth checking rather than assuming: Skool positions *against* Discord,
-  and already ships a (like-based) points and levels system it will not want
+  worth checking rather than assuming: it positions against Discord and
+  already ships a (like-based) points and levels system it will not want
   replaced. Verify both claims before building a pitch on them.
-- **Multi-tenancy is the real engineering cost.** Today's design is
-  single-tenant throughout — one guild, one Supabase project, one
-  service-role key, RLS written against a single community. Two paths:
-  `tenant_id` on every table with RLS rewritten, or one managed install per
-  customer. The second is far cheaper to reach and sells as a service;
-  price the first before choosing it.
+- **Multi-tenancy is the real engineering cost.** Today everything is
+  single-tenant — one guild, one Supabase project, one service-role key, RLS
+  written for a single community. Either `tenant_id` on every table with RLS
+  rewritten, or one managed install per customer. The second is far cheaper
+  to reach and sells as a service; price the first before choosing it.
 - **Discord's own limits help here.** An HTTPS interactions bot needs no
-  privileged intents and no gateway connection, so scaling to many servers
-  is mostly a verification exercise, not an infrastructure one.
-- **Competitive scan**, which has not been done at all: MEE6, Arcane and the
-  engagement-bot tier; Circle, Heartbeat and Mighty Networks on the cohort
-  side; whatever exists specifically bridging Skool and Discord. The honest
-  question is whether the Squad/Mission/Assist model is differentiated or
-  just unbundled.
+  privileged intents and no gateway connection, so many servers is a
+  verification exercise, not an infrastructure one.
+- **Competitive scan**, not started: MEE6, Arcane and the engagement-bot tier;
+  Circle, Heartbeat, Mighty Networks on the cohort side; anything already
+  bridging Skool and Discord. The honest question is whether the
+  Squad/Mission/Assist model is differentiated or just unbundled.
 
 Deliverable for this track: a short written brief — market, what extracts,
-what the seam costs, and a recommendation — not code. Then decide.
+what the two seams cost, and a recommendation — not code. Then decide.
 
 ## Ops notes
 
