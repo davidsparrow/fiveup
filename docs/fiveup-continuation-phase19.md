@@ -120,6 +120,17 @@ The full section is in the build spec; this is the shape.
   the group forms, frozen at creation, visible to everyone in it, and absent
   entirely for groups that want no rewards. (b) One member recommending
   points for another: assistance 25, witnessed accomplishment 50.
+- **Auto-pay is a property of the goal, not of the path.** Each catalog goal
+  carries an `evidence_kind`. `public_url` — follower milestones, views on a
+  post, a site launched, an app live in a store, a first book or course, a
+  Shopify/Etsy store, a published speaker agenda — pays with no human.
+  `screenshot` — users inside your own app, a provisional patent receipt
+  (US provisionals are never published), printed business cards — goes to the
+  queue. What deters lying on the automatic path is discoverability, not
+  verification: the link stays attached to the claim and anyone in the group
+  can click it. Each milestone pays once per member per platform, unique on
+  `(member, goal, platform)`. **"X reviews in a month" is not an eligible
+  goal** — it pays for accumulating reviews, which the wall forbids.
 - **Every recommendation goes to admin approval.** The proof burden sits with
   the recommender; where the thread is private and the bot cannot read it,
   the admin may ask the recipient for a screenshot. Direction matters and is
