@@ -176,35 +176,28 @@ export async function getPreviousMatches(supabase, userId, otherUserId) {
   };
 }
 
-// Union of channels already posted to across the given prior matches, split by
-// which side owned the reviewed asset: `mine` are channels of the caller's
-// asset(s) (blocked for the caller in the new match), `theirs` are the other
-// member's (blocked for them).
+// Union of channels an external review was reported on across the given prior
+// matches, split by who was reviewed: `mine` are channels where the caller was
+// the subject (blocked for the caller in the new match), `theirs` the other
+// member's. Reports are member-volunteered; the platform never asks for them.
 export async function getUsedChannelsForMatches(supabase, matchIds, myUserId) {
   if (matchIds.length === 0) return { mine: [], theirs: [] };
 
-  const { data: feedback, error: feedbackError } = await supabase
-    .from("feedback_submissions")
-    .select("id, reviewee_user_id")
+  const { data: reports, error } = await supabase
+    .from("external_review_reports")
+    .select("subject_user_id, channel_name, status")
     .in("match_id", matchIds);
 
-  if (feedbackError) throw feedbackError;
-  if (feedback.length === 0) return { mine: [], theirs: [] };
+  if (error) throw error;
 
-  const { data: posts, error: postsError } = await supabase
-    .from("review_post_requests")
-    .select("feedback_submission_id, requested_channel_name")
-    .in("feedback_submission_id", feedback.map((f) => f.id));
-
-  if (postsError) throw postsError;
-
-  const revieweeByFeedbackId = Object.fromEntries(feedback.map((f) => [f.id, f.reviewee_user_id]));
   const mine = new Set();
   const theirs = new Set();
-  posts.forEach((p) => {
-    if (revieweeByFeedbackId[p.feedback_submission_id] === myUserId) mine.add(p.requested_channel_name);
-    else theirs.add(p.requested_channel_name);
-  });
+  reports
+    .filter((r) => r.status !== "retracted")
+    .forEach((r) => {
+      if (r.subject_user_id === myUserId) mine.add(r.channel_name);
+      else theirs.add(r.channel_name);
+    });
 
   return { mine: [...mine], theirs: [...theirs] };
 }
@@ -234,17 +227,15 @@ export async function listMyMatches(supabase, userId) {
 
   const theirFeedbackIds = feedback.filter(f => otherUserIds.includes(f.reviewer_user_id)).map(f => f.id);
 
-  const [{ data: ratings, error: ratingsError }, { data: postRequests, error: postRequestsError }] = await Promise.all([
+  const [{ data: ratings, error: ratingsError }, { data: externalReports, error: externalReportsError }] = await Promise.all([
     theirFeedbackIds.length
       ? supabase.from("member_feedback_ratings").select("feedback_submission_id, stars").eq("rater_user_id", userId).in("feedback_submission_id", theirFeedbackIds)
       : Promise.resolve({ data: [], error: null }),
-    theirFeedbackIds.length
-      ? supabase.from("review_post_requests").select("feedback_submission_id, status, requested_channel_name, posted_url").in("feedback_submission_id", theirFeedbackIds)
-      : Promise.resolve({ data: [], error: null }),
+    supabase.from("external_review_reports").select("id, match_id, subject_user_id, author_user_id, reported_by_user_id, channel_name, posted_url, status").in("match_id", matchIds),
   ]);
 
   if (ratingsError) throw ratingsError;
-  if (postRequestsError) throw postRequestsError;
+  if (externalReportsError) throw externalReportsError;
 
   const profileById = Object.fromEntries(profiles.map(p => [p.user_id, p]));
   const feedbackByMatch = {};
@@ -252,7 +243,10 @@ export async function listMyMatches(supabase, userId) {
     (feedbackByMatch[f.match_id] ||= []).push(f);
   });
   const ratingByFeedbackId = Object.fromEntries(ratings.map(r => [r.feedback_submission_id, r.stars]));
-  const postRequestByFeedbackId = Object.fromEntries(postRequests.map(r => [r.feedback_submission_id, r]));
+  const externalReportsByMatch = {};
+  externalReports.forEach(r => {
+    (externalReportsByMatch[r.match_id] ||= []).push(r);
+  });
 
   return matches.map(m => {
     const isA = m.member_a_user_id === userId;
@@ -273,7 +267,7 @@ export async function listMyMatches(supabase, userId) {
       myFeedback,
       theirFeedback,
       theirFeedbackMyRating: theirFeedback ? ratingByFeedbackId[theirFeedback.id] ?? null : null,
-      theirFeedbackPostRequest: theirFeedback ? postRequestByFeedbackId[theirFeedback.id] ?? null : null,
+      externalReviewReports: (externalReportsByMatch[m.id] || []).filter(r => r.status !== "retracted"),
     };
   });
 }
@@ -301,14 +295,27 @@ export async function rateFeedback(supabase, { feedbackSubmissionId, stars }) {
   return data;
 }
 
-export async function requestReviewPost(supabase, { feedbackSubmissionId, channelName }) {
-  const { data, error } = await supabase.rpc("request_review_post", {
-    p_feedback_submission_id: feedbackSubmissionId,
-    p_requested_channel_name: channelName,
+// A member records that a review happened outside ProofSignals — in either
+// direction. Nothing in the product asks them to post one; this only records
+// what already happened, and it is the seed data for per-channel separation.
+export async function reportExternalReview(supabase, { matchId, channelName, iAmTheAuthor, postedUrl }) {
+  const { data, error } = await supabase.rpc("report_external_review", {
+    p_match_id: matchId,
+    p_channel_name: channelName,
+    p_i_am_the_author: iAmTheAuthor,
+    p_posted_url: postedUrl || null,
   });
 
   if (error) throw error;
   return data;
+}
+
+export async function retractExternalReviewReport(supabase, reportId) {
+  const { error } = await supabase.rpc("retract_external_review_report", {
+    p_report_id: reportId,
+  });
+
+  if (error) throw error;
 }
 
 // ── Proof Lab (marketplace) ────────────────────────────────────────────────
