@@ -222,7 +222,7 @@ export default function PublicProfilePage({ profile, feedback = [], assets = [],
               {proofLabAvg != null && proofLabCount > 0 ? (
                 <StatTile
                   value={proofLabAvg}
-                  label="Proof Lab signal"
+                  label="Proof Market signal"
                   sub={`across ${proofLabCount} engaged ${proofLabCount === 1 ? "review" : "reviews"}`}
                 />
               ) : null}
@@ -383,7 +383,7 @@ export default function PublicProfilePage({ profile, feedback = [], assets = [],
         {/* ── Offers / services ── */}
         {offers.length > 0 ? (
           <section style={{ padding: sectionPad, paddingBottom: isMobile ? 48 : 64 }}>
-            <SectionHeading kicker="Proof Lab">Offers & services</SectionHeading>
+            <SectionHeading kicker="Proof Market">Offers & services</SectionHeading>
             <div style={{ display: "grid", gap: 14 }}>
               {offers.map((o, i) => {
                 const price = formatMoney(o.member_price_cents);
@@ -437,8 +437,8 @@ export default function PublicProfilePage({ profile, feedback = [], assets = [],
             </div>
             <p style={{ fontFamily: FONT_SANS, fontSize: 13, color: T.slate, marginTop: 16 }}>
               Member pricing shown.{" "}
-              <Link href="/proof-lab" style={{ color: T.orange, fontWeight: 700 }}>
-                Explore Proof Lab →
+              <Link href="/proof-market" style={{ color: T.orange, fontWeight: 700 }}>
+                Explore Proof Market →
               </Link>
             </p>
           </section>

@@ -10,15 +10,15 @@ export async function POST(req) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
 
-      from: "FiveStarz <noreply@bendersaas.ai>",
+      from: process.env.RESEND_FROM ?? "ProofSignals <noreply@notify.indieops.co>",
       to: ["spasta+fivestarz@gmail.com"],
-      subject: `New FiveStarz Beta Request — ${name}`,
+      subject: `New ProofSignals Beta Request — ${name}`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #3D2B1F;">
           <div style="background: #3D2B1F; padding: 28px 32px; border-radius: 16px 16px 0 0;">
             <span style="font-size: 24px;">⭐</span>
             <span style="font-size: 20px; font-weight: 800; color: #fff; margin-left: 8px;">
-              five<span style="color: #FF6B35;">starz</span>
+              Proof<span style="color: #FF6B35;">Signals</span>
             </span>
           </div>
           <div style="background: #fff; padding: 32px; border-radius: 0 0 16px 16px; border: 1.5px solid #F0E8E0;">

@@ -8,8 +8,8 @@ const FOOTER_LINKS = [
   { label: "Home", href: "/" },
   { label: "My Dashboard", href: "/dashboard" },
   { label: "Add Asset", href: "/assets/new" },
-  { label: "Browse Members", href: "/browse" },
-  { label: "Proof Lab", href: "/proof-lab" },
+  { label: "Browse Members", href: "/browse", webMatchingOnly: true }, // archived web matching surface (Phase A)
+  { label: "Proof Market", href: "/proof-market" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "Live Demo", href: "/demo" },
   { label: "Pricing", href: "/pricing" },
@@ -17,9 +17,12 @@ const FOOTER_LINKS = [
   { label: "Trust & Safety", href: "/safety" },
 ];
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useMatchSurface } from "@/components/fivestarz/PageShell";
 
 export default function Footer() {
   const isMobile = useIsMobile();
+  const matchSurface = useMatchSurface();
+  const footerLinks = FOOTER_LINKS.filter((l) => !l.webMatchingOnly || matchSurface === "web");
   return (
     <footer style={{ background: T.brown, padding: isMobile ? "36px 20px 24px" : "48px 32px 32px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -30,7 +33,7 @@ export default function Footer() {
           </div>
           <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
             <div>
-              {FOOTER_LINKS.map(({ label, href }) => (
+              {footerLinks.map(({ label, href }) => (
                 <div key={href} style={{ marginBottom: 10 }}>
                   <Link href={href} style={{ fontSize: 14, color: "#C4A68A", fontFamily: "'DM Sans',sans-serif", textDecoration: "none" }}>{label}</Link>
                 </div>

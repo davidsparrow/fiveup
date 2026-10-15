@@ -22,7 +22,7 @@ export const T = {
 
 export const NAV_LINKS = [
   { label: "How It Works", href: "/how-it-works" },
-  { label: "Proof Lab", href: "/proof-lab" },
+  { label: "Proof Market", href: "/proof-market" },
   { label: "Pricing", href: "/pricing" },
   { label: "Community Rules", href: "/community" },
   { label: "Trust & Safety", href: "/safety" },
