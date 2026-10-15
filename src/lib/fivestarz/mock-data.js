@@ -43,7 +43,7 @@ export const ME_PROOF_LISTINGS = [
 
 export const MATCHES = [
   { id: 1, person: "Alex Chen", avatar: "AC", asset: "UX Design Studio", type: "Service / Consulting", status: "feedback_pending", due: "Mar 8", channels: ["Google Business Profile"], color: "#FF6B35" },
-  { id: 2, person: "Maya Patel", avatar: "MP", asset: "E-com Growth Newsletter", type: "Content / Podcast / Video", status: "awaiting_post", due: "Mar 5", channels: ["Substack", "LinkedIn"], color: "#1A9E8F" },
+  { id: 2, person: "Maya Patel", avatar: "MP", asset: "E-com Growth Newsletter", type: "Content / Podcast / Video", status: "completed", due: "Mar 5", channels: ["Substack", "LinkedIn"], color: "#1A9E8F" },
   { id: 3, person: "Sam Torres", avatar: "ST", asset: "Shopify Plugin", type: "Digital Product / SaaS", status: "posted", due: "Feb 28", channels: ["Shopify App Store"], color: "#F4A832", postedCh: "Shopify App Store", myFbRating: 4 },
   { id: 4, person: "Priya Nair", avatar: "PN", asset: "Brand Strategy Session", type: "Advisory / Consulting Skills", status: "posted", due: "Feb 20", channels: ["Google Business Profile", "Yelp"], color: "#6B4226", postedCh: "Google Business Profile", myFbRating: null },
   { id: 5, person: "Chris Wu", avatar: "CW", asset: "Freelance Dev Services", type: "Service / Consulting", status: "matched", due: "Mar 12", channels: ["Clutch.co", "Google Business Profile"], color: "#38A169" },

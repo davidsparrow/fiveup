@@ -136,7 +136,11 @@ console.log('\n[A3 — gated routes + nav]');
   const dash = read('src/app/dashboard/page.jsx');
   expect('dashboard route passes the archived MatchActions only on web', /surface === MATCH_SURFACE_WEB \? <MatchActions \/> : null/.test(dash));
   const dashPage = read('src/components/fivestarz/DashboardPage.jsx');
-  expect('DashboardPage keeps the feedback / post / rating flow', /<FeedbackModal/.test(dashPage) && /<PostModal/.test(dashPage) && /<RateFeedbackWidget/.test(dashPage));
+  // Phase 19 retired the post-request flow (<PostModal>): the platform does not
+  // ask members to post public reviews. <ReportReviewModal> replaced it, and
+  // records a review that happened on its own.
+  expect('DashboardPage keeps the feedback / rating flow', /<FeedbackModal/.test(dashPage) && /<RateFeedbackWidget/.test(dashPage));
+  expect('DashboardPage records outside reviews rather than requesting posts', /<ReportReviewModal/.test(dashPage) && !/<PostModal/.test(dashPage));
   expect('DashboardPage shows a Discord notice when the surface is not web', /matchSurface !== "web"/.test(dashPage) && /Discord/.test(dashPage));
 
   const shell = read('src/components/fivestarz/PageShell.jsx');

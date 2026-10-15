@@ -349,13 +349,18 @@ async function seed() {
     }
 
     if (m.reviewPost) {
-      const requester = world[m.reviewPost.requester];
-      const reviewerHandle = m.reviewPost.feedbackFrom;
-      const fbId = world[reviewerHandle].feedbackIds.get(`${reviewerHandle}→${m.reviewPost.requester}`);
-      const reqId = await rpc(requester.client, 'request_review_post', {
-        p_feedback_submission_id: fbId, p_requested_channel_name: m.reviewPost.channel,
+      // A review that happened outside ProofSignals, recorded by both sides.
+      // Two matching reports corroborate each other and confirm the row.
+      const subject = world[m.reviewPost.requester];
+      const authorHandle = m.reviewPost.feedbackFrom;
+      await rpc(subject.client, 'report_external_review', {
+        p_match_id: matchId, p_channel_name: m.reviewPost.channel,
+        p_i_am_the_author: false, p_posted_url: null,
       }, m.reviewPost.requester);
-      await rpc(world[reviewerHandle].client, 'respond_review_post_request', { p_request_id: reqId, p_accept: true }, reviewerHandle);
+      await rpc(world[authorHandle].client, 'report_external_review', {
+        p_match_id: matchId, p_channel_name: m.reviewPost.channel,
+        p_i_am_the_author: true, p_posted_url: null,
+      }, authorHandle);
     }
     log(`  ✓ ${m.by} ⇄ ${m.other}`);
   }

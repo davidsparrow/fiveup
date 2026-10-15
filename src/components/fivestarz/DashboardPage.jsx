@@ -8,7 +8,7 @@ import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
-import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, requestReviewPost, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard, createProofLabReview, getProofLabReviewsForSeller } from "@/lib/fivestarz/data";
+import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, reportExternalReview, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard, createProofLabReview, getProofLabReviewsForSeller } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
 import { initials } from "@/lib/fivestarz/format";
 import MatchPipeline from "@/components/fivestarz/MatchPipeline";
@@ -113,7 +113,7 @@ export default function DashboardPage({ userId, matchSurface = "web", matchActio
   const router = useRouter();
   const [tab, setTab] = useState("matches");
   const [fbModal, setFbModal] = useState(null);
-  const [postModal, setPostModal] = useState(null);
+  const [reportModal, setReportModal] = useState(null);
   const isMobile = useIsMobile();
   const hideHeaderIdentityText = useIsMobile(1024);
   const [profile, setProfile] = useState(null);
@@ -125,8 +125,9 @@ export default function DashboardPage({ userId, matchSurface = "web", matchActio
     matched: { label: "New Match", color: T.gold, bg: T.goldL + "55" },
     accepted: { label: "New Match", color: T.gold, bg: T.goldL + "55" },
     feedback_pending: { label: "Feedback Due", color: T.orange, bg: T.orangeP },
-    awaiting_post: { label: "Post Requested", color: T.teal, bg: T.tealP },
-    posted: { label: "Publicly Shared ✓", color: T.green, bg: T.greenP },
+    // Dormant: nothing writes these any more. Kept so an old row still renders.
+    awaiting_post: { label: "Completed", color: T.green, bg: T.greenP },
+    posted: { label: "Completed", color: T.green, bg: T.greenP },
     completed: { label: "Completed", color: T.green, bg: T.greenP },
     queued_next_month: { label: "Queued", color: T.brownL, bg: T.cream },
     cancelled: { label: "Cancelled", color: T.brownL, bg: T.cream },
@@ -251,13 +252,10 @@ export default function DashboardPage({ userId, matchSurface = "web", matchActio
                           {m.myFeedback && !m.theirFeedback && <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Feedback sent — waiting on their feedback</div>}
                           {bothSubmitted && (
                             <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "stretch" : "flex-end", gap: 6, width: isMobile ? "100%" : "auto" }}>
-                              {m.theirFeedbackPostRequest?.status === "posted" ? (
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: T.green, fontFamily: "'DM Sans',sans-serif", fontWeight: 600 }}>✓ Posted to {m.theirFeedbackPostRequest.requested_channel_name}</div>
-                              ) : m.theirFeedbackPostRequest ? (
-                                <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>Post requested · {m.theirFeedbackPostRequest.status}</div>
-                              ) : (
-                                <Btn sz="sm" v="teal" onClick={() => setPostModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Request Post</Btn>
+                              {m.externalReviewReports?.length > 0 && (
+                                <div style={{ fontSize: 12, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textAlign: isMobile ? "left" : "right" }}>On record outside ProofSignals: {m.externalReviewReports.map(r => r.channel_name).join(", ")}</div>
                               )}
+                              <Btn sz="sm" v="ghost" onClick={() => setReportModal(m)} sx={isMobile ? { width: "100%", justifyContent: "center" } : {}}>Record an outside review</Btn>
                               <RateFeedbackWidget feedbackSubmissionId={m.theirFeedback.id} initialRating={m.theirFeedbackMyRating} />
                             </div>
                           )}
@@ -415,10 +413,10 @@ export default function DashboardPage({ userId, matchSurface = "web", matchActio
           }}
         />
       )}
-      {postModal && (
-        <PostModal
-          match={postModal}
-          onClose={() => setPostModal(null)}
+      {reportModal && (
+        <ReportReviewModal
+          match={reportModal}
+          onClose={() => setReportModal(null)}
           onSubmitted={async () => {
             const supabase = createClient();
             await refreshMatches(supabase);
@@ -992,29 +990,51 @@ function FeedbackModal({ match, onClose, onSubmitted }) {
   );
 }
 
-function PostModal({ match, onClose, onSubmitted }) {
+function ReportReviewModal({ match, onClose, onSubmitted }) {
   const isMobile = useIsMobile();
-  const [sel, setSel] = useState(null);
+  const [iAmAuthor, setIAmAuthor] = useState(null);
+  const [channel, setChannel] = useState(null);
+  const [otherChannel, setOtherChannel] = useState("");
+  const [url, setUrl] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
-  const channels = match.myAsset.asset_channels;
+
+  const channels = [...new Set([
+    ...(match.myAsset?.asset_channels || []),
+    ...(match.theirAsset?.asset_channels || []),
+  ].map(c => c.channel_name))];
+
+  const chosenChannel = channel === "__other" ? otherChannel.trim() : channel;
+  const ready = iAmAuthor !== null && Boolean(chosenChannel);
 
   const send = async () => {
-    if (!sel) return;
+    if (!ready) return;
     setSending(true);
     setError("");
     try {
       const supabase = createClient();
-      await requestReviewPost(supabase, { feedbackSubmissionId: match.theirFeedback.id, channelName: sel });
+      await reportExternalReview(supabase, {
+        matchId: match.id,
+        channelName: chosenChannel,
+        iAmTheAuthor: iAmAuthor,
+        postedUrl: url.trim() || null,
+      });
       await onSubmitted?.();
       setSent(true);
     } catch (err) {
-      setError(err.message || "Could not send this request.");
+      setError(err.message || "Could not record this.");
     } finally {
       setSending(false);
     }
   };
+
+  const optionStyle = (active) => ({
+    padding: "14px 18px", borderRadius: 12, marginBottom: 10, cursor: "pointer",
+    border: `2px solid ${active ? T.teal : "#E8DDD5"}`, background: active ? T.tealP : "#fff",
+    display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.15s",
+    fontFamily: "'DM Sans',sans-serif", fontWeight: 600, color: T.brown,
+  });
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(61,43,31,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -1022,26 +1042,43 @@ function PostModal({ match, onClose, onSubmitted }) {
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", fontSize: 22, color: T.brownL }}>×</button>
         {!sent ? (
           <>
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Request Post From</div>
-              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: 0 }}>{match.otherDisplayName}</h2>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>Record An Outside Review</div>
+              <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: 0 }}>You and {match.otherDisplayName}</h2>
             </div>
-            <div style={{ padding: "12px 14px", background: T.tealP, borderRadius: 12, marginBottom: 20, fontSize: 13, color: T.teal, fontFamily: "'DM Sans',sans-serif" }}>✓ {match.otherDisplayName} is never obligated to post. This is a friendly request only.</div>
-            {channels.length === 0 && <div style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif", marginBottom: 16 }}>Your asset has no review channels set up yet.</div>}
+            <div style={{ padding: "12px 14px", background: T.cream, borderRadius: 12, marginBottom: 20, fontSize: 13, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.5 }}>ProofSignals never asks anyone to post a review anywhere. If one happened on its own, recording it here keeps your separation record accurate.</div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.brown, marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>What happened?</div>
+            <div onClick={() => setIAmAuthor(true)} style={optionStyle(iAmAuthor === true)}>
+              <span>I reviewed {match.otherDisplayName}</span>{iAmAuthor === true && <span style={{ color: T.teal }}>✓</span>}
+            </div>
+            <div onClick={() => setIAmAuthor(false)} style={optionStyle(iAmAuthor === false)}>
+              <span>{match.otherDisplayName} reviewed me</span>{iAmAuthor === false && <span style={{ color: T.teal }}>✓</span>}
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.brown, margin: "20px 0 8px", fontFamily: "'DM Sans',sans-serif" }}>Where?</div>
             {channels.map(c => (
-              <div key={c.channel_name} onClick={() => setSel(c.channel_name)} style={{ padding: "14px 18px", borderRadius: 12, marginBottom: 10, cursor: "pointer", border: `2px solid ${sel === c.channel_name ? T.teal : "#E8DDD5"}`, background: sel === c.channel_name ? T.tealP : "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.15s" }}>
-                <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 600, color: T.brown }}>{c.channel_name}</span>
-                {sel === c.channel_name && <span style={{ color: T.teal }}>✓</span>}
+              <div key={c} onClick={() => setChannel(c)} style={optionStyle(channel === c)}>
+                <span>{c}</span>{channel === c && <span style={{ color: T.teal }}>✓</span>}
               </div>
             ))}
+            <div onClick={() => setChannel("__other")} style={optionStyle(channel === "__other")}>
+              <span>Somewhere else</span>{channel === "__other" && <span style={{ color: T.teal }}>✓</span>}
+            </div>
+            {channel === "__other" && (
+              <input value={otherChannel} onChange={e => setOtherChannel(e.target.value)} placeholder="Channel name" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: "'DM Sans',sans-serif", marginBottom: 10 }} />
+            )}
+
+            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Link to it (optional)" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid #E8DDD5", fontSize: 14, fontFamily: "'DM Sans',sans-serif", marginTop: 10 }} />
+
             {error && <div style={{ padding: "12px 16px", background: "#FFE5E5", borderRadius: 12, fontSize: 13, color: "#C0392B", fontFamily: "'DM Sans',sans-serif", marginTop: 12 }}>⚠️ {error}</div>}
-            <Btn v="teal" onClick={send} disabled={!sel || sending} sx={{ width: "100%", justifyContent: "center", marginTop: 12, opacity: sel ? 1 : 0.5 }}>{sending ? "Sending…" : "Send Request"}</Btn>
+            <Btn v="teal" onClick={send} disabled={!ready || sending} sx={{ width: "100%", justifyContent: "center", marginTop: 16, opacity: ready ? 1 : 0.5 }}>{sending ? "Saving…" : "Record it"}</Btn>
           </>
         ) : (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 52, marginBottom: 16 }}>📨</div>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Request Sent!</h2>
-            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}><strong>{match.otherDisplayName}</strong> has been notified. If they post to <strong>{sel}</strong>, you&rsquo;ll get a confirmation here.</p>
+            <div style={{ fontSize: 52, marginBottom: 16 }}>📒</div>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>Recorded</h2>
+            <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, marginBottom: 24 }}>Thanks — this stays private between you, {match.otherDisplayName} and our moderators. It only ever feeds your separation record.</p>
             <Btn onClick={onClose}>Done</Btn>
           </div>
         )}

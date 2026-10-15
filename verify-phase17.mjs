@@ -18,45 +18,36 @@ const states = (m) => matchPipelineStages(m)?.map((s) => s.state).join(',');
 const labels = (m) => matchPipelineStages(m)?.map((s) => s.label).join(',');
 
 const FB = { id: 'x' };
-const mk = (over = {}) => ({ status: 'matched', myFeedback: null, theirFeedback: null, theirFeedbackPostRequest: null, ...over });
+const mk = (over = {}) => ({ status: 'matched', myFeedback: null, theirFeedback: null, ...over });
 
 console.log('\n[derivation — lifecycle scenarios]');
 {
-  expect('5 stages defined', PIPELINE_STAGES.length === 5);
+  // Phase 19 removed the "Post requested" and "Posted" stages: the platform
+  // does not tell members a match is unfinished until a public review exists.
+  expect('4 stages defined', PIPELINE_STAGES.length === 4, String(PIPELINE_STAGES.length));
+  expect('no post stages remain', !PIPELINE_STAGES.some((s) => /post/i.test(s.key)),
+    PIPELINE_STAGES.map((s) => s.key).join(','));
 
   expect('fresh match: matched done, your feedback current',
-    states(mk()) === 'done,current,pending,pending,pending', states(mk()));
+    states(mk()) === 'done,current,pending,pending', states(mk()));
 
   expect('my feedback sent: their feedback current',
-    states(mk({ myFeedback: FB })) === 'done,done,current,pending,pending', states(mk({ myFeedback: FB })));
+    states(mk({ myFeedback: FB })) === 'done,done,current,pending', states(mk({ myFeedback: FB })));
 
   expect('their feedback first still shows my side current',
-    states(mk({ theirFeedback: FB })) === 'done,current,done,pending,pending', states(mk({ theirFeedback: FB })));
+    states(mk({ theirFeedback: FB })) === 'done,current,done,pending', states(mk({ theirFeedback: FB })));
 
   const both = mk({ myFeedback: FB, theirFeedback: FB });
-  expect('both submitted: post requested current',
-    states(both) === 'done,done,done,current,pending', states(both));
-
-  const requested = mk({ myFeedback: FB, theirFeedback: FB, theirFeedbackPostRequest: { status: 'pending' } });
-  expect('post requested: posted current',
-    states(requested) === 'done,done,done,done,current', states(requested));
-
-  const accepted = mk({ myFeedback: FB, theirFeedback: FB, theirFeedbackPostRequest: { status: 'accepted' } });
-  expect('accepted request relabels stage 4', labels(accepted).includes('Post accepted'), labels(accepted));
-
-  const posted = mk({ status: 'posted', myFeedback: FB, theirFeedback: FB, theirFeedbackPostRequest: { status: 'posted' } });
-  expect('posted: all five done', states(posted) === 'done,done,done,done,done', states(posted));
-
-  const declined = mk({ myFeedback: FB, theirFeedback: FB, theirFeedbackPostRequest: { status: 'declined' } });
-  expect('declined request blocks the tail', states(declined) === 'done,done,done,blocked,blocked', states(declined));
-  expect('declined request is labeled', labels(declined).includes('Post declined'), labels(declined));
+  expect('both submitted: the pipeline is complete',
+    states(both) === 'done,done,done,done', states(both));
+  expect('final stage is Complete', labels(both).endsWith('Complete'), labels(both));
 
   expect('queued match has no pipeline', matchPipelineStages(mk({ status: 'queued_next_month' })) === null);
   expect('cancelled-before-progress has no pipeline', matchPipelineStages(mk({ status: 'cancelled' })) === null);
 
   const cancelledMid = mk({ status: 'cancelled', myFeedback: FB });
   expect('cancelled mid-flight keeps progress, blocks the rest',
-    states(cancelledMid) === 'done,done,blocked,blocked,blocked', states(cancelledMid));
+    states(cancelledMid) === 'done,done,blocked,blocked', states(cancelledMid));
 }
 
 console.log('\n[wiring]');
