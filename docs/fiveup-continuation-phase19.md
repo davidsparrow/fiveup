@@ -72,9 +72,8 @@ string outside Phase 19's comments.
 
 ## Decisions locked — do not relitigate
 
-Groups are **both** user-created and matcher-suggested · Discord runs
-**alongside** the web matching surface (the Sep 24 "Phase A" archive is
-dropped) · Discord ships **before** points · private groups are Discord
+Groups are **both** user-created and matcher-suggested · Discord ships
+**before** points · private groups are Discord
 **private threads**, not channels (500-channel cap) · a match-up is a
 `matches` row plus `discord_thread_id`, `groups` is for 3+ · challenge
 cohorts can be as small as 2 · **no admin approval on match-ups** — caps are
@@ -84,6 +83,28 @@ review separation shows **degrees 1–4 bare**, no guidance text, never names
 an intermediary, never compares channels · non-member edges are
 **admin-only** to view and dispute · **URL-only dedupe** for non-member
 nodes, no global name picker.
+
+## Phase A shipped anyway — reconcile this first
+
+The Discord spec decided to **drop** the Sep 24 "Phase A" (shelving the web
+matching surface). A parallel branch implemented and merged it the same day:
+PR #16, `claude/proofsignals-discord-skool-refactor-4uqssh`. Main now has
+`/browse` and `/account/preferences` rendering archived components out of
+`src/archive/web-matching/` behind a `match_surface()` gate, and Proof Lab
+renamed to **Proof Market** — not `/deals`, which is what the Sep 24 plan
+proposed.
+
+Its migration `20260925120000_phaseA_match_surface_gate.sql` is **not applied
+to the live database** (`match_surface()` does not exist there), and
+`resolveMatchSurface` fails open to `web`. So behaviour today is still "both
+surfaces live", which is what the spec decided — but by accident rather than
+by design.
+
+**Decide before building D1:** apply that migration and seed the gate to
+`discord`, which removes web matching while Discord still has no members and
+is what the spec argued against; or leave the gate inert and treat Phase A as
+a rename-plus-refactor. Either way the spec's decision table needs editing,
+because it currently describes a world that lasted a day.
 
 ## Constraints that bite (verified in the migrations)
 
