@@ -5,8 +5,8 @@ import AssetPage from "@/components/fivestarz/AssetPage";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
-  title: "Add New Asset | FiveStarz",
-  description: "Set up a new asset on FiveStarz and start collecting honest feedback from real members.",
+  title: "Add New Asset | ProofSignals",
+  description: "Set up a new asset on ProofSignals and start collecting honest feedback from real members.",
 };
 
 export default async function NewAssetPage() {

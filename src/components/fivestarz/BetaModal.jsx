@@ -61,7 +61,7 @@ export default function BetaModal({ show, onClose }) {
             <Btn onClick={submit} sx={{ width: "100%", justifyContent: "center", marginTop: 8 }} disabled={loading}>{loading ? "Sending..." : "✦ Request My Spot →"}</Btn>
           </>
         ) : (
-          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>You&rsquo;re on the list!</h2><p style={{ fontSize: 15, color: T.slate, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: 28 }}>Thanks, <strong>{form.name || "friend"}</strong>! Confirmation sent to <strong>{form.email || "your inbox"}</strong>.</p><Btn onClick={onClose}>Back to FiveStarz</Btn></div>
+          <div style={{ textAlign: "center", padding: "20px 0" }}><div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div><h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 800, color: T.brown, margin: "0 0 12px" }}>You&rsquo;re on the list!</h2><p style={{ fontSize: 15, color: T.slate, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: 28 }}>Thanks, <strong>{form.name || "friend"}</strong>! Confirmation sent to <strong>{form.email || "your inbox"}</strong>.</p><Btn onClick={onClose}>Back to ProofSignals</Btn></div>
         )}
       </div>
     </div>

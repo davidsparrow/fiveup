@@ -6,9 +6,9 @@ const CONTENT_LABELS = {
   profile_bio: "profile bio",
   feedback: "feedback submission",
   asset: "asset",
-  proof_lab_listing: "Proof Lab listing",
+  proof_lab_listing: "Proof Market listing",
   deal_note: "deal note",
-  proof_lab_review: "Proof Lab review",
+  proof_lab_review: "Proof Market review",
 };
 
 // Subject + body copy per moderation action. Returns null for actions the
@@ -58,7 +58,7 @@ export function renderModerationEmailHtml({ heading, body }) {
     <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; color: #3D2B1F;">
       <div style="background: #3D2B1F; padding: 28px 32px; border-radius: 16px 16px 0 0;">
         <span style="font-size: 20px; font-weight: 800; color: #fff;">
-          five<span style="color: #FF6B35;">starz</span>
+          Proof<span style="color: #FF6B35;">Signals</span>
         </span>
       </div>
       <div style="background: #fff; padding: 32px; border-radius: 0 0 16px 16px; border: 1.5px solid #F0E8E0;">
@@ -108,7 +108,7 @@ export async function sendModerationOutcomeEmail({ flagId, action }) {
 
     const resend = new Resend(resendKey);
     await resend.emails.send({
-      from: "FiveStarz <noreply@bendersaas.ai>",
+      from: process.env.RESEND_FROM ?? "ProofSignals <noreply@notify.indieops.co>",
       to: [to],
       subject: email.subject,
       html: renderModerationEmailHtml(email),

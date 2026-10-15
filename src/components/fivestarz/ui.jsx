@@ -101,12 +101,12 @@ export function ButtonLink({ children, href, v = "primary", sz = "md", sx = {}, 
   );
 }
 
-/** Renders a feature string, turning "Proof Lab" into a link to /proof-lab */
+/** Renders a feature string, turning "Proof Market" into a link to /proof-market */
 export function FeatureText({ text }) {
-  if (!text.includes("Proof Lab")) return <>{text}</>;
-  const [before, after] = text.split("Proof Lab");
+  if (!text.includes("Proof Market")) return <>{text}</>;
+  const [before, after] = text.split("Proof Market");
   return (
-    <>{before}<Link href="/proof-lab" style={{ color: "inherit", textDecoration: "underline", fontWeight: 700 }}>Proof Lab</Link>{after}</>
+    <>{before}<Link href="/proof-market" style={{ color: "inherit", textDecoration: "underline", fontWeight: 700 }}>Proof Market</Link>{after}</>
   );
 }
 

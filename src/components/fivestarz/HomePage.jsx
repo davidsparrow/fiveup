@@ -133,13 +133,13 @@ export default function HomePageContent() {
         </div>
       </section>
 
-      {/* ── Proof Lab Marketplace ── */}
+      {/* ── Proof Market Marketplace ── */}
       <section style={{ background: `linear-gradient(160deg, ${T.brown} 0%, #1C3A40 100%)`, overflow: "hidden", paddingTop: isMobile ? 56 : 80, paddingBottom: isMobile ? 48 : 72 }}>
         {/* Header + benefits */}
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "0 20px 40px" : "0 32px 52px", textAlign: "center" }}>
           <Pill color={T.teal} bg={T.teal + "28"}>🧪 Member Marketplace</Pill>
           <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 42, fontWeight: 900, color: "#fff", margin: "14px 0 16px", letterSpacing: "-0.02em" }}>
-            The Proof Lab
+            Proof Market
           </h2>
           <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 15 : 18, color: "#C4A68A", lineHeight: 1.65, maxWidth: 580, margin: "0 auto 36px" }}>
             Members offer exclusive deals on their best services — marketing, design, video, AI, ads, and more. Access comes with your membership. Zero middlemen.
@@ -189,7 +189,7 @@ export default function HomePageContent() {
 
         {/* CTA */}
         <div style={{ textAlign: "center" }}>
-          <Btn v="teal" sz="lg" onClick={() => router.push("/proof-lab")}>🧪 Explore the Proof Lab →</Btn>
+          <Btn v="teal" sz="lg" onClick={() => router.push("/proof-market")}>🧪 Explore the Proof Market →</Btn>
         </div>
       </section>
 

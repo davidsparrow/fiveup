@@ -26,7 +26,7 @@ console.log('\n[composition — one email per notifiable action]');
     expect(`${action} composes subject + heading + body`, !!e?.subject && !!e?.heading && !!e?.body, JSON.stringify(e));
   }
   const rm = composeModerationEmail({ action: 'remove_content', contentType: 'proof_lab_listing' });
-  expect('remove_content names the content type', /Proof Lab listing/.test(rm?.subject ?? ''), rm?.subject);
+  expect('remove_content names the content type', /Proof Market listing/.test(rm?.subject ?? ''), rm?.subject);
   const rs = composeModerationEmail({ action: 'restore_content', contentType: 'feedback' });
   expect('restore_content names the content type', /feedback submission/.test(rs?.subject ?? ''), rs?.subject);
   const unknownType = composeModerationEmail({ action: 'remove_content', contentType: 'something_new' });
