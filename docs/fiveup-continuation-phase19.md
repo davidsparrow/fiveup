@@ -82,29 +82,63 @@ group pairings are **exempt** from monthly match quota via `in_group_id` ·
 review separation shows **degrees 1–4 bare**, no guidance text, never names
 an intermediary, never compares channels · non-member edges are
 **admin-only** to view and dispute · **URL-only dedupe** for non-member
-nodes, no global name picker.
+nodes, no global name picker · **no points for any review** · points are
+recommended *to* you, never requested *by* you · the dues refund is retired ·
+the match-surface gate is seeded `web` until D3 lands.
 
-## Phase A shipped anyway — reconcile this first
+## Phase A: resolved, gate seeded to `web`
 
-The Discord spec decided to **drop** the Sep 24 "Phase A" (shelving the web
-matching surface). A parallel branch implemented and merged it the same day:
-PR #16, `claude/proofsignals-discord-skool-refactor-4uqssh`. Main now has
-`/browse` and `/account/preferences` rendering archived components out of
-`src/archive/web-matching/` behind a `match_surface()` gate, and Proof Lab
-renamed to **Proof Market** — not `/deals`, which is what the Sep 24 plan
-proposed.
+A parallel branch implemented and merged Phase A (PR #16,
+`claude/proofsignals-discord-skool-refactor-4uqssh`) the same day this
+session's spec decided to drop it. Resolved 2026-10-15: the migration
+`20260925120000_phaseA_match_surface_gate.sql` is **applied**, with all three
+plans seeded `{"surface":"web"}` rather than the `discord` the file ships.
+(Its seed is `on conflict do nothing`, so the `web` rows were inserted first
+and the file's own seed became a no-op.)
 
-Its migration `20260925120000_phaseA_match_surface_gate.sql` is **not applied
-to the live database** (`match_surface()` does not exist there), and
-`resolveMatchSurface` fails open to `web`. So behaviour today is still "both
-surfaces live", which is what the spec decided — but by accident rather than
-by design.
+Both surfaces are therefore live — deliberately now, rather than by accident.
+`/browse` and `/account/preferences` render the archived components out of
+`src/archive/web-matching/`, and `create_match` / `eligible_match_candidates`
+carry the gate guard. Flipping to Discord-only is a one-row edit on the day
+D3 lands, which is the entire point of the gate.
 
-**Decide before building D1:** apply that migration and seed the gate to
-`discord`, which removes web matching while Discord still has no members and
-is what the spec argued against; or leave the gate inert and treat Phase A as
-a rename-plus-refactor. Either way the spec's decision table needs editing,
-because it currently describes a world that lasted a day.
+Two things came along with it. The marketplace is **Proof Market**, not
+`/deals`. And `matches.source` now allows `'discord'`, which closes one of
+the constraints below before D4 starts.
+
+Verified after applying: verify-phaseA 66, verify-phase19 28, verify-phase17
+12, verify-phase15 11 — all green.
+
+## The points economy (specced 2026-10-15)
+
+The full section is in the build spec; this is the shape.
+
+- **No points for any review, internal or external, ever.** Not for writing
+  one, receiving one, or a rating. Nothing in the earning table is reachable
+  through a review — a design constraint, not a policy to remember.
+- **Two earning paths only.** (a) Automated, against goals defined *before*
+  the group forms, frozen at creation, visible to everyone in it, and absent
+  entirely for groups that want no rewards. (b) One member recommending
+  points for another: assistance 25, witnessed accomplishment 50.
+- **Every recommendation goes to admin approval.** The proof burden sits with
+  the recommender; where the thread is private and the bot cannot read it,
+  the admin may ask the recipient for a screenshot. Direction matters and is
+  easy to lose: **points come from someone else to you, and you never ask for
+  your own.**
+- **Peg: 10 points ≈ $1.** A $19/month software seat is 190 points, roughly
+  eight assists. Swag is landed cost × 10.
+- **Spends:** software access for members outside the paid Skool group, swag
+  for members inside it (they already have every software), Skool course
+  unlocks for anyone. The course unlock is the only zero-touch fulfilment —
+  Zapier's *Unlock Course for Member* fires on approval, keyed by email,
+  needs a Skool Pro plan and a `member_identities(provider = 'skool')` row.
+- **The dues refund is retired.** It was the one spend that converted points
+  into money, which turned the approval queue from quality control into fraud
+  control and raised an accounting question. Swag does the same job for paid
+  members without that.
+- **Same-pair concentration is surfaced to the admin, not decayed.** Decay
+  would tax a genuine working friendship, which is the success case. One line
+  of context on the approval card instead.
 
 ## Constraints that bite (verified in the migrations)
 
@@ -112,9 +146,9 @@ because it currently describes a world that lasted a day.
    without a match row.
 2. `matches` requires an asset on **both** sides, so joining a feedback
    group has to require an asset.
-3. `matches.source` carries `check (source in ('auto','browse','queued'))`
-   **and** `create_match` raises on anything but browse/queued. Adding
-   `discord` is a migration plus a function replace, not a convention.
+3. `matches.source` — **half done.** Phase A widened the table CHECK to
+   include `'discord'`. `create_match`'s own member-input check still accepts
+   only browse/queued, so the service-role writer remains D4 work.
 4. `member_feedback_ratings` is `unique (rater_user_id, rated_user_id)` —
    one rating per ordered pair, ever. Open question whether to widen it.
 5. **The bot cannot call existing member RPCs.** They resolve the caller
