@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { HOW_STEPS, PLANS, PROOF_LISTINGS } from "@/lib/fivestarz/mock-data";
+import { HOW_STEPS, PROOF_LISTINGS } from "@/lib/fivestarz/mock-data";
+import { PLAN_TIERS, getSkoolUrls } from "@/lib/fivestarz/plans";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Av, Btn, ButtonLink, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
@@ -199,28 +200,42 @@ export default function HomePageContent() {
           <div style={{ textAlign: "center", marginBottom: isMobile ? 28 : 48 }}>
             <Pill color={T.orange}>Simple Pricing</Pill>
             <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 42, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>Start free, grow together</h2>
+            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 14 : 16, color: T.slate, margin: "12px auto 0", maxWidth: 520, lineHeight: 1.6 }}>
+              Both tiers are Skool groups. Your ProofSignals account is free either way.
+            </p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: isMobile ? 16 : 24 }}>
-            {PLANS.map((p, i) => (
-              <div key={i} style={{ background: "#fff", borderRadius: 20, border: `2px solid ${p.badge ? p.color : "#F0E8E0"}`, padding: isMobile ? 24 : 36, position: "relative", boxShadow: p.badge ? `0 8px 40px ${p.color}22` : "0 2px 10px rgba(0,0,0,0.05)", transform: (!isMobile && p.badge) ? "scale(1.03)" : "scale(1)" }}>
-                {p.badge && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: p.color, color: "#fff", padding: "4px 18px", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}>{p.badge}</div>}
-                <div style={{ fontSize: 12, fontWeight: 800, color: p.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>{p.name}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: isMobile ? 16 : 24 }}>
-                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 36 : 42, fontWeight: 900, color: T.brown }}>{p.price}</span>
-                  <span style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{p.sub}</span>
+          {/* Copy only — the caps live on /pricing, read from the plan gates.
+              Two cards, because there are two tiers. */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)", gap: isMobile ? 16 : 24, maxWidth: 820, margin: "0 auto" }}>
+            {PLAN_TIERS.map((tier) => {
+              const accent = T[tier.accent] ?? T.orange;
+              return (
+                <div key={tier.planCode} style={{ background: "#fff", borderRadius: 20, border: `2px solid ${tier.badge ? accent : "#F0E8E0"}`, padding: isMobile ? 24 : 32, position: "relative", boxShadow: tier.badge ? `0 8px 40px ${accent}22` : "0 2px 10px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column" }}>
+                  {tier.badge && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: accent, color: "#fff", padding: "4px 18px", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>{tier.badge}</div>}
+                  <div style={{ fontSize: 12, fontWeight: 800, color: accent, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, fontFamily: "'DM Sans',sans-serif" }}>{tier.audience}</div>
+                  <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 900, color: T.brown, marginBottom: 10, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{tier.name}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: isMobile ? 14 : 20 }}>
+                    <span style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 30 : 36, fontWeight: 900, color: T.brown }}>{tier.price}</span>
+                    <span style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{tier.priceSub}</span>
+                  </div>
+                  <div style={{ borderTop: "1.5px solid #F0E8E0", paddingTop: isMobile ? 14 : 18, marginBottom: isMobile ? 16 : 22 }}>
+                    {tier.includes.slice(0, 4).map((f, j) => (
+                      <div key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 9, fontSize: isMobile ? 13 : 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.5 }}>
+                        <span style={{ color: accent, flexShrink: 0 }}>✓</span><FeatureText text={f} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <ButtonLink href={getSkoolUrls()[tier.ctaKind]} v={tier.ctaKind === "free" ? "teal" : "primary"} sx={{ width: "100%", justifyContent: "center" }}>
+                      {tier.ctaLabel}
+                    </ButtonLink>
+                    <Link href="/pricing" style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12.5, color: T.brownL, textAlign: "center", textDecoration: "underline" }}>
+                      See the caps on this tier
+                    </Link>
+                  </div>
                 </div>
-                <div style={{ borderTop: "1.5px solid #F0E8E0", paddingTop: isMobile ? 14 : 20, marginBottom: isMobile ? 16 : 24 }}>
-                  {p.features.map((f, j) => (
-                    <div key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 9, fontSize: isMobile ? 13 : 14, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>
-                      <span style={{ color: p.color, flexShrink: 0 }}>✓</span><FeatureText text={f} />
-                    </div>
-                  ))}
-                </div>
-                <Btn v={p.badge ? "primary" : p.price === "Free" ? "teal" : "gold"} sx={{ width: "100%", justifyContent: "center" }} onClick={openBeta}>
-                  {p.price === "Free" ? "Start Free" : p.name === "Bloom" ? "Start 14-Day Trial" : "Talk to Us"}
-                </Btn>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

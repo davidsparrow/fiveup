@@ -174,6 +174,38 @@ underlying query rather than the gated RPC, or make the recommender pass the
 guard explicitly, and have `verify-phase22.mjs` assert it works with the
 gate set to `discord`.
 
+## Phase 21b — the pricing lander
+
+Migration `20261016130000_phase21b_public_plan_caps.sql`, applied live.
+`node verify-phase21b.mjs` — 32 checks.
+
+`public_plan_caps()` is a security-definer reader over a **whitelist** of
+`plan_feature_gates` keys, granted to `anon`. The policy on the table itself
+was deliberately not widened: publishing a cap is now a one-line act and a
+new internal gate (like `match_surface`, or whatever D2 and the points phase
+add) stays private by default.
+
+Three things worth knowing:
+
+- **`PLANS` was the worst of `mock-data.js`.** It restated caps as hardcoded
+  strings while `plan_feature_gates` was the only thing enforcing them, named
+  three tiers at $0/$29/$79 when there are two and no Stripe, and tied no
+  card to a `plan_code`. It now lives in `src/lib/fivestarz/plans.js` as
+  copy only — every number comes from the gates. `mock-data.js` gained a
+  header separating its real configuration from its fake sample data, which
+  is still read by the dashboard and Browse.
+- **A long-standing flex bug surfaced.** `FeatureText` returned a bare
+  fragment, and every caller renders it inside a `display: flex` row — so a
+  feature line containing a link became three side-by-side columns instead of
+  one sentence. It returns a `<span>` now. This affected the homepage too.
+- **Phase A's brand guard needed narrowing, not weakening.**
+  `verify-phaseA.mjs` asserted no "Proof Lab" string survives in the UI,
+  because the marketplace was renamed Proof Market. "IndieOps Proof Lab" is
+  now a Skool group — a different thing sharing the words. The check now
+  allows the group sense *and* separately forbids "Proof Lab" attached to a
+  marketplace noun, because exclusion alone would have let "the Proof Lab
+  listings" through. Both relapse shapes were tested against the new rule.
+
 ## Still open
 
 - **The Skool → plan webhook.** Deferred, not forgotten. When built:
@@ -184,13 +216,19 @@ gate set to `discord`.
   `member_identities(provider = 'skool')` row — **exactly** the row the
   points economy's course-unlock Zap needs later. D1 already supports
   `provider = 'skool'` with no schema change. Needs a Skool Pro plan.
-- **`/pricing` still advertises Free / $29 / $79** with a Stripe-shaped FAQ
-  about billing periods, upgrades and refunds. It is noindexed now, so it is
-  no longer an SEO problem, but a signed-in member can still reach it and
-  read something untrue. Retire it in favour of the WordPress page, or cut it
-  to two tiers whose CTA is "join the Skool group". `PLANS` in
-  `src/lib/fivestarz/mock-data.js` and `FEATURE_TABLE` in `PricingPage.jsx`
-  both carry the three-tier shape.
+- ~~`/pricing` still advertises Free / $29 / $79~~ **Done 2026-10-16 as
+  Phase 21b.** `/pricing` is now a lander feeding the two Skool groups:
+  **IndieOps Proof Lab** (free, `sprout`) and **IndieOps Incubator** (paid,
+  `bloom`, with the all-access software pass). Caps on each card are read
+  live from `plan_feature_gates` through the new anon-readable
+  `public_plan_caps()`, so the cards cannot drift from what the database
+  enforces — and D2's three new gates will appear on the cards by themselves
+  once seeded, with no edit and no deploy. `PLANS` moved out of
+  `mock-data.js` into `src/lib/fivestarz/plans.js`.
+  **Still needed:** the real Skool URLs. Set `NEXT_PUBLIC_SKOOL_FREE_URL` and
+  `NEXT_PUBLIC_SKOOL_PAID_URL`; both currently fall back to
+  `https://indieops.co`. The Incubator card says "Waitlist / opening soon"
+  rather than a price, because no price has been set.
 - **Discord setup steps 6–7** wait on `app.proofsignals.net` pointing at
   Vercel. Steps 1–5 can be done any time; see `docs/discord-setup.md`.
 - **One rating per pair, ever.** `member_feedback_ratings` is

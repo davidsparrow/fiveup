@@ -1,3 +1,31 @@
+// Sample data from the original design prototype, kept because parts of it
+// are still the right thing to use.
+//
+// This file predates the Supabase schema. Everything in it was hardcoded to
+// make the UI render before there was a database, and it has since split into
+// two kinds of export that happen to live in one place:
+//
+//   REAL CONFIGURATION — static option lists the UI legitimately owns, with
+//   no database equivalent. Safe to use, safe to edit:
+//     ASSET_TYPES, CHANNELS, FB_FORMATS, PLAN_OPTS, CREDIT_OPTS, PROOF_CATS,
+//     HOW_STEPS, RULES
+//
+//   FAKE SAMPLE DATA — placeholder content from the prototype. Anything
+//   reading these is showing something that is not true of the signed-in
+//   member. Each one is a thing still to be replaced with a real query:
+//     ME, ME_PROFILE, ME_PROOF_LISTINGS, MATCHES, MEMBERS, HISTORY_ITEMS,
+//     PROOF_LISTINGS
+//
+// `PLANS` used to be here and has moved to src/lib/fivestarz/plans.js. It was
+// the worst case of the second kind: marketing copy that restated caps as
+// hardcoded strings while `plan_feature_gates` was the only thing actually
+// enforcing them, so the page could disagree with the database silently. It
+// also named three tiers at $0/$29/$79 when there are two and no Stripe. The
+// new module keeps the copy and reads every number from the gates.
+//
+// Before adding anything here, ask which of the two lists it belongs in. If
+// it is the second, it probably belongs in a query instead.
+
 export const ME = {
   name: "Jordan Rivera",
   avatar: "JR",
@@ -72,12 +100,6 @@ export const HOW_STEPS = [
   { n: "03", icon: "👀", title: "Experience Their Work", desc: "Interact with their asset — service, product, content, consultation, or advisory session. Give it a real try." },
   { n: "04", icon: "✍️", title: "Give Honest Feedback", desc: "Submit your feedback privately inside ProofSignals using any format: written, structured categories, or video/audio. This is the core of what we do." },
   { n: "05", icon: "🌐", title: "Optionally Share Publicly", desc: "Optionally request a real online review — the choice is 100% that of the other person. Never expect one, never pressure one." },
-];
-
-export const PLANS = [
-  { name: "Sprout", price: "Free", sub: "forever", color: "#1A9E8F", features: ["4 auto-matches / month", "1 asset", "1 review channel per asset", "Text + star feedback", "Default 1° separation", "1 Proof Market Listing"] },
-  { name: "Bloom", price: "$29", sub: "/ month", color: "#FF6B35", badge: "Most Popular", features: ["6 auto + 6 browse matches", "Up to 5 assets", "Multiple channels per asset", "All feedback formats incl. Advisory Skills", "Set 1–3 degrees of separation", "3 Proof Market Listings", "Require specific feedback types", "Control semi-duplicate match settings"] },
-  { name: "Flourish", price: "$79", sub: "/ month", color: "#F4A832", features: ["Everything in Bloom", "Unlimited assets", "Priority matching", "Manage client assets", "White-label feedback forms", "Team seats (3 users)", "Dedicated support"] },
 ];
 
 export const RULES = [
