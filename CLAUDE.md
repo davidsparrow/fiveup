@@ -4,6 +4,17 @@ Next.js 16 + React 19 + Supabase (SSR client, RLS on every table, logic in
 security-definer RPCs), Resend for email, deployed on Vercel. Brand is
 **ProofSignals**; `fiveup` / `fivestarz` are the old names still in paths.
 
+**Hosting:** the apex `proofsignals.net` is a WordPress site on SiteGround;
+this app lives on `app.proofsignals.net`. `getSiteUrl()` is the app host —
+canonicals, OG images, the sitemap and every link the Discord bot posts use
+it. `getMarketingUrl()` is the apex, for the few links that really mean the
+marketing site.
+
+**Plans:** `sprout` = free Skool member, `bloom` = paid Skool member,
+`flourish` retired but dormant in the enum. Skool is the billing system;
+there is no Stripe. Nothing in the repo can set `plan_code` yet — see the
+handoff's D2a.
+
 ## Start here
 
 **`docs/fiveup-continuation-phase20.md` is the current handoff.** It carries

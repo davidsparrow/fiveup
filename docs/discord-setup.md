@@ -16,23 +16,41 @@ Everything else can be done in any order.
 - **The server is called 5⭐️s.** Not Questmates — that name stays unspent
   for the game layer, which is also what the standalone-product track wants:
   keep brand equity off the thing being sold.
-- **Steps 6 and 7 are on hold** until `proofsignals.net` points at the Vercel
-  project. They go together: registering `/link` without a live endpoint
-  makes the command appear in Discord and fail with "application did not
-  respond", which is worse than it not being there. Steps 1–5 are safe to do
-  now and nothing in them is hard to change.
+- **The app lives on `app.proofsignals.net`.** The apex `proofsignals.net`
+  is a WordPress site on SiteGround; this Next app is a separate host. That
+  **unblocks steps 6 and 7 much sooner than an apex migration would** — it
+  is one CNAME in Vercel plus one DNS record at the registrar, and it never
+  touches WordPress. The Interactions Endpoint URL becomes
+  `https://app.proofsignals.net/api/discord/interactions` and is then
+  permanent for good, because the app host no longer depends on any
+  marketing-site decision.
+- **Steps 6 and 7 go together** and still wait for that subdomain:
+  registering `/link` without a live endpoint makes the command appear in
+  Discord and fail with "application did not respond", which is worse than
+  it not being there. Steps 1–5 are safe to do now and nothing in them is
+  hard to change.
 
-## Before you start: the domain
+## Before you start: the subdomain
 
 The **Interactions Endpoint URL is effectively permanent** — Discord
 re-verifies it with a live PING whenever you change it, and members never see
-it, so there is no reason to churn it. The repo deploys to
-`fiveup-nine.vercel.app` today and `NEXT_PUBLIC_SITE_URL` already says
-`https://proofsignals.net`.
+it, so there is no reason to churn it.
 
-If `proofsignals.net` is going to be production, **point it at the Vercel
-project before step 6.** Otherwise step 6 pins the endpoint to the
-`vercel.app` host.
+The repo deploys to `fiveup-nine.vercel.app` today. Point
+**`app.proofsignals.net`** at the Vercel project before step 6:
+
+1. Vercel → the project → **Settings → Domains** → add
+   `app.proofsignals.net`.
+2. At the registrar (or in SiteGround's DNS, wherever `proofsignals.net`'s
+   nameservers live), add the CNAME Vercel shows you —
+   `app` → `cname.vercel-dns.com`.
+3. Set `NEXT_PUBLIC_SITE_URL=https://app.proofsignals.net` in the Vercel
+   project and redeploy.
+
+The apex and `www` stay with WordPress on SiteGround and are untouched by
+any of this. `getSiteUrl()` already falls back to the app host, so canonical
+tags, OG images, the sitemap and every link the bot posts resolve to a page
+that can actually sign a member in.
 
 ## 1 · Create the application
 
@@ -101,11 +119,12 @@ This is the one-click path for someone already on the site. Skip it and the
 In this order:
 
 1. Deploy, with `DISCORD_PUBLIC_KEY` set in the Vercel project.
-2. Check it is answering: `GET https://<host>/api/discord/interactions`
-   returns `{"endpoint":"discord-interactions","ready":true,...}`.
-   `ready:false` means `DISCORD_PUBLIC_KEY` is missing.
-3. Paste `https://<host>/api/discord/interactions` into **General
-   Information → Interactions Endpoint URL** and save.
+2. Check it is answering:
+   `GET https://app.proofsignals.net/api/discord/interactions` returns
+   `{"endpoint":"discord-interactions","ready":true,...}`. `ready:false`
+   means `DISCORD_PUBLIC_KEY` is missing.
+3. Paste `https://app.proofsignals.net/api/discord/interactions` into
+   **General Information → Interactions Endpoint URL** and save.
 
 Discord sends a signed PING when you save and refuses the URL if the response
 is not a correctly verified PONG. It also probes with a deliberately invalid
@@ -135,7 +154,8 @@ typo in a global registration costs an hour.
 | `DISCORD_MEMBER_ROLE_ID` | Right-click the Member role | Role grants |
 | `NEXT_PUBLIC_DISCORD_INVITE_URL` | A server invite | The "join the server" line, and the Phase A surface gate |
 | `NEXT_PUBLIC_DISCORD_OAUTH_ENABLED` | `true` once step 5 is done | Showing the one-click button |
-| `NEXT_PUBLIC_SITE_URL` | Already set | Every link the bot posts |
+| `NEXT_PUBLIC_SITE_URL` | `https://app.proofsignals.net` | Canonicals, OG images, the sitemap, every link the bot posts |
+| `NEXT_PUBLIC_MARKETING_URL` | `https://proofsignals.net` (optional) | Links back to the WordPress site |
 
 Set them in `.env.local` **and** in the Vercel project. Nothing throws when
 they are absent: the site renders the Discord card with whichever road is
