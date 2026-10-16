@@ -6,8 +6,9 @@ import {
   getModerationAccess,
   listModerationQueue,
   listDealsAwaitingConfirmation,
+  searchMembersAsAdmin,
 } from "@/lib/fivestarz/data";
-import { resolveFlagAction } from "./actions";
+import { resolveFlagAction, setMemberPlanAction } from "./actions";
 
 export const metadata = {
   title: "Moderation console | ProofSignals",
@@ -43,6 +44,19 @@ export default async function AdminPage({ searchParams }) {
 
   const flags = await listModerationQueue(supabase, status);
   const awaiting = isAdmin ? await listDealsAwaitingConfirmation(supabase) : [];
+
+  // Member lookup for the plan control. Only runs when an admin has actually
+  // searched, so the page costs the same as before by default.
+  const memberQuery = typeof sp.q === "string" ? sp.q.trim() : "";
+  let members = [];
+  let memberError = null;
+  if (isAdmin && memberQuery) {
+    try {
+      members = await searchMembersAsAdmin(supabase, memberQuery);
+    } catch (err) {
+      memberError = err?.message ?? "search failed";
+    }
+  }
 
   const actionable = status === "pending" || status === "reviewing";
 
@@ -156,6 +170,97 @@ export default async function AdminPage({ searchParams }) {
         {isAdmin ? (
           <section style={S.opsSection}>
             <h2 style={S.sectionTitle}>
+              Member plans
+              <span style={S.adminOnly}>admin only</span>
+            </h2>
+            <p style={S.opsHint}>
+              Skool is the billing system: <strong>sprout</strong> is a free Skool member,{" "}
+              <strong>bloom</strong> is a paid one. Setting a plan here writes an audit row. Put the
+              member&rsquo;s Skool email in the reference field when the change is because they
+              joined or left the paid group.
+            </p>
+
+            <form method="GET" style={S.searchForm}>
+              <input
+                type="search"
+                name="q"
+                defaultValue={memberQuery}
+                placeholder="search by email, display name or handle"
+                style={S.search}
+              />
+              <button type="submit" style={{ ...S.btn, ...S.btnNeutral }}>
+                Find
+              </button>
+            </form>
+
+            {memberError ? <p style={S.searchError}>{memberError}</p> : null}
+
+            {memberQuery && !memberError && members.length === 0 ? (
+              <p style={S.empty}>No member matches &ldquo;{memberQuery}&rdquo;.</p>
+            ) : null}
+
+            {members.length > 0 ? (
+              <ul style={S.list}>
+                {members.map((m) => (
+                  <li key={m.user_id} style={S.card}>
+                    <div style={S.cardTop}>
+                      <span style={S.typeBadge}>{m.plan_code}</span>
+                      <span style={S.meta}>{m.display_name ?? "—"}</span>
+                      <span style={S.metaDim}>{m.email}</span>
+                      {m.is_demo ? <span style={{ ...S.meta, ...S.autoBadge }}>demo</span> : null}
+                      <span style={{ ...S.statusBadge, ...(statusStyle[m.account_status] ?? null) }}>
+                        {m.account_status}
+                      </span>
+                    </div>
+
+                    <div style={S.subMeta}>
+                      <span>plan source: {m.plan_source}</span>
+                      <span>discord: {m.discord_handle ?? "not linked"}</span>
+                      <span>skool: {m.skool_ref ?? "not linked"}</span>
+                    </div>
+
+                    <form action={setMemberPlanAction} style={S.actions}>
+                      <input type="hidden" name="userId" value={m.user_id} />
+                      <input type="hidden" name="q" value={memberQuery} />
+                      <div style={S.planRow}>
+                        <input
+                          type="text"
+                          name="externalRef"
+                          placeholder="Skool email (optional)"
+                          defaultValue={m.skool_ref ?? ""}
+                          style={{ ...S.notes, marginBottom: 0 }}
+                        />
+                        <input type="text" name="note" placeholder="note (optional)" style={{ ...S.notes, marginBottom: 0 }} />
+                      </div>
+                      <div style={S.btnRow}>
+                        <button
+                          name="planCode"
+                          value="sprout"
+                          disabled={m.plan_code === "sprout"}
+                          style={{ ...S.btn, ...S.btnNeutral, ...(m.plan_code === "sprout" ? S.btnOff : null) }}
+                        >
+                          Set sprout (free)
+                        </button>
+                        <button
+                          name="planCode"
+                          value="bloom"
+                          disabled={m.plan_code === "bloom"}
+                          style={{ ...S.btn, ...S.btnGo, ...(m.plan_code === "bloom" ? S.btnOff : null) }}
+                        >
+                          Set bloom (paid)
+                        </button>
+                      </div>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        ) : null}
+
+        {isAdmin ? (
+          <section style={S.opsSection}>
+            <h2 style={S.sectionTitle}>
               Deals awaiting confirmation <span style={S.count}>({awaiting.length})</span>
               <span style={S.adminOnly}>admin only</span>
             </h2>
@@ -189,6 +294,9 @@ const statusStyle = {
   reviewing: { background: "#dbeafe", color: "#1e40af" },
   resolved: { background: "#dcfce7", color: "#166534" },
   dismissed: { background: "#f1f5f9", color: "#475569" },
+  active: { background: "#dcfce7", color: "#166534" },
+  warned: { background: "#fef3c7", color: "#92400e" },
+  suspended: { background: "#fee2e2", color: "#991b1b" },
 };
 
 const S = {
@@ -229,5 +337,11 @@ const S = {
   btnDanger: { background: "#b91c1c", color: "#fff" },
   opsSection: { marginTop: 32, paddingTop: 24, borderTop: "1px solid #1f2937" },
   opsHint: { fontSize: 13, color: "#94a3b8", margin: "0 0 12px" },
+  searchForm: { display: "flex", gap: 8, marginBottom: 14 },
+  search: { flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 6, border: "1px solid #334155", background: "#0b1220", color: "#e5e7eb", fontSize: 13 },
+  searchError: { color: "#fca5a5", fontSize: 13, margin: "0 0 12px" },
+  planRow: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" },
+  btnGo: { background: "#15803d", color: "#fff" },
+  btnOff: { opacity: 0.45, cursor: "not-allowed" },
   opsCard: { background: "#111827", border: "1px solid #1f2937", borderRadius: 10, padding: "12px 16px", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" },
 };
