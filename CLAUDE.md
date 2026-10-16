@@ -6,10 +6,14 @@ security-definer RPCs), Resend for email, deployed on Vercel. Brand is
 
 ## Start here
 
-**`docs/fiveup-continuation-phase19.md` is the current handoff.** It carries
+**`docs/fiveup-continuation-phase20.md` is the current handoff.** It carries
 what last shipped, what is unfinished, the locked decisions, the schema
 constraints that bite, and the open commercial track. Read it before planning
-anything. Earlier phases have their own `docs/fiveup-continuation-phaseNN.md`.
+anything. Earlier phases have their own `docs/fiveup-continuation-phaseNN.md`;
+phase 19's still holds the points-economy spec verbatim.
+
+The Discord side is being built as D1–D6. D1 (identity linking) has shipped;
+the portal steps it needs are in `docs/discord-setup.md`.
 
 The live design docs are **Claude Docs, not files in this repo**. Read them
 with the Claude Docs connector (`read` project id → file id → node id);
@@ -52,6 +56,22 @@ exercise the behaviour, assert, and delete the users. Run with
 
 One branch per phase, `claude-phase-NN`, stacked on the previous one, merged
 to `main` by PR.
+
+## The two seams
+
+The Discord layer is built to be extractable, and two import rules make that
+real rather than aspirational:
+
+- Nothing under `src/lib/discord/` imports Supabase. Command handlers take a
+  `port` argument.
+- Nothing under `src/lib/community/` imports Discord. `port.js` names the
+  operations, `proofsignals/adapter.js` is the only file there that knows
+  Supabase exists, and `rules/*` imports no backend at all.
+
+Route handlers are the composition roots and the only files allowed to import
+both sides. `verify-phase20.mjs` checks both rules by grepping imports — if
+you need to break one, the honest move is to add a composition root, not to
+loosen the check.
 
 ## House rule
 

@@ -2,9 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signOut } from "@/app/auth/actions";
+import DiscordLinkCard from "@/components/fivestarz/DiscordLinkCard";
+import { getMyLinkedIdentity } from "@/lib/fivestarz/data";
+import { getDiscordConfig } from "@/lib/discord/config";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function AccountPage() {
+export default async function AccountPage({ searchParams }) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,6 +18,21 @@ export default async function AccountPage() {
   }
 
   const name = user.user_metadata?.full_name || user.user_metadata?.name || "ProofSignals member";
+
+  // Read linked state server-side so the card renders settled rather than
+  // flickering through "Not connected". A missing table (migration not yet
+  // applied on a preview) must not take the account page down.
+  let discordIdentity = null;
+  try {
+    discordIdentity = await getMyLinkedIdentity(supabase, user.id, "discord");
+  } catch (err) {
+    console.error("member_identities lookup failed:", err);
+  }
+
+  const discord = getDiscordConfig();
+  const params = await searchParams;
+  const discordMessage =
+    typeof params?.message === "string" && params.message.length < 300 ? params.message : null;
 
   return (
     <main style={styles.page}>
@@ -43,6 +61,14 @@ export default async function AccountPage() {
           <p style={styles.infoLabel}>User ID</p>
           <p style={styles.infoMono}>{user.id}</p>
         </div>
+
+        <DiscordLinkCard
+          identity={discordIdentity}
+          oauthEnabled={discord.oauthEnabled}
+          codeEnabled={discord.canVerify}
+          inviteUrl={discord.inviteUrl}
+          initialMessage={discordMessage}
+        />
 
         <Link href="/account/public" style={styles.settingsLink}>
           Manage public profile & publishing →
