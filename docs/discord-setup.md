@@ -11,6 +11,17 @@ bot at the bottom of the list silently fails to grant Member.
 
 Everything else can be done in any order.
 
+## Decided 2026-10-15
+
+- **The server is called 5⭐️s.** Not Questmates — that name stays unspent
+  for the game layer, which is also what the standalone-product track wants:
+  keep brand equity off the thing being sold.
+- **Steps 6 and 7 are on hold** until `proofsignals.net` points at the Vercel
+  project. They go together: registering `/link` without a live endpoint
+  makes the command appear in Discord and fail with "application did not
+  respond", which is worse than it not being there. Steps 1–5 are safe to do
+  now and nothing in them is hard to change.
+
 ## Before you start: the domain
 
 The **Interactions Endpoint URL is effectively permanent** — Discord
@@ -45,8 +56,8 @@ honest: the bot cannot see what is said in a thread, so
 
 ## 3 · Create the server
 
-Build the channels and roles from the build spec's server section. The
-minimum D1 needs is the **Member** role and `#start-here`.
+Name it **5⭐️s**. Build the channels and roles from the build spec's server
+section; the minimum D1 needs is the **Member** role and `#start-here`.
 
 Then, in **Server Settings → Roles**, drag the bot's own role **above**
 Member. This is the step that is silent when you skip it: linking succeeds,
@@ -85,6 +96,8 @@ This is the one-click path for someone already on the site. Skip it and the
 
 ## 6 · Deploy the endpoint, then give Discord its URL
 
+**On hold** until the domain decision above. Do steps 6 and 7 in one sitting.
+
 In this order:
 
 1. Deploy, with `DISCORD_PUBLIC_KEY` set in the Vercel project.
@@ -99,6 +112,9 @@ is not a correctly verified PONG. It also probes with a deliberately invalid
 signature and expects a `401` — which the route returns.
 
 ## 7 · Register the commands
+
+**On hold with step 6.** A registered command with no working endpoint shows
+up in the server and fails.
 
 ```
 node src/lib/discord/register.mjs            # guild-scoped, appears instantly

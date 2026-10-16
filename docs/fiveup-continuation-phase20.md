@@ -119,13 +119,17 @@ messy input through both and asserts they agree, rather than trusting it.
 Three questions have a commercial or naming consequence and were left for
 Robbie rather than defaulted:
 
-1. **Is the server called Questmates?** Blocks step 1 of setup. Members
-   bookmark the invite, so the name is awkward to change later. The
-   alternative is an unbranded server with the name saved for the game
-   layer — and the standalone-product track argues for keeping brand equity
-   *off* the thing being sold.
-2. **Does `proofsignals.net` point at the Vercel project?** Blocks step 6.
-   The Interactions Endpoint URL is effectively permanent.
+1. ~~Is the server called Questmates?~~ **Decided 2026-10-15: the server is
+   called 5⭐️s.** Questmates stays unspent for the game layer, which is also
+   what the standalone-product track wants — brand equity off the thing being
+   sold. Worth watching: the name reads as being about star ratings, and the
+   house rule is that the platform never raises online reviews. Internal
+   stars are the product, so it holds, but `#start-here` copy should carry
+   the "stars happen on the site, never in Discord" line early.
+2. **Does `proofsignals.net` point at the Vercel project?** **Still open, and
+   setup steps 6 and 7 are on hold for it.** The Interactions Endpoint URL is
+   effectively permanent, and registering `/link` before the endpoint is live
+   makes the command appear and fail. Steps 1–5 can proceed meanwhile.
 3. **Plan codes.** Everything is written against `sprout` / `bloom` /
    `flourish`. If Proof Lab free and Proof Lab Pro map onto those, which maps
    to which, and is `flourish` still a tier being sold? Blocks D2's gate
