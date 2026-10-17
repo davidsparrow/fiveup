@@ -17,40 +17,30 @@ Everything else can be done in any order.
   for the game layer, which is also what the standalone-product track wants:
   keep brand equity off the thing being sold.
 - **The app lives on `app.proofsignals.net`.** The apex `proofsignals.net`
-  is a WordPress site on SiteGround; this Next app is a separate host. That
-  **unblocks steps 6 and 7 much sooner than an apex migration would** — it
-  is one CNAME in Vercel plus one DNS record at the registrar, and it never
-  touches WordPress. The Interactions Endpoint URL becomes
-  `https://app.proofsignals.net/api/discord/interactions` and is then
-  permanent for good, because the app host no longer depends on any
-  marketing-site decision.
-- **Steps 6 and 7 go together** and still wait for that subdomain:
-  registering `/link` without a live endpoint makes the command appear in
-  Discord and fail with "application did not respond", which is worse than
-  it not being there. Steps 1–5 are safe to do now and nothing in them is
-  hard to change.
+  is a WordPress site on SiteGround; this Next app is a separate host.
+- **Done 2026-10-17: the CNAME is in place and propagated.** The endpoint is
+  live and answering:
+  `GET https://app.proofsignals.net/api/discord/interactions` →
+  `{"endpoint":"discord-interactions","ready":false,"canGrantRoles":false}`.
+  `ready:false` is correct — it means `DISCORD_PUBLIC_KEY` is not set yet,
+  which step 6 fixes. **Every step below is now unblocked.**
+- **Steps 6 and 7 still go together.** Registering `/link` without a live
+  endpoint makes the command appear in Discord and fail with "application
+  did not respond", which is worse than it not being there.
 
-## Before you start: the subdomain
+## The subdomain — done
+
+`app.proofsignals.net` is pointed at the Vercel project via a CNAME in
+SiteGround's DNS and has propagated. `NEXT_PUBLIC_SITE_URL` is set: the live
+`robots.txt` reports `Host: https://app.proofsignals.net` and the sitemap
+emits that host, so canonical tags, OG images and every link the bot posts
+resolve to a page that can sign a member in.
+
+The apex and `www` stay with WordPress on SiteGround and are untouched.
 
 The **Interactions Endpoint URL is effectively permanent** — Discord
 re-verifies it with a live PING whenever you change it, and members never see
-it, so there is no reason to churn it.
-
-The repo deploys to `fiveup-nine.vercel.app` today. Point
-**`app.proofsignals.net`** at the Vercel project before step 6:
-
-1. Vercel → the project → **Settings → Domains** → add
-   `app.proofsignals.net`.
-2. At the registrar (or in SiteGround's DNS, wherever `proofsignals.net`'s
-   nameservers live), add the CNAME Vercel shows you —
-   `app` → `cname.vercel-dns.com`.
-3. Set `NEXT_PUBLIC_SITE_URL=https://app.proofsignals.net` in the Vercel
-   project and redeploy.
-
-The apex and `www` stay with WordPress on SiteGround and are untouched by
-any of this. `getSiteUrl()` already falls back to the app host, so canonical
-tags, OG images, the sitemap and every link the bot posts resolve to a page
-that can actually sign a member in.
+it. It is `https://app.proofsignals.net/api/discord/interactions`.
 
 ## 1 · Create the application
 

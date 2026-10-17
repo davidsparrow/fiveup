@@ -46,16 +46,24 @@ console.log('\n[A4 — Proof Market rename + redirect]');
   // Phase A renamed the MARKETPLACE from Proof Lab to Proof Market, and this
   // check exists to stop that rename regressing.
   //
-  // Narrowed 2026-10-16: "Proof Lab" is now also the name of the free Skool
-  // group (IndieOps Proof Lab), which /pricing is a lander for. That is a
-  // different thing that happens to share the words, so the group sense is
-  // allowed and the marketplace sense is still forbidden. A relapse like
-  // "Proof Lab listings" or "Browse the Proof Lab marketplace" still fails,
-  // and the /proof-lab route check stays absolute.
-  // Two rules, because exclusion alone is not enough: allowing "the Proof
-  // Lab" for the group would also let "the Proof Lab listings" through, which
-  // is exactly the relapse this check exists to catch.
-  const GROUP_SENSE = [/IndieOps Proof Lab/g, /[Tt]he Proof Lab/g];
+  // Rewritten 2026-10-17 around the right distinction. "IndieOps Proof Lab"
+  // is the free Skool GROUP, and marketing copy needs to talk about it
+  // freely — "our Proof Lab", "The Proof Lab", "the only Proof Lab worth
+  // joining". Listing the words allowed in front of it was never going to
+  // hold. What actually separates the two senses is context:
+  //
+  //   1. /proof-lab as a ROUTE is always wrong. The marketplace lives at
+  //      /proof-market and the group lives on skool.com.
+  //   2. Inside the marketplace's own files, "Proof Lab" is always wrong —
+  //      there is no group to talk about there.
+  //   3. Anywhere else, "Proof Lab" attached to a marketplace noun is wrong,
+  //      whatever precedes it: "the Proof Lab listings", "our Proof Lab
+  //      sellers".
+  //
+  // Everything else — any article, pronoun or adjective in front of the
+  // group's name — is ordinary copy and passes.
+  const isMarketplaceFile = (f) =>
+    f.includes('/proof-market/') || /\/ProofMarket\w*\.jsx$/.test(f);
   const MARKETPLACE_SENSE =
     /Proof Lab\s+(listing|listings|deal|deals|marketplace|seller|sellers|categor)/i;
 
@@ -64,17 +72,13 @@ console.log('\n[A4 — Proof Market rename + redirect]');
     if (f === 'src/app/proof-lab/page.jsx') continue; // the redirect may name the old label in its comment
     const src = read(f);
 
-    // 1. A bare "Proof Lab" that is not the group's name.
-    const withoutGroupName = GROUP_SENSE.reduce((acc, re) => acc.replace(re, ''), src);
-    if (withoutGroupName.includes('Proof Lab')) offenders.push(`${f}: bare "Proof Lab"`);
-
-    // 2. "Proof Lab" attached to a marketplace noun, group phrasing or not.
+    if (src.match(/\/proof-lab/g)) offenders.push(`${f}: "/proof-lab" route reference`);
+    if (isMarketplaceFile(f) && src.includes('Proof Lab')) {
+      offenders.push(`${f}: "Proof Lab" inside a marketplace file`);
+    }
     if (MARKETPLACE_SENSE.test(src)) offenders.push(`${f}: "Proof Lab" used of the marketplace`);
-
-    const routeHits = src.match(/\/proof-lab/g);
-    if (routeHits) offenders.push(`${f}: "/proof-lab" route reference`);
   }
-  expect('the marketplace is Proof Market everywhere; only the Skool group is a "Proof Lab"', offenders.length === 0, offenders.join('; '));
+  expect('the marketplace is Proof Market; "Proof Lab" is only ever the Skool group', offenders.length === 0, offenders.join('; '));
   expect('notify-seller API route renamed to src/app/api/proof-market/', exists('src/app/api/proof-market/notify-seller/route.js') && !exists('src/app/api/proof-lab'));
   expect('demo screenshots renamed to proofmarket-*.jpg', exists('public/demo/proofmarket-01.jpg') && exists('public/demo/proofmarket-02.jpg') && !exists('public/demo/prooflab-01.jpg') && !read('src/lib/fivestarz/demo-slides.js').includes('prooflab'));
   const emailHeaders = ['src/app/api/proof-market/notify-seller/route.js', 'src/lib/fivestarz/moderation-email.js', 'src/app/api/beta-signup/route.js'].map(read).join('\n');
