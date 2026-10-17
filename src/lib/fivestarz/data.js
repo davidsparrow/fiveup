@@ -331,6 +331,27 @@ export async function retractExternalReviewReport(supabase, reportId) {
   if (error) throw error;
 }
 
+// ── Linked accounts (Discord, later Skool) ───────────────────────────────────
+
+// RLS limits this to the caller's own rows; there is no path to anyone
+// else's. Writes go through the RPCs in
+// 20261015130000_phase20_member_identities.sql, never through the table.
+export async function listMyMemberIdentities(supabase, userId) {
+  const { data, error } = await supabase
+    .from("member_identities")
+    .select("id, provider, external_id, handle, status, linked_via, linked_at, role_granted_at")
+    .eq("user_id", userId)
+    .order("linked_at", { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getMyLinkedIdentity(supabase, userId, provider) {
+  const rows = await listMyMemberIdentities(supabase, userId);
+  return rows.find((row) => row.provider === provider && row.status === "linked") ?? null;
+}
+
 // ── Proof Market (marketplace) ────────────────────────────────────────────────
 
 export async function getProofLabCategories(supabase) {
