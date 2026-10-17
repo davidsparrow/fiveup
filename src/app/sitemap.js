@@ -1,18 +1,25 @@
 import { getSiteUrl } from "@/lib/fivestarz/site";
 import { createClient } from "@/lib/supabase/server";
 
-// Public marketing routes + every search-indexable public profile
-// (list_searchable_profiles applies the same gating as the `searchable` flag).
-// Asset pages stay noindex and are intentionally omitted (see phase 9 doc).
+// Every search-indexable public profile and asset (list_searchable_profiles
+// applies the same gating as the `searchable` flag).
+//
+// The app's marketing routes are deliberately NOT here. proofsignals.net is a
+// WordPress site that carries the same copy, and submitting both would have
+// two hosts competing for one set of keywords; those pages now carry
+// MARKETING_ROBOTS instead. What the app publishes is the record — the public
+// profiles and asset pages Skool and the apex link into.
 export const dynamic = "force-dynamic";
 
 export default async function sitemap() {
   const base = getSiteUrl();
 
-  const staticRoutes = ["", "/how-it-works", "/pricing", "/community", "/safety", "/proof-market", "/demo"].map((route) => ({
+  // Proof Market stays: it is a product surface with its own public teaser,
+  // not something the marketing site duplicates.
+  const appRoutes = ["/proof-market"].map((route) => ({
     url: `${base}${route}`,
     changeFrequency: "weekly",
-    priority: route === "" ? 1 : 0.6,
+    priority: 0.6,
   }));
 
   let profiles = [];
@@ -40,5 +47,5 @@ export default async function sitemap() {
     assets = [];
   }
 
-  return [...staticRoutes, ...profiles, ...assets];
+  return [...appRoutes, ...profiles, ...assets];
 }

@@ -11,20 +11,24 @@ it. `getMarketingUrl()` is the apex, for the few links that really mean the
 marketing site.
 
 **Plans:** `sprout` = free Skool member, `bloom` = paid Skool member,
-`flourish` retired but dormant in the enum. Skool is the billing system;
-there is no Stripe. Nothing in the repo can set `plan_code` yet — see the
-handoff's D2a.
+`flourish` retired but dormant in the enum (`set_member_plan` refuses it).
+Skool is the billing system; there is no Stripe. `plan_code` has exactly one
+writer — `set_member_plan`, admin or service role — which appends to the
+append-only `plan_grants` audit table and records the entitlement's `source`
+so adding Stripe later is a second caller, not a refactor. Members take no
+direct writes on `user_profiles`; don't loosen that.
 
 ## Start here
 
-**`docs/fiveup-continuation-phase20.md` is the current handoff.** It carries
+**`docs/fiveup-continuation-phase21.md` is the current handoff.** It carries
 what last shipped, what is unfinished, the locked decisions, the schema
 constraints that bite, and the open commercial track. Read it before planning
 anything. Earlier phases have their own `docs/fiveup-continuation-phaseNN.md`;
 phase 19's still holds the points-economy spec verbatim.
 
-The Discord side is being built as D1–D6. D1 (identity linking) has shipped;
-the portal steps it needs are in `docs/discord-setup.md`.
+The Discord side is being built as D1–D6. D1 (identity linking) and D2a
+(plan grants) have shipped; **D2, groups and caps, is next and unblocked.**
+The Discord portal steps are in `docs/discord-setup.md`.
 
 The live design docs are **Claude Docs, not files in this repo**. Read them
 with the Claude Docs connector (`read` project id → file id → node id);

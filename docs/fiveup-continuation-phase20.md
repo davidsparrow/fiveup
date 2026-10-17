@@ -154,6 +154,8 @@ the bot posts — all pointing at pages that cannot sign a member in.
 live on WordPress. `src/app/sitemap.js` currently submits all of them, so two
 hosts would compete for the same keywords and both need maintaining.
 
+**Done 2026-10-16 in Phase 21**, as recommended below.
+
 *Recommendation:* WordPress owns marketing; the app owns the record. Drop the
 static marketing routes from `sitemap.js`, leave `/u/[username]` and
 `/a/[slug]` indexed (they are the SEO asset and the thing Skool links into),
@@ -230,6 +232,13 @@ authenticated`, so a member cannot promote themselves through PostgREST
 despite the permissive `profiles_update_self` policy. The only writers are
 security-definer RPCs and the service role. That is the right starting
 position for a column that now carries money — **do not loosen it.**
+
+**Shipped 2026-10-16 as Phase 21** — migration
+`20261016120000_phase21_plan_grants.sql`, 61 verify checks. See
+`docs/fiveup-continuation-phase21.md`. What was built, against the
+recommendation below: items 1, 2 and 4; item 3 (the Skool webhook) is
+deliberately deferred until volume justifies it, with admin-by-hand as both
+the launch mechanism and the permanent fallback.
 
 *Recommended as **D2a**, roughly a day, before or alongside D2:*
 

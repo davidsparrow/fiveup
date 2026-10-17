@@ -331,6 +331,59 @@ export async function retractExternalReviewReport(supabase, reportId) {
   if (error) throw error;
 }
 
+// ── Plans and entitlements ───────────────────────────────────────────────────
+
+// Plan plus where it came from. A member may read their own; admins may read
+// anyone's. Returns source 'signup' when no grant row exists, which is what
+// every account on the free default looks like.
+export async function getMemberPlanState(supabase, userId = null) {
+  const { data, error } = await supabase.rpc("member_plan_state", {
+    p_user_id: userId,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+// The one writer. Admin or service role only — set_member_plan re-checks.
+// `source` records what caused the change ('skool' | 'stripe' | 'admin'), so
+// adding a second billing system later is a new caller rather than a
+// refactor of everything that reads a plan.
+export async function setMemberPlan(supabase, { userId, planCode, source = "admin", externalRef = null, note = null }) {
+  const { data, error } = await supabase.rpc("set_member_plan", {
+    p_user_id: userId,
+    p_plan_code: planCode,
+    p_source: source,
+    p_external_ref: externalRef,
+    p_note: note,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function searchMembersAsAdmin(supabase, query, limit = 20) {
+  const { data, error } = await supabase.rpc("admin_search_members", {
+    p_query: query,
+    p_limit: limit,
+  });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function listPlanGrants(supabase, userId, limit = 10) {
+  const { data, error } = await supabase
+    .from("plan_grants")
+    .select("id, plan_code, previous_plan_code, source, external_ref, note, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ── Linked accounts (Discord, later Skool) ───────────────────────────────────
 
 // RLS limits this to the caller's own rows; there is no path to anyone

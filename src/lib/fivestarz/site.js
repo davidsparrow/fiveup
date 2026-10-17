@@ -21,4 +21,13 @@ export function getMarketingUrl() {
   return raw.replace(/\/+$/, "");
 }
 
+// The WordPress apex owns marketing. These pages still exist on the app so
+// nothing 404s and a signed-in member can still reach them, but only one host
+// should compete for the keywords.
+//
+// Unindexed rather than blocked in robots.txt on purpose: a disallowed page is
+// never crawled, so its noindex is never seen, and a page that is already
+// indexed stays indexed. Crawlable + noindex is what actually removes it.
+export const MARKETING_ROBOTS = { index: false, follow: true };
+
 export const SITE_NAME = "ProofSignals";

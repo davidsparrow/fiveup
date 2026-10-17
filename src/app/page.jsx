@@ -3,6 +3,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import PageShell from "@/components/fivestarz/PageShell";
 import HomePageContent from "@/components/fivestarz/HomePage";
+import { MARKETING_ROBOTS } from "@/lib/fivestarz/site";
+
+// proofsignals.net (WordPress) is the homepage a prospect lands on. This is
+// the app's root — reachable, but not a second homepage in search results.
+export const metadata = {
+  robots: MARKETING_ROBOTS,
+};
 
 export default async function Home() {
     const supabase = await createClient();
