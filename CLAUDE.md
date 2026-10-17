@@ -20,15 +20,16 @@ direct writes on `user_profiles`; don't loosen that.
 
 ## Start here
 
-**`docs/fiveup-continuation-phase21.md` is the current handoff.** It carries
+**`docs/fiveup-continuation-phase22.md` is the current handoff.** It carries
 what last shipped, what is unfinished, the locked decisions, the schema
 constraints that bite, and the open commercial track. Read it before planning
 anything. Earlier phases have their own `docs/fiveup-continuation-phaseNN.md`;
 phase 19's still holds the points-economy spec verbatim.
 
-The Discord side is being built as D1–D6. D1 (identity linking) and D2a
-(plan grants) have shipped; **D2, groups and caps, is next and unblocked.**
-The Discord portal steps are in `docs/discord-setup.md`.
+The Discord side is being built as D1–D6. D1 (identity linking), D2a (plan
+grants) and the pricing lander have shipped; **D2, groups and caps, is next
+and unblocked.** The Discord portal steps are in `docs/discord-setup.md` —
+`app.proofsignals.net` is live, so all of them are unblocked.
 
 The live design docs are **Claude Docs, not files in this repo**. Read them
 with the Claude Docs connector (`read` project id → file id → node id);
@@ -87,6 +88,23 @@ Route handlers are the composition roots and the only files allowed to import
 both sides. `verify-phase20.mjs` checks both rules by grepping imports — if
 you need to break one, the honest move is to add a composition root, not to
 loosen the check.
+
+## Naming
+
+**Proof Market** is the marketplace on this site, at `/proof-market`. It was
+renamed from "Proof Lab" and must never be called that again.
+
+**IndieOps Proof Lab** is the free Skool group, at
+`skool.com/indieops-proof-lab-2789`. Marketing copy talks about it freely —
+"our Proof Lab", "The Proof Lab", "the only Proof Lab worth joining" are all
+fine. The paid Skool group is the **IndieOps Incubator**, $99/month.
+
+So the two senses are separated by context, not by wording.
+`verify-phaseA.mjs` enforces exactly three things: `/proof-lab` is never a
+route, "Proof Lab" never appears inside the marketplace's own files, and
+"Proof Lab" is never attached to a marketplace noun (listings, deals,
+sellers, categories). The `proof_lab_*` table and RPC identifiers in the
+database are deliberately untouched.
 
 ## House rule
 
