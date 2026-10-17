@@ -2,7 +2,8 @@
 
 The code for D1 is in the repo and the migration is applied. What is left is
 the Discord side, which cannot be done from here: it is portal clicks and
-five environment variables.
+seven environment variables — five named `DISCORD_*` and two
+`NEXT_PUBLIC_DISCORD_*`. Section 0 says where they go.
 
 Order matters in exactly two places. **The endpoint has to be deployed before
 Discord will accept its URL**, and **the bot's own role has to sit above the
@@ -41,6 +42,58 @@ The apex and `www` stay with WordPress on SiteGround and are untouched.
 The **Interactions Endpoint URL is effectively permanent** — Discord
 re-verifies it with a live PING whenever you change it, and members never see
 it. It is `https://app.proofsignals.net/api/discord/interactions`.
+
+## 0 · Where the environment variables go
+
+`DISCORD_*` is not a variable. It is shorthand for *the set of variables
+whose names begin with* `DISCORD_` — there are five of them, listed in
+section 8. They are ordinary **environment variables**: name/value pairs the
+running app reads. Nothing is hard-coded in the repo, because a bot token in
+git is a bot token on the internet.
+
+They live in two places, and you need both.
+
+**Locally — `.env.local`** at the repo root. It is gitignored. One
+`NAME=value` per line, no quotes, no spaces around the `=`:
+
+```
+DISCORD_APP_ID=1234567890123456789
+DISCORD_PUBLIC_KEY=abc123...
+```
+
+**In production — Vercel.** Go to **vercel.com → your project → Settings →
+Environment Variables**. For each one:
+
+1. **Key** = the name, e.g. `DISCORD_APP_ID`
+2. **Value** = what you copied from Discord
+3. **Environments** = tick **Production**, **Preview** and **Development**
+   (there is no harm in all three; the values are the same)
+4. **Save**
+
+**Then redeploy.** This is the step people miss: Vercel bakes environment
+variables in at build time, so a variable added after the last deploy does
+nothing until you trigger a new one. **Deployments → the latest one → ⋯ →
+Redeploy.**
+
+Two practical notes:
+
+- **`NEXT_PUBLIC_` means the browser can see it.** Those values are shipped
+  into the page and are not secret — which is correct for an invite URL, and
+  is exactly why the bot token is *not* named that way.
+- **`DISCORD_BOT_TOKEN` is a password.** Anyone holding it controls the bot.
+  Never paste it into a chat, an issue or a commit. If it leaks, regenerate
+  it on the Bot tab — that instantly invalidates the old one.
+
+To check a variable actually landed, use the endpoint's own health check:
+
+```
+GET https://app.proofsignals.net/api/discord/interactions
+→ {"endpoint":"discord-interactions","ready":true,"canGrantRoles":true}
+```
+
+`ready` follows `DISCORD_PUBLIC_KEY`. `canGrantRoles` follows
+`DISCORD_BOT_TOKEN` + `DISCORD_GUILD_ID` + `DISCORD_MEMBER_ROLE_ID`. Both
+`false` today, because none of them are set yet.
 
 ## 1 · Create the application
 
@@ -104,11 +157,10 @@ This is the one-click path for someone already on the site. Skip it and the
 
 ## 6 · Deploy the endpoint, then give Discord its URL
 
-**On hold** until the domain decision above. Do steps 6 and 7 in one sitting.
+Do steps 6 and 7 in one sitting. In this order:
 
-In this order:
-
-1. Deploy, with `DISCORD_PUBLIC_KEY` set in the Vercel project.
+1. Add `DISCORD_PUBLIC_KEY` in Vercel (section 0) **and redeploy** — the
+   value does nothing until a build picks it up.
 2. Check it is answering:
    `GET https://app.proofsignals.net/api/discord/interactions` returns
    `{"endpoint":"discord-interactions","ready":true,...}`. `ready:false`
@@ -147,9 +199,12 @@ typo in a global registration costs an hour.
 | `NEXT_PUBLIC_SITE_URL` | `https://app.proofsignals.net` | Canonicals, OG images, the sitemap, every link the bot posts |
 | `NEXT_PUBLIC_MARKETING_URL` | `https://proofsignals.net` (optional) | Links back to the WordPress site |
 
-Set them in `.env.local` **and** in the Vercel project. Nothing throws when
-they are absent: the site renders the Discord card with whichever road is
-available, and the endpoint returns 503.
+Set them in `.env.local` **and** in Vercel, then redeploy — see section 0.
+
+Nothing throws when they are absent. The site renders the Discord card with
+whichever road is configured, role grants are skipped with a message rather
+than an error, and the interactions endpoint returns 503. So a half-finished
+setup degrades instead of breaking.
 
 ## What "done" looks like
 
