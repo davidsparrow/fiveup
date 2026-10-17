@@ -20,16 +20,26 @@ direct writes on `user_profiles`; don't loosen that.
 
 ## Start here
 
-**`docs/fiveup-continuation-phase22.md` is the current handoff.** It carries
-what last shipped, what is unfinished, the locked decisions, the schema
-constraints that bite, and the open commercial track. Read it before planning
-anything. Earlier phases have their own `docs/fiveup-continuation-phaseNN.md`;
-phase 19's still holds the points-economy spec verbatim.
+**`docs/fiveup-continuation-phase23.md` is the current handoff.** It carries
+what last shipped, what is unfinished, the schema constraints that bite, and
+the traps that cost real time. Read it before planning anything. Phase 22's
+doc holds the locked product decisions and is still current — phase 23 adds to
+that list rather than replacing it. Phase 19's still holds the points-economy
+spec verbatim.
 
 The Discord side is being built as D1–D6. D1 (identity linking), D2a (plan
-grants) and the pricing lander have shipped; **D2, groups and caps, is next
-and unblocked.** The Discord portal steps are in `docs/discord-setup.md` —
-`app.proofsignals.net` is live, so all of them are unblocked.
+grants), the pricing lander and **D2 (groups and caps) have shipped; D3,
+groups in Discord, is next.** D3 needs the Discord portal set up — the steps
+are in `docs/discord-setup.md`, and `app.proofsignals.net` is live, so all of
+them are unblocked.
+
+**Groups:** `groups` + `group_members` cover feedback groups now and challenge
+cohorts from D5. Both tables take **no direct writes** from `anon` or
+`authenticated` — the RPCs in `20261017120000` are the only road, and each one
+takes an optional `p_acting_user_id` honoured only for the service role, which
+is how the bot calls them. A pairing inside a group is a `matches` row with
+`in_group_id` set and `source = 'group'`, exempt from monthly quota and from
+`max_concurrent_matchups`.
 
 The live design docs are **Claude Docs, not files in this repo**. Read them
 with the Claude Docs connector (`read` project id → file id → node id);
@@ -59,6 +69,26 @@ Empty `[]` means success. The whole body runs in one transaction, so a
 failure rolls everything back. `alter type ... add value` must go in its own
 request before anything references the new value.
 
+## SQL gotchas that have each caused a real bug here
+
+- **`revoke all on function ... from public` is not enough.** Supabase grants
+  `EXECUTE` to `anon` and `authenticated` **by name** through default
+  privileges, so revoking the `PUBLIC` pseudo-role leaves them. Revoke by role
+  name for anything internal, and assert the ACL in the verify script.
+- **`PERFORM` resets `FOUND`.** Capture `found` into a local boolean right
+  after the `SELECT INTO` if anything runs before you branch on it.
+- **`if not (A or B or C) then raise` opens up when any operand is null.**
+  `null = 'owner'` is null, `not null` is null, and `if null` is false — so the
+  guard never fires. Use boolean-returning `exists(...)` helpers and wrap
+  nullable comparisons in `coalesce(..., false)`.
+- **A `RESTRICT` foreign key on a column that cascades from the same parent
+  row is a coin flip,** decided by cascade-trigger order. If deleting an
+  account could reach it, use `SET NULL` and keep the rule in the RPC.
+- **Append-only or audit triggers must be `FOR EACH ROW`,** and anything that
+  can run inside account deletion must not raise. A statement-level trigger
+  fires even when the `UPDATE` matched no rows, which is how Phase 21 broke
+  every account deletion in the system.
+
 ## Verification
 
 Each phase commits a service-role Node script at the repo root,
@@ -85,9 +115,9 @@ real rather than aspirational:
   Supabase exists, and `rules/*` imports no backend at all.
 
 Route handlers are the composition roots and the only files allowed to import
-both sides. `verify-phase20.mjs` checks both rules by grepping imports — if
-you need to break one, the honest move is to add a composition root, not to
-loosen the check.
+both sides. `verify-phase20.mjs` and `verify-phase22.mjs` check both rules by
+grepping imports — if you need to break one, the honest move is to add a
+composition root, not to loosen the check.
 
 ## Naming
 
