@@ -663,3 +663,198 @@ export async function listDealsAwaitingConfirmation(supabase, staleDays = 14) {
   if (error) throw error;
   return data ?? [];
 }
+
+// ── Track (the entry cohort) ─────────────────────────────────────────────────
+
+// user_profiles takes no direct writes from authenticated (revoked in
+// 20260715120000), so the RPC is the only road — the same arrangement
+// plan_code has. Pass no userId to set your own; an admin may pass one.
+export async function setMemberTrack(supabase, { track, userId = null } = {}) {
+  const { data, error } = await supabase.rpc("set_member_track", {
+    p_track: track,
+    p_user_id: userId,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+// ── Groups (feedback groups; challenge cohorts from D5) ──────────────────────
+//
+// Every write here is an RPC. groups and group_members have insert, update and
+// delete revoked from `authenticated`, so there is no table-write path to fall
+// back on and no way for a client to skip a cap.
+
+export async function listMyGroups(supabase) {
+  const { data, error } = await supabase.rpc("my_groups", { p_acting_user_id: null });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+// "Find a group": listed and open rooms the caller is not already in.
+// `can_join` is advisory — join_group re-decides it server-side, so a page
+// left open does not become a way past a cap.
+export async function listDiscoverableGroups(supabase, { limit = 30 } = {}) {
+  const { data, error } = await supabase.rpc("discoverable_groups", {
+    p_limit: limit,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getGroupRoster(supabase, groupId) {
+  const { data, error } = await supabase.rpc("group_roster", {
+    p_group_id: groupId,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createGroup(
+  supabase,
+  { name, assetId, kind = "feedback", track = null, visibility = "private", maxMembers = null } = {},
+) {
+  const { data, error } = await supabase.rpc("create_group", {
+    p_name: name,
+    p_asset_id: assetId,
+    p_kind: kind,
+    p_track: track,
+    p_visibility: visibility,
+    p_max_members: maxMembers,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+// joinedVia records whether the invite came out of the recommendations or the
+// owner's own head — the column that answers "do recommended members
+// outperform self-invited ones" a year from now.
+export async function inviteToGroup(supabase, { groupId, userId, joinedVia = "invite" }) {
+  const { data, error } = await supabase.rpc("invite_to_group", {
+    p_group_id: groupId,
+    p_user_id: userId,
+    p_joined_via: joinedVia,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function respondToGroupInvite(supabase, { groupId, accept, assetId = null }) {
+  const { data, error } = await supabase.rpc("respond_to_group_invite", {
+    p_group_id: groupId,
+    p_accept: accept,
+    p_asset_id: assetId,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+// Open groups join straight away; listed groups return status 'requested' and
+// wait on the owner.
+export async function joinGroup(supabase, { groupId, assetId }) {
+  const { data, error } = await supabase.rpc("join_group", {
+    p_group_id: groupId,
+    p_asset_id: assetId,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function reviewGroupJoinRequest(supabase, { groupId, userId, approve }) {
+  const { data, error } = await supabase.rpc("review_group_join_request", {
+    p_group_id: groupId,
+    p_user_id: userId,
+    p_approve: approve,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function leaveGroup(supabase, groupId) {
+  const { data, error } = await supabase.rpc("leave_group", {
+    p_group_id: groupId,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function removeGroupMember(supabase, { groupId, userId }) {
+  const { data, error } = await supabase.rpc("remove_group_member", {
+    p_group_id: groupId,
+    p_user_id: userId,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function closeGroup(supabase, groupId) {
+  const { data, error } = await supabase.rpc("close_group", {
+    p_group_id: groupId,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+// Owner-only. Wraps the matcher: the owner's candidates, filtered by the
+// group's Track, minus anyone already in or on their way in, minus anyone who
+// fails a separation preference against ANY current member.
+export async function recommendGroupMembers(supabase, { groupId, limit = 10 }) {
+  const { data, error } = await supabase.rpc("recommend_group_members", {
+    p_group_id: groupId,
+    p_limit: limit,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+// A pairing inside a group: both assets come off the group_members rows, and
+// the match is exempt from monthly quota and the concurrency cap. Inherits the
+// Phase A surface gate from create_match on purpose — when the surface flips
+// to Discord, pairing happens in the room.
+export async function pairInGroup(supabase, { groupId, otherUserId, previousMatchId = null }) {
+  const { data, error } = await supabase.rpc("pair_in_group", {
+    p_group_id: groupId,
+    p_other_user_id: otherUserId,
+    p_previous_match_id: previousMatchId,
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+// Change what you bring, or refill a seat whose asset was deleted (the FK
+// sets it null rather than blocking the deletion). Leaving and rejoining
+// would work too, and would spend one of the month's groups.
+export async function setGroupAsset(supabase, { groupId, assetId }) {
+  const { data, error } = await supabase.rpc("set_group_asset", {
+    p_group_id: groupId,
+    p_asset_id: assetId,
+    p_acting_user_id: null,
+  });
+
+  if (error) throw error;
+  return data;
+}
