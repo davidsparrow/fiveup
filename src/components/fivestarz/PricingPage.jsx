@@ -1,158 +1,435 @@
 "use client";
 
+// /pricing is a lander that feeds the two Skool groups, not a checkout.
+//
+// Skool is the billing system, so there is nothing to buy here: the free card
+// sends people to the Proof Lab group and the paid card to the Incubator
+// waitlist. Both CTAs sit at the bottom of their card, which is where someone
+// who has just finished reading the caps is looking.
+//
+// Caps come in as props, read server-side from `public_plan_caps()`. They are
+// never hardcoded here — see the header of src/lib/fivestarz/plans.js for why
+// that mattered enough to move.
+
 import { useState } from "react";
 
-import { PLANS } from "@/lib/fivestarz/mock-data";
+import { PLAN_TIERS } from "@/lib/fivestarz/plans";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Btn, Card, FeatureText, Pill } from "@/components/fivestarz/ui";
-import { useBetaModal } from "@/components/fivestarz/PageShell";
-
-const FEATURE_TABLE = [
-  { feature: "Monthly auto-matches", sprout: "4", bloom: "6", flourish: "6" },
-  { feature: "Browse & select matches", sprout: "—", bloom: "6 / month", flourish: "6 / month" },
-  { feature: "Active assets", sprout: "1", bloom: "Up to 5", flourish: "Unlimited" },
-  { feature: "Feedback formats (written, structured, video)", sprout: "Written only", bloom: "All formats", flourish: "All formats" },
-  { feature: "Advisory Skills asset type", sprout: "—", bloom: "✓", flourish: "✓" },
-  { feature: "Manage client assets", sprout: "—", bloom: "✓", flourish: "✓" },
-  { feature: "Degrees-of-separation control (1–3°)", sprout: "1° default", bloom: "1–3°", flourish: "1–3°" },
-  { feature: "Semi-duplicate match settings", sprout: "—", bloom: "✓", flourish: "✓" },
-  { feature: "Internal signal reputation score", sprout: "✓", bloom: "✓", flourish: "✓" },
-  { feature: "Public profile publishing", sprout: "—", bloom: "✓", flourish: "✓" },
-  { feature: "Marketplace listing", sprout: "—", bloom: "✓", flourish: "✓" },
-  { feature: "White-label feedback forms", sprout: "—", bloom: "—", flourish: "✓" },
-  { feature: "Team seats", sprout: "—", bloom: "—", flourish: "3 users" },
-  { feature: "Priority matching", sprout: "—", bloom: "—", flourish: "✓" },
-  { feature: "Dedicated support", sprout: "—", bloom: "—", flourish: "✓" },
-];
+import { ButtonLink, FeatureText, Pill } from "@/components/fivestarz/ui";
 
 const FAQS = [
-  { q: "Is the feedback I receive private?", a: "Yes. All feedback is private by default. You control what, if anything, becomes public. Reviewers can independently choose to share their experience publicly — that is always 100% their own decision." },
-  { q: "Can I upgrade or downgrade anytime?", a: "Yes. You can upgrade immediately and downgrade at the end of your billing period. No lock-ins." },
-  { q: "What counts as a 'match'?", a: "A match is when two members are paired to experience and give each other honest feedback on their assets. Free members receive 4 auto-matches per month. Paid members get 6 auto + 6 browse-and-select." },
-  { q: "Is ProofSignals a review exchange platform?", a: "No. ProofSignals is a trusted founder feedback network. The primary product is honest internal feedback between peers. Any public sharing is always optional and entirely at the discretion of the reviewer — never expected or rewarded." },
-  { q: "Can I cancel anytime?", a: "Yes. Cancel anytime from your account settings. You keep access through the end of your billing period." },
-  { q: "Are there refunds?", a: "We offer a 7-day refund on first-time paid subscriptions if you haven't used any browse credits. Contact support." },
+  {
+    q: "What am I actually joining?",
+    a: "A Skool group. The free group is the IndieOps Proof Lab; the paid group is the IndieOps Incubator. ProofSignals is the software the groups run on — it holds your assets, your matches and your feedback record, and your account here is free either way.",
+  },
+  {
+    q: "How does billing work?",
+    a: "The Incubator is $99 a month, billed through Skool once your application is accepted. There is no checkout on this site and no card details here — joining the paid group lifts your caps on ProofSignals automatically once your membership is linked.",
+  },
+  {
+    q: "What does the all-access pass include?",
+    a: "Every piece of software IndieOps builds, ProofSignals included, at no cost on top of the group membership. Incubator members are not paying for a ProofSignals seat separately — they already have one.",
+  },
+  {
+    q: "Is the feedback I receive private?",
+    a: "Yes. All feedback is private by default and you control what, if anything, becomes public. A reviewer may independently choose to share their experience publicly — that is always entirely their own decision.",
+  },
+  {
+    q: "What counts as a match?",
+    a: "Two members paired to experience each other's work and give honest feedback on it. Both sides bring something to be looked at; a match with nothing on one side is not a match.",
+  },
+  {
+    q: "Is ProofSignals a review-exchange platform?",
+    a: "No, and it is built so it cannot become one. The platform never asks for a public review, never suggests one, never compares channels and never rewards one. The product is honest private feedback between peers. If a member chooses to post something publicly off their own back, they may tell us it happened — that is all.",
+  },
+  {
+    q: "Do I have to apply?",
+    a: "For the Incubator, yes — it is an application rather than an open door, so the room stays useful. The Proof Lab is open: join the Skool group and you are in.",
+  },
+  {
+    q: "Can I leave?",
+    a: "Yes. Leave the Skool group whenever you like; your ProofSignals account and your feedback record stay yours, with the free caps.",
+  },
 ];
 
-export default function PricingPage() {
+export default function PricingPage({ capsByPlan = {}, skoolUrls = {} }) {
   const isMobile = useIsMobile();
-  const { openBeta } = useBetaModal();
   const [openFaq, setOpenFaq] = useState(null);
-
-  // No payment processing during the beta — every plan CTA routes to the
-  // beta-access modal. Billing (if ever) is a future product decision.
-  const handleSubscribe = () => {
-    openBeta();
-  };
 
   return (
     <div style={{ background: T.cream }}>
-      {/* Hero */}
-      <section style={{ background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`, padding: isMobile ? "48px 20px 40px" : "72px 32px 56px", textAlign: "center" }}>
-        <Pill color={T.gold}>Simple, honest pricing</Pill>
-        <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 38 : 56, fontWeight: 900, color: "#fff", margin: "16px 0 16px", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-          Start free.<br /><span style={{ color: T.gold }}>Unlock more when you&rsquo;re ready.</span>
+      {/* ── Hero ── */}
+      <section
+        style={{
+          background: `linear-gradient(135deg,${T.brown} 0%,${T.brownM} 100%)`,
+          padding: isMobile ? "48px 20px 40px" : "72px 32px 56px",
+          textAlign: "center",
+        }}
+      >
+        <Pill color={T.gold}>Two rooms, one record</Pill>
+        <h1
+          style={{
+            fontFamily: "'Fraunces',serif",
+            fontSize: isMobile ? 36 : 54,
+            fontWeight: 900,
+            color: "#fff",
+            margin: "16px 0 16px",
+            letterSpacing: "-0.03em",
+            lineHeight: 1.1,
+          }}
+        >
+          Start in the Proof Lab.
+          <br />
+          <span style={{ color: T.gold }}>Move up when you&rsquo;re ready.</span>
         </h1>
-        <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? 16 : 18, color: "#C4A68A", maxWidth: 520, margin: "0 auto", lineHeight: 1.65 }}>
-          Every plan includes honest human feedback. No fake reviews, no engagement swaps — just real signal from real peers.
+        <p
+          style={{
+            fontFamily: "'DM Sans',sans-serif",
+            fontSize: isMobile ? 16 : 18,
+            color: "#C4A68A",
+            maxWidth: 580,
+            margin: "0 auto",
+            lineHeight: 1.65,
+          }}
+        >
+          Both tiers are Skool groups. ProofSignals is the software underneath — it holds your
+          assets, your matches and your feedback record, and your account is free either way.
         </p>
       </section>
 
-      {/* Pricing cards */}
-      <section style={{ padding: isMobile ? "48px 16px" : "64px 32px", background: "#fff" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 24 }}>
-            {PLANS.map((p, i) => (
-              <div key={i} style={{ background: T.cream, borderRadius: 24, border: `2px solid ${p.badge ? p.color : "#F0E8E0"}`, padding: 36, position: "relative", boxShadow: p.badge ? `0 8px 40px ${p.color}22` : "0 2px 10px rgba(0,0,0,0.05)", transform: (!isMobile && p.badge) ? "scale(1.03)" : "scale(1)" }}>
-                {p.badge && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: p.color, color: "#fff", padding: "4px 18px", borderRadius: 20, fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}>{p.badge}</div>}
-                <div style={{ fontSize: 13, fontWeight: 800, color: p.color, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, fontFamily: "'DM Sans',sans-serif" }}>{p.name}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 24 }}>
-                  <span style={{ fontFamily: "'Fraunces',serif", fontSize: 42, fontWeight: 900, color: T.brown }}>{p.price}</span>
-                  <span style={{ fontSize: 14, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>{p.sub}</span>
-                </div>
-                <div style={{ borderTop: "1.5px solid #F0E8E0", paddingTop: 20, marginBottom: 24 }}>
-                  {p.features.map((f, j) => (
-                    <div key={j} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif" }}>
-                      <span style={{ color: p.color, flexShrink: 0 }}>✓</span><FeatureText text={f} />
-                    </div>
-                  ))}
-                </div>
-                <Btn
-                  v={p.badge ? "primary" : p.price === "Free" ? "teal" : "gold"}
-                  sx={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => handleSubscribe(p.name)}
-                >
-                  {p.price === "Free" ? "Start Free" : p.name === "Bloom" ? "Start 14-Day Trial" : "Talk to Us"}
-                </Btn>
-                {p.price !== "Free" && (
-                  <div style={{ marginTop: 10, fontSize: 11, color: T.brownL, fontFamily: "'DM Sans',sans-serif", textAlign: "center" }}>Cancel anytime · No lock-in</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      {/* Feature comparison table */}
-      <section style={{ padding: isMobile ? "40px 16px" : "64px 32px", background: T.cream }}>
+      {/* ── The two cards ── */}
+      <section style={{ padding: isMobile ? "40px 16px" : "64px 32px", background: "#fff" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <Pill color={T.teal}>Full Comparison</Pill>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 38, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>What&rsquo;s included in each plan</h2>
-          </div>
-          {/* Horizontally scrollable on mobile */}
-          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", borderRadius: 20, border: "1.5px solid #F0E8E0" }}>
-            <div style={{ minWidth: 480 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", background: T.brown, padding: "14px 20px" }}>
-                {["Feature", "Sprout", "Bloom", "Flourish"].map((h, i) => (
-                  <div key={h} style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13, color: i === 0 ? "#C4A68A" : i === 2 ? T.orange : "#fff", textAlign: i > 0 ? "center" : "left" }}>{h}</div>
-                ))}
-              </div>
-              {FEATURE_TABLE.map((row, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", padding: "14px 20px", borderBottom: i < FEATURE_TABLE.length - 1 ? "1px solid #F0E8E0" : "none", background: i % 2 === 0 ? "#fff" : T.cream }}>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: T.slate }}>{row.feature}</div>
-                  {[row.sprout, row.bloom, row.flourish].map((v, j) => (
-                    <div key={j} style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: v === "—" ? "#CCC4BC" : v === "✓" ? T.green : T.brown, fontWeight: v !== "—" ? 600 : 400, textAlign: "center" }}>{v}</div>
-                  ))}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)",
+              gap: isMobile ? 20 : 28,
+              // Natural heights, not stretch. The free card is shorter, and
+              // stretching it to match left a few hundred pixels of void
+              // above its CTA — the one button this page most wants clicked.
+              // The gap closes on its own as D2's caps are seeded.
+              alignItems: "start",
+            }}
+          >
+            {PLAN_TIERS.map((tier) => {
+              const accent = T[tier.accent] ?? T.orange;
+              const caps = capsByPlan[tier.planCode] ?? [];
+              const href = skoolUrls[tier.ctaKind] ?? "https://indieops.co";
+
+              return (
+                <div
+                  key={tier.planCode}
+                  style={{
+                    background: T.cream,
+                    borderRadius: 24,
+                    border: `2px solid ${tier.badge ? accent : "#F0E8E0"}`,
+                    padding: isMobile ? 24 : 32,
+                    position: "relative",
+                    boxShadow: tier.badge ? `0 8px 40px ${accent}22` : "0 2px 10px rgba(0,0,0,0.05)",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  {tier.badge ? (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: -14,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        background: accent,
+                        color: "#fff",
+                        padding: "4px 18px",
+                        borderRadius: 20,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        fontFamily: "'DM Sans',sans-serif",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {tier.badge}
+                    </div>
+                  ) : null}
+
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 800,
+                      color: accent,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      marginBottom: 6,
+                      fontFamily: "'DM Sans',sans-serif",
+                    }}
+                  >
+                    {tier.audience} · {tier.tierLabel}
+                  </div>
+
+                  <h2
+                    style={{
+                      fontFamily: "'Fraunces',serif",
+                      fontSize: isMobile ? 26 : 30,
+                      fontWeight: 900,
+                      color: T.brown,
+                      margin: "0 0 10px",
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.15,
+                    }}
+                  >
+                    {tier.name}
+                  </h2>
+
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 14 }}>
+                    <span
+                      style={{
+                        fontFamily: "'Fraunces',serif",
+                        fontSize: isMobile ? 32 : 38,
+                        fontWeight: 900,
+                        color: T.brown,
+                      }}
+                    >
+                      {tier.price}
+                    </span>
+                    <span style={{ fontSize: 13, color: T.brownL, fontFamily: "'DM Sans',sans-serif" }}>
+                      {tier.priceSub}
+                    </span>
+                  </div>
+
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans',sans-serif",
+                      fontSize: isMobile ? 14 : 15,
+                      color: T.slate,
+                      lineHeight: 1.6,
+                      margin: "0 0 20px",
+                    }}
+                  >
+                    {tier.pitch}
+                  </p>
+
+                  <div style={{ borderTop: "1.5px solid #F0E8E0", paddingTop: 18, marginBottom: 20 }}>
+                    {tier.includes.map((line, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "flex-start",
+                          marginBottom: 10,
+                          fontSize: isMobile ? 13 : 14,
+                          color: T.slate,
+                          fontFamily: "'DM Sans',sans-serif",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <span style={{ color: accent, flexShrink: 0 }}>✓</span>
+                        <FeatureText text={line} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Caps, straight from plan_feature_gates. New gates appear
+                      here on their own as they are seeded. */}
+                  {caps.length > 0 ? (
+                    <div style={{ borderTop: "1.5px solid #F0E8E0", paddingTop: 18, marginBottom: 20 }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          color: T.brownL,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          marginBottom: 12,
+                          fontFamily: "'DM Sans',sans-serif",
+                        }}
+                      >
+                        Caps on this tier
+                      </div>
+                      <dl style={{ margin: 0 }}>
+                        {caps.map((cap) => (
+                          <div
+                            key={cap.label}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "baseline",
+                              gap: 12,
+                              padding: "6px 0",
+                              borderBottom: "1px solid #F5EDE4",
+                              fontFamily: "'DM Sans',sans-serif",
+                              fontSize: isMobile ? 13 : 13.5,
+                            }}
+                          >
+                            <dt style={{ color: T.slate, margin: 0 }}>{cap.label}</dt>
+                            <dd
+                              style={{
+                                color: cap.value === "—" ? T.brownL : T.brown,
+                                fontWeight: 700,
+                                margin: 0,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {cap.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  ) : null}
+
+                  {/* The CTA sits at the bottom of the card, after the caps. */}
+                  <div style={{ marginTop: "auto", paddingTop: 4 }}>
+                    <ButtonLink
+                      href={href}
+                      v={tier.ctaKind === "free" ? "teal" : "primary"}
+                      sx={{ width: "100%", justifyContent: "center" }}
+                    >
+                      {tier.ctaLabel}
+                    </ButtonLink>
+                    <p
+                      style={{
+                        fontFamily: "'DM Sans',sans-serif",
+                        fontSize: 12,
+                        color: T.brownL,
+                        textAlign: "center",
+                        margin: "10px 0 0",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {tier.ctaKind === "free"
+                        ? "Opens the Skool group. Free to join, no card."
+                        : "Opens the application. Membership is billed through Skool, not here."}
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
+
+          <p
+            style={{
+              fontFamily: "'DM Sans',sans-serif",
+              fontSize: 13,
+              color: T.brownL,
+              textAlign: "center",
+              maxWidth: 640,
+              margin: isMobile ? "28px auto 0" : "36px auto 0",
+              lineHeight: 1.6,
+            }}
+          >
+            Caps are read live from the plan gates this site enforces, so what you see here is what
+            the database will actually do.
+          </p>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section style={{ padding: isMobile ? "40px 16px 60px" : "64px 32px 80px", background: "#fff" }}>
+      {/* ── The one promise worth repeating ── */}
+      <section
+        style={{
+          padding: isMobile ? "40px 20px" : "56px 32px",
+          background: T.warm,
+          borderTop: "1.5px solid #F0E8E0",
+          borderBottom: "1.5px solid #F0E8E0",
+        }}
+      >
+        <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center" }}>
+          <h2
+            style={{
+              fontFamily: "'Fraunces',serif",
+              fontSize: isMobile ? 22 : 30,
+              fontWeight: 800,
+              color: T.brown,
+              margin: "0 0 14px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Neither tier buys you reviews
+          </h2>
+          <p
+            style={{
+              fontFamily: "'DM Sans',sans-serif",
+              fontSize: isMobile ? 14 : 16,
+              color: T.slate,
+              lineHeight: 1.7,
+              margin: 0,
+            }}
+          >
+            This platform never asks you to post a public review, never suggests one, never compares
+            channels and never rewards one. Nothing you can pay for changes that. What you get is
+            honest private feedback from people who can judge your work — and a record of it that is
+            yours.
+          </p>
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section style={{ padding: isMobile ? "48px 20px" : "64px 32px", background: "#fff" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <Pill color={T.orange}>Common Questions</Pill>
-            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 28 : 38, fontWeight: 800, color: T.brown, margin: "12px 0 0", letterSpacing: "-0.02em" }}>Pricing FAQ</h2>
-          </div>
-          {FAQS.map((item, i) => (
-            <div key={i} style={{ borderBottom: "1.5px solid #F0E8E0" }}>
-              <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: "100%", textAlign: "left", padding: "20px 0", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-                <span style={{ fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, color: T.brown }}>{item.q}</span>
-                <span style={{ fontSize: 20, color: T.brownL, flexShrink: 0, transition: "transform 0.2s", transform: openFaq === i ? "rotate(45deg)" : "rotate(0)" }}>+</span>
+          <h2
+            style={{
+              fontFamily: "'Fraunces',serif",
+              fontSize: isMobile ? 24 : 34,
+              fontWeight: 800,
+              color: T.brown,
+              margin: "0 0 24px",
+              letterSpacing: "-0.02em",
+              textAlign: "center",
+            }}
+          >
+            Questions
+          </h2>
+
+          {FAQS.map((faq, i) => (
+            <div
+              key={i}
+              style={{
+                borderBottom: "1.5px solid #F0E8E0",
+                padding: "16px 0",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                aria-expanded={openFaq === i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 16,
+                  width: "100%",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontFamily: "'DM Sans',sans-serif",
+                  fontSize: isMobile ? 15 : 16,
+                  fontWeight: 700,
+                  color: T.brown,
+                }}
+              >
+                {faq.q}
+                <span style={{ color: T.orange, flexShrink: 0, fontSize: 20, lineHeight: 1 }}>
+                  {openFaq === i ? "−" : "+"}
+                </span>
               </button>
-              {openFaq === i && (
-                <div style={{ paddingBottom: 20, fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.7 }}>{item.a}</div>
-              )}
+              {openFaq === i ? (
+                <p
+                  style={{
+                    fontFamily: "'DM Sans',sans-serif",
+                    fontSize: isMobile ? 14 : 15,
+                    color: T.slate,
+                    lineHeight: 1.7,
+                    margin: "12px 0 0",
+                  }}
+                >
+                  {faq.a}
+                </p>
+              ) : null}
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
-      <section style={{ padding: isMobile ? "56px 20px" : "72px 32px", background: T.brown, textAlign: "center" }}>
-        <div style={{ maxWidth: 540, margin: "0 auto" }}>
-          <div style={{ fontSize: isMobile ? 32 : 40, marginBottom: 14 }}>✦</div>
-          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 26 : 40, fontWeight: 800, color: "#fff", margin: "0 0 14px", letterSpacing: "-0.02em" }}>
-            Join the beta free.<br /><span style={{ color: T.gold }}>Upgrade when you&rsquo;re ready.</span>
-          </h2>
-          <p style={{ color: "#C4A68A", fontSize: 16, lineHeight: 1.65, fontFamily: "'DM Sans',sans-serif", marginBottom: 32 }}>First 500 members get free Bloom access for 90 days. No credit card required to start.</p>
-          <Btn sz="lg" v="gold" onClick={openBeta}>✦ Request Beta Access →</Btn>
         </div>
       </section>
     </div>

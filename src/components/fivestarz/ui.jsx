@@ -101,12 +101,17 @@ export function ButtonLink({ children, href, v = "primary", sz = "md", sx = {}, 
   );
 }
 
-/** Renders a feature string, turning "Proof Market" into a link to /proof-market */
+/** Renders a feature string, turning "Proof Market" into a link to /proof-market.
+ *
+ *  Wrapped in a span rather than returned as a bare fragment: every caller
+ *  puts this inside a `display: flex` row next to a tick, and a fragment's
+ *  children each become their own flex item — so a linked string rendered as
+ *  three side-by-side columns instead of one sentence. */
 export function FeatureText({ text }) {
-  if (!text.includes("Proof Market")) return <>{text}</>;
+  if (!text.includes("Proof Market")) return <span>{text}</span>;
   const [before, after] = text.split("Proof Market");
   return (
-    <>{before}<Link href="/proof-market" style={{ color: "inherit", textDecoration: "underline", fontWeight: 700 }}>Proof Market</Link>{after}</>
+    <span>{before}<Link href="/proof-market" style={{ color: "inherit", textDecoration: "underline", fontWeight: 700 }}>Proof Market</Link>{after}</span>
   );
 }
 

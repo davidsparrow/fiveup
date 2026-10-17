@@ -331,6 +331,21 @@ export async function retractExternalReviewReport(supabase, reportId) {
   if (error) throw error;
 }
 
+// Published caps for the /pricing lander. Readable by anonymous visitors —
+// public_plan_caps() is a whitelist over plan_feature_gates, so internal
+// switches are not exposed. Returns [] rather than throwing: a pricing page
+// that cannot read the gates should still render its copy.
+export async function getPublicPlanCaps(supabase) {
+  const { data, error } = await supabase.rpc("public_plan_caps");
+
+  if (error) {
+    console.error("public_plan_caps failed; rendering the cards without caps:", error);
+    return [];
+  }
+
+  return data ?? [];
+}
+
 // ── Plans and entitlements ───────────────────────────────────────────────────
 
 // Plan plus where it came from. A member may read their own; admins may read
