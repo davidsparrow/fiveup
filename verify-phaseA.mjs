@@ -55,7 +55,7 @@ console.log('\n[A4 — Proof Market rename + redirect]');
   // Two rules, because exclusion alone is not enough: allowing "the Proof
   // Lab" for the group would also let "the Proof Lab listings" through, which
   // is exactly the relapse this check exists to catch.
-  const GROUP_SENSE = [/IndieOps Proof Lab/g, /the Proof Lab/g];
+  const GROUP_SENSE = [/IndieOps Proof Lab/g, /[Tt]he Proof Lab/g];
   const MARKETPLACE_SENSE =
     /Proof Lab\s+(listing|listings|deal|deals|marketplace|seller|sellers|categor)/i;
 

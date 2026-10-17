@@ -28,13 +28,17 @@
 // Skool is the billing system. There is no checkout here, so every CTA is an
 // outbound link.
 
-// Set these in the environment as they become available; both fall back to
-// the IndieOps site, which is a real page rather than a dead link.
+// The real destinations, as defaults rather than env-only: these are public
+// URLs printed on a public page, not secrets, so a deploy that forgets an env
+// var should still send people to the right place. The env vars stay as the
+// override for a staging group or a changed link.
+export const SKOOL_FREE_URL = "https://www.skool.com/indieops-proof-lab-2789/about";
+export const INCUBATOR_APPLY_URL = "https://indieops.co/incubator/apply";
+
 export function getSkoolUrls() {
-  const fallback = "https://indieops.co";
   return {
-    free: process.env.NEXT_PUBLIC_SKOOL_FREE_URL || fallback,
-    paid: process.env.NEXT_PUBLIC_SKOOL_PAID_URL || fallback,
+    free: process.env.NEXT_PUBLIC_SKOOL_FREE_URL || SKOOL_FREE_URL,
+    paid: process.env.NEXT_PUBLIC_SKOOL_PAID_URL || INCUBATOR_APPLY_URL,
   };
 }
 
@@ -63,8 +67,8 @@ export const PLAN_TIERS = [
     name: "IndieOps Incubator",
     tierLabel: "Bloom",
     audience: "Paid Skool group",
-    price: "Waitlist",
-    priceSub: "opening soon",
+    price: "$99",
+    priceSub: "/ month",
     accent: "orange",
     badge: "All-access",
     pitch:
@@ -76,7 +80,7 @@ export const PLAN_TIERS = [
       "Sell into Proof Market and set your own degrees-of-separation",
       "Build-challenge cohorts and the private rooms that come with them",
     ],
-    ctaLabel: "Join the waitlist",
+    ctaLabel: "Apply to the Incubator",
     ctaKind: "paid",
   },
 ];

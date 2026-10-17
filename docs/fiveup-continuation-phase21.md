@@ -206,6 +206,49 @@ Three things worth knowing:
   marketplace noun, because exclusion alone would have let "the Proof Lab
   listings" through. Both relapse shapes were tested against the new rule.
 
+## Points economy: three rules decided 2026-10-17
+
+The points phase is still unbuilt (it follows D5), but these are locked and
+are in the build spec under *Nothing pays without a pre-registered goal*.
+
+**Nothing pays without a pre-registered goal.** Pre-definition already stopped
+a reward being invented after the fact; this stops one being claimed for
+something that was already true. **The starting state is recorded before the
+work, and the award pays on the change.**
+
+- **Catalog goals capture a baseline when selected.** When a member picks a
+  milestone goal, or a group freezes its `point_schedule`, the starting
+  number and its evidence link are written down then. "Reach 1,000 followers"
+  pays only someone who was below 1,000 at registration. The
+  `(member, goal, platform)` uniqueness stops double payment but does nothing
+  about someone already past the milestone on day one.
+- **Anything outside the catalog is registered with the admin first** —
+  beginning state, end state that counts, how it will be evidenced. The admin
+  approves, adjusts or rejects and **sets the award at that point**. An
+  unregistered accomplishment cannot be claimed later, whatever the evidence.
+- **Registering is declaring intent, not asking for points.** The direction
+  rule holds: the award still arrives when someone *else* recommends it and
+  the admin approves. A member may say what they are about to do; they cannot
+  award themselves for having done it.
+- **An approved custom goal is published to its group**, the way a frozen
+  schedule is. Admin-set awards put discretion back into a deliberately flat
+  map, and publishing the goal and its award at approval time is what keeps
+  the fairness story intact.
+
+**SOC 2 compliance stays out of the catalog**, as the archetype of the custom
+path. A flat 25 or 50 misprices it in both directions, and its evidence is not
+public — a SOC 2 report is delivered under NDA, so what exists is an auditor's
+attestation letter, not a page anyone can open. Registered up front with scope
+and audit window, evidenced as `screenshot`, priced by the admin.
+
+*Schema shape for whoever builds it:* a `point_goals` row per registration —
+`user_id` or `group_id`, `catalog_key` (null for custom), `baseline_state`,
+`baseline_evidence_url`, `target_state`, `evidence_kind`, `award_points`,
+`status`, `approved_by_user_id`. Claims reference `point_goal_id`. The ledger
+and this table both want to be append-only: **use `FOR EACH ROW`** and work
+out what the FK actions are allowed to do first — see *The bug worth
+remembering* above.
+
 ## Still open
 
 - **The Skool → plan webhook.** Deferred, not forgotten. When built:
@@ -225,10 +268,15 @@ Three things worth knowing:
   enforces — and D2's three new gates will appear on the cards by themselves
   once seeded, with no edit and no deploy. `PLANS` moved out of
   `mock-data.js` into `src/lib/fivestarz/plans.js`.
-  **Still needed:** the real Skool URLs. Set `NEXT_PUBLIC_SKOOL_FREE_URL` and
-  `NEXT_PUBLIC_SKOOL_PAID_URL`; both currently fall back to
-  `https://indieops.co`. The Incubator card says "Waitlist / opening soon"
-  rather than a price, because no price has been set.
+  Live destinations (2026-10-17): the free card opens
+  `https://www.skool.com/indieops-proof-lab-2789/about`, the paid card opens
+  `https://indieops.co/incubator/apply`, and the Incubator is **$99 / month**,
+  billed through Skool after an accepted application. Both URLs are defaults
+  in `plans.js` rather than env-only — they are public links on a public page,
+  so a deploy that forgets an env var should still reach the right place.
+  `NEXT_PUBLIC_SKOOL_FREE_URL` / `NEXT_PUBLIC_SKOOL_PAID_URL` remain as
+  overrides. `/pricing` stays noindexed: it is a page you send people to,
+  not one they find.
 - **Discord setup steps 6–7** wait on `app.proofsignals.net` pointing at
   Vercel. Steps 1–5 can be done any time; see `docs/discord-setup.md`.
 - **One rating per pair, ever.** `member_feedback_ratings` is

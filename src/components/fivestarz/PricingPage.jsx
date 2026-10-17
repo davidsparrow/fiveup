@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: "How does billing work?",
-    a: "Through Skool. There is no checkout on this site and no card details here. Joining the paid group lifts your caps on ProofSignals automatically once your membership is linked.",
+    a: "The Incubator is $99 a month, billed through Skool once your application is accepted. There is no checkout on this site and no card details here — joining the paid group lifts your caps on ProofSignals automatically once your membership is linked.",
   },
   {
     q: "What does the all-access pass include?",
@@ -42,6 +42,10 @@ const FAQS = [
   {
     q: "Is ProofSignals a review-exchange platform?",
     a: "No, and it is built so it cannot become one. The platform never asks for a public review, never suggests one, never compares channels and never rewards one. The product is honest private feedback between peers. If a member chooses to post something publicly off their own back, they may tell us it happened — that is all.",
+  },
+  {
+    q: "Do I have to apply?",
+    a: "For the Incubator, yes — it is an application rather than an open door, so the room stays useful. The Proof Lab is open: join the Skool group and you are in.",
   },
   {
     q: "Can I leave?",
@@ -296,7 +300,7 @@ export default function PricingPage({ capsByPlan = {}, skoolUrls = {} }) {
                     >
                       {tier.ctaKind === "free"
                         ? "Opens the Skool group. Free to join, no card."
-                        : "Opens the IndieOps waitlist. Skool handles membership and billing."}
+                        : "Opens the application. Membership is billed through Skool, not here."}
                     </p>
                   </div>
                 </div>

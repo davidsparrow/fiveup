@@ -106,12 +106,19 @@ try {
       paid.planCode === 'bloom' && paid.name === 'IndieOps Incubator', JSON.stringify(paid.name));
     expect('the paid tier leads with the all-access pass',
       /all-access pass/i.test(paid.includes[0]) && /all-access/i.test(paid.pitch), paid.includes[0]);
-    expect('no tier mentions flourish or a dollar price',
-      !PLAN_TIERS.some((t) => /flourish/i.test(JSON.stringify(t)) || /\$\d/.test(JSON.stringify(t))));
+    expect('no tier mentions the retired flourish or its old prices',
+      !PLAN_TIERS.some((t) => /flourish/i.test(JSON.stringify(t)) || /\$29|\$79/.test(JSON.stringify(t))));
+    expect('the Incubator carries its real price', paid.price === '$99' && paid.priceSub === '/ month',
+      `${paid.price} ${paid.priceSub}`);
+    expect('the free tier has no price at all', free.price === 'Free');
 
+    // Real destinations as defaults, not env-only: a deploy that forgets an
+    // env var must not send people to a placeholder.
     const urls = getSkoolUrls();
-    expect('both CTAs resolve to a real URL',
-      /^https:\/\//.test(urls.free) && /^https:\/\//.test(urls.paid), JSON.stringify(urls));
+    expect('the free CTA points at the Proof Lab Skool group',
+      /skool\.com\/indieops-proof-lab/.test(urls.free), urls.free);
+    expect('the paid CTA points at the Incubator application',
+      /indieops\.co\/incubator\/apply/.test(urls.paid), urls.paid);
   }
 
   console.log('\n[wiring]');
@@ -132,6 +139,8 @@ try {
       page.indexOf('Caps on this tier') < page.indexOf('tier.ctaLabel'));
     expect('the Stripe-shaped FAQ rows are gone',
       !/billing period|7-day refund|14-Day Trial/i.test(page));
+    expect('the FAQ states the price and that Skool bills it',
+      /\$99 a month/.test(page) && /billed through Skool/.test(page));
     expect('the house rule is stated on the page',
       /never asks you to post a public review/i.test(page));
 
