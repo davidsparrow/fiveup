@@ -296,7 +296,10 @@ export default function PublicSettingsPage({ initialProfile = {}, features = {},
                   </Link>
                 ) : (
                   <span>Turn on “Publish my profile” below to go live.</span>
-                )}
+                )}{" "}
+                <Link href="/account/profile" style={{ color: T.teal, fontWeight: 700 }}>
+                  Design your card →
+                </Link>
               </div>
             </div>
           ) : (

@@ -20,6 +20,10 @@ export const T = {
   purpleP: "#EDE9FE",
 };
 
+// SiteNav's sticky bar height. DemoBanner pins under it and the profile card
+// subtracts it from the viewport — one number, three readers.
+export const NAV_HEIGHT = 64;
+
 export const NAV_LINKS = [
   { label: "How It Works", href: "/how-it-works" },
   { label: "Proof Market", href: "/proof-market" },

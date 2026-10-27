@@ -20,11 +20,24 @@ direct writes on `user_profiles`; don't loosen that.
 
 ## Start here
 
-**`docs/fiveup-continuation-phase22.md` is the current handoff.** It carries
-what last shipped, what is unfinished, the locked decisions, the schema
-constraints that bite, and the open commercial track. Read it before planning
-anything. Earlier phases have their own `docs/fiveup-continuation-phaseNN.md`;
-phase 19's still holds the points-economy spec verbatim.
+**`docs/fiveup-continuation-phase23.md` is the current handoff.** Phase 23
+shipped the profile card at `/u/<handle>` (one viewport, tab layers, styled
+photo, stars) **but its migration is not yet applied and `verify-phase23`
+has not run** — that is the first job. `docs/fiveup-continuation-phase22.md`
+is still the handoff for the Discord track (D2, groups and caps) and carries
+the locked decisions, the schema constraints that bite, and the open
+commercial track. Read both before planning anything. Earlier phases have
+their own `docs/fiveup-continuation-phaseNN.md`; phase 19's still holds the
+points-economy spec verbatim.
+
+**Profile cards show stars** (decided 2026-10-27): star icons on every
+approved review and a star average on the card. The older "avoid five stars"
+guidance in `docs/ProofSignals-Specs/` is superseded for the public card
+only. The style a member picks is a closed whitelist —
+`src/components/fivestarz/profile-card/cardStyle.js` and the SQL validator
+`profile_style_is_valid` are twins and `verify-phase23.mjs` diffs them; only
+ever widen them. Photos live in the public `avatars` bucket at
+`<uid>/avatar.<ext>`.
 
 The Discord side is being built as D1–D6. D1 (identity linking), D2a (plan
 grants) and the pricing lander have shipped; **D2, groups and caps, is next

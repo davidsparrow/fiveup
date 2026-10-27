@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import DemoBanner from "@/components/fivestarz/DemoBanner";
 import PageShell from "@/components/fivestarz/PageShell";
-import PublicProfilePage from "@/components/fivestarz/PublicProfilePage";
+import ProfileCard from "@/components/fivestarz/profile-card/ProfileCard";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl, SITE_NAME } from "@/lib/fivestarz/site";
 
@@ -41,7 +41,8 @@ export async function generateMetadata({ params }) {
   const searchable = Boolean(profile.searchable);
   const canonical = `/u/${profile.public_username}`;
   const title = `${profile.display_name} (@${profile.public_username}) | ${SITE_NAME}`;
-  const description = profile.bio ? profile.bio.slice(0, 160) : `${profile.display_name} on ${SITE_NAME}.`;
+  const blurb = profile.tagline || profile.bio;
+  const description = blurb ? blurb.slice(0, 160) : `${profile.display_name} on ${SITE_NAME}.`;
   return {
     title,
     description,
@@ -71,28 +72,31 @@ export default async function PublicProfileRoute({ params }) {
     supabase.rpc("get_public_links", { p_username: username }),
   ]);
 
+  const blurb = profile.tagline || profile.bio;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
     name: profile.display_name,
     url: `${getSiteUrl()}/u/${profile.public_username}`,
-    ...(profile.bio ? { description: profile.bio } : {}),
+    ...(blurb ? { description: blurb } : {}),
     ...(profile.avatar_url ? { image: profile.avatar_url } : {}),
   };
 
+  // The card is one viewport, so the shell keeps its nav and drops the footer;
+  // the demo banner rides inside the card's top row instead of above it.
   return (
-    <PageShell>
-      {profile.is_demo && <DemoBanner />}
+    <PageShell footer={false}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PublicProfilePage
+      <ProfileCard
         profile={profile}
         feedback={feedbackRes.data ?? []}
         assets={assetsRes.data ?? []}
         offers={offersRes.data ?? []}
         links={linksRes.data ?? []}
+        topSlot={profile.is_demo ? <DemoBanner inline /> : null}
       />
     </PageShell>
   );

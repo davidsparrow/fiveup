@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ME, ME_PROFILE, HISTORY_ITEMS } from "@/lib/fivestarz/mock-data";
 import { T } from "@/lib/fivestarz/theme";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Av, Stars, Btn, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
+import { Av, Stars, Btn, ButtonLink, Card, Pill, PlanPill } from "@/components/fivestarz/ui";
 import { createClient } from "@/lib/supabase/client";
 import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback, reportExternalReview, listMyProofLabListings, getProofLabCategories, createProofLabListing, updateProofLabListing, setProofLabListingStatus, listIncomingDealRequests, listOutgoingDealRequests, acceptProofLabDeal, declineProofLabDeal, cancelProofLabDeal, markProofLabDealFulfilled, confirmProofLabDeal, getCharities, getFundraiserLeaderboard, createProofLabReview, getProofLabReviewsForSeller } from "@/lib/fivestarz/data";
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
@@ -344,7 +344,7 @@ export default function DashboardPage({ userId, matchSurface = "web", matchActio
                       <div style={{ fontFamily: "'Fraunces',serif", fontSize: isMobile ? 22 : 26, fontWeight: 800, color: T.brown }}>{displayName}</div>
                       <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, color: T.brownM, fontWeight: 600, marginTop: 2 }}>{ME_PROFILE.title}</div>
                     </div>
-                    <Btn sz="sm" v="ghost">Edit Profile</Btn>
+                    <ButtonLink sz="sm" v="ghost" href="/account/profile">Edit Profile</ButtonLink>
                   </div>
                   <p style={{ fontSize: 14, color: T.slate, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.65, margin: "12px 0 14px" }}>{profile?.bio || ME_PROFILE.bio}</p>
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>

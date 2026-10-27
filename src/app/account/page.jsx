@@ -70,6 +70,10 @@ export default async function AccountPage({ searchParams }) {
           initialMessage={discordMessage}
         />
 
+        <Link href="/account/profile" style={styles.settingsLink}>
+          Design your profile card →
+        </Link>
+
         <Link href="/account/public" style={styles.settingsLink}>
           Manage public profile & publishing →
         </Link>

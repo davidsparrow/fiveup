@@ -40,7 +40,9 @@ function GlobalStyles() {
   );
 }
 
-export default function PageShell({ children }) {
+// `footer={false}` is for single-viewport pages (the profile card) that must
+// not scroll: the nav stays, the footer would push the card past 100dvh.
+export default function PageShell({ children, footer = true }) {
   const [showBeta, setShowBeta] = useState(false);
   const [matchSurface, setMatchSurface] = useState(null);
   const value = useMemo(() => ({ openBeta: () => setShowBeta(true) }), []);
@@ -66,7 +68,7 @@ export default function PageShell({ children }) {
         <GlobalStyles />
         <SiteNav />
         <main>{children}</main>
-        <Footer />
+        {footer ? <Footer /> : null}
         <BetaModal show={showBeta} onClose={() => setShowBeta(false)} />
       </MatchSurfaceContext.Provider>
     </BetaModalContext.Provider>

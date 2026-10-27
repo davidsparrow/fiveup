@@ -7,7 +7,7 @@ import { GiStarSwirl } from "react-icons/gi";
 import { PiPlanetFill } from "react-icons/pi";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { T } from "@/lib/fivestarz/theme";
+import { NAV_HEIGHT, T } from "@/lib/fivestarz/theme";
 import { useBetaModal, useMatchSurface } from "@/components/fivestarz/PageShell";
 
 import { Btn } from "./ui";
@@ -60,7 +60,7 @@ export default function SiteNav() {
   return (
     <>
       <nav style={{ position: "sticky", top: 0, zIndex: 200, background: "rgba(255,248,240,0.75)", backdropFilter: scrolled ? "blur(14px)" : "blur(8px)", borderBottom: scrolled ? `1px solid ${T.orangeP}` : "1px solid rgba(255,200,160,0.25)", transition: "border-color 0.3s, backdrop-filter 0.3s", padding: isMobile ? "0 16px" : "0 32px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", height: NAV_HEIGHT, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", flexShrink: 0, marginLeft: 0 }}>
             <span style={{ display: "flex", alignItems: "center", position: "relative", width: 28, height: 28 }}>

@@ -88,6 +88,12 @@ Avoid:
 - top rated guru
 - review count spam
 
+> **Superseded for the profile card (2026-10-27).** Phase 23 rebuilt `/u/<handle>`
+> as a profile card and the decision was to show stars: star icons on every
+> approved review and a star-rated average on the card and About layers. The
+> rest of this section still stands — no "best reviewer" / "top rated" framing,
+> no review-count spam, and the platform still never asks for a review.
+
 ---
 
 ## 3. Optional Public Asset Pages
