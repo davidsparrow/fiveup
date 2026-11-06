@@ -12,6 +12,7 @@ import { getMyProfile, listMyAssets, listMyMatches, submitFeedback, rateFeedback
 import { ASSET_TYPE_DB_TO_LABEL, PROOF_LAB_TIMEFRAME_LABEL } from "@/lib/fivestarz/enums";
 import { initials } from "@/lib/fivestarz/format";
 import MatchPipeline from "@/components/fivestarz/MatchPipeline";
+import GroupsTab from "@/components/fivestarz/GroupsTab";
 
 const DEAL_STATUS_META = {
   pending: { label: "Pending", color: T.gold, bg: T.goldL + "55" },
@@ -198,7 +199,7 @@ export default function DashboardPage({ userId, matchSurface = "web", matchActio
             ))}
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-            {[["matches", "🤝 Matches"], ["assets", "📦 Assets"], ["history", "📜 History"], ["profile", "👤 Profile"], ["prooflab", "🧪 Proof Market"]].map(([id, lbl]) => (
+            {[["matches", "🤝 Matches"], ["groups", "👥 Groups"], ["assets", "📦 Assets"], ["history", "📜 History"], ["profile", "👤 Profile"], ["prooflab", "🧪 Proof Market"]].map(([id, lbl]) => (
               <button key={id} onClick={() => setTab(id)} style={{ padding: isMobile ? "10px 14px" : "12px 24px", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: isMobile ? 13 : 14, borderRadius: "10px 10px 0 0", background: tab === id ? T.cream : "transparent", color: tab === id ? T.brown : "#C4A68A", transition: "all 0.2s", flex: isMobile ? "1 1 0" : "0 0 auto" }}>{lbl}</button>
             ))}
           </div>
@@ -269,6 +270,11 @@ export default function DashboardPage({ userId, matchSurface = "web", matchActio
             )}
           </div>
         )}
+
+        {/* D2: groups work on the site before they work in Discord, so this tab
+            is the surface D3's slash commands become a second client of. Every
+            rule it appears to apply is applied in the database. */}
+        {tab === "groups" && <GroupsTab assets={assets} isMobile={isMobile} />}
 
         {tab === "assets" && (
           <div>

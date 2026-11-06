@@ -25,10 +25,41 @@
 //
 //   markRoleGranted({ provider, externalId }) → void
 //
-// D2 adds createGroup / inviteMember / joinGroup / recommendMembers; D4 adds
-// createPairing. Add them here first, so the next adapter knows what it owes.
+// Operations added by D2 (groups and caps). Every one of them names the
+// member it is acting for, because the backend resolves a member from the
+// session and a bot has no session: a service-role call to the ProofSignals
+// adapter passes the member through explicitly. An adapter whose backend
+// works the other way is free to ignore the argument.
+//
+//   createGroup({ userId, name, assetId, kind, track, visibility, maxMembers })
+//     → { status: 'created', groupId, kind, name, track, visibility, maxMembers }
+//
+//   inviteMember({ userId, groupId, inviteeUserId, joinedVia })
+//     → { status: 'invited' | 'already_invited' | 'already_member' | 'joined' }
+//
+//   joinGroup({ userId, groupId, assetId })
+//     → { status: 'joined' | 'requested' | 'already_member' | 'already_requested' }
+//
+//   recommendMembers({ userId, groupId, limit })
+//     → [{ userId, displayName, publicUsername, planCode, track, assetId,
+//           assetName, assetType, shortestPathDegree, priorMatchCount }]
+//
+// Four more the D3 command surface needs, implemented but not required of an
+// adapter, since a backend with no rooms of its own has nothing to say about
+// them: listGroups, groupRoster, closeGroup, recordGroupRoom.
+//
+// D4 adds createPairing (/feedback). Add it here first, so the next adapter
+// knows what it owes.
 
-const REQUIRED_OPERATIONS = ["issueLinkCode", "resolveMember", "markRoleGranted"];
+const REQUIRED_OPERATIONS = [
+  "issueLinkCode",
+  "resolveMember",
+  "markRoleGranted",
+  "createGroup",
+  "inviteMember",
+  "joinGroup",
+  "recommendMembers",
+];
 
 export function assertCommunityPort(port) {
   if (!port || typeof port !== "object") {

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { signOut } from "@/app/auth/actions";
 import DiscordLinkCard from "@/components/fivestarz/DiscordLinkCard";
+import TrackCard from "@/components/fivestarz/TrackCard";
 import { getMyLinkedIdentity } from "@/lib/fivestarz/data";
 import { getDiscordConfig } from "@/lib/discord/config";
 import { createClient } from "@/lib/supabase/server";
@@ -27,6 +28,21 @@ export default async function AccountPage({ searchParams }) {
     discordIdentity = await getMyLinkedIdentity(supabase, user.id, "discord");
   } catch (err) {
     console.error("member_identities lookup failed:", err);
+  }
+
+  // The Track is identity, not a matching preference, so it is read here
+  // rather than on /account/preferences — which redirects to Discord whenever
+  // the match_surface gate is not 'web'.
+  let track = null;
+  try {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("track")
+      .eq("user_id", user.id)
+      .single();
+    track = profile?.track ?? null;
+  } catch (err) {
+    console.error("track lookup failed:", err);
   }
 
   const discord = getDiscordConfig();
@@ -61,6 +77,8 @@ export default async function AccountPage({ searchParams }) {
           <p style={styles.infoLabel}>User ID</p>
           <p style={styles.infoMono}>{user.id}</p>
         </div>
+
+        <TrackCard track={track} />
 
         <DiscordLinkCard
           identity={discordIdentity}
