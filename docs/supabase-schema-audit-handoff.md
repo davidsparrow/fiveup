@@ -48,6 +48,13 @@ compares it against live introspection. **910 checks, clean** as of
 | function bodies vs `pg_proc.prosrc` | 129 definitions | 0 stale |
 | `plan_feature_gates` seeds | 60 `(plan, feature_key)` pairs | 0 missing |
 
+**"CLEAN" does not mean "every migration is applied."** It means every
+statement of a shape the script parses has its end state live. Statements
+inside a `do $$ ... $$` block are not parsed at all, and neither are
+table-level grants — which is why Job 1's own migration is currently unapplied
+and the script still reports 910/910 clean. Treat the headline as "no drift in
+the covered classes", never as a release gate. Closing this is part of Job 3.
+
 It is verified in **both** directions: a temporary self-test migration
 expecting a missing table, two columns, an index, a policy, RLS, a function, a
 contradicted privilege, a tampered body and an absent seed row was caught in
@@ -194,6 +201,7 @@ present and wrong.
 | **Table/column-level grants** | 6 statements | `audit-migrations.mjs` section 3 parses `on function` only. Job 1 covers TRUNCATE specifically; this generalises it to the six `grant`/`revoke` statements that target tables |
 | **`alter column`** | 6 statements, all phase 19 | Nullability, defaults and the type change on `external_review_reports.status`. Check `information_schema.columns` |
 | **`comment on`** | 23 statements | `obj_description()` / `col_description()`. Cosmetic, lowest value, cheap |
+| **`do $$ ... $$` blocks** | 1 today (Job 1's migration), more later | The script parses no statement inside a procedural block, so anything written that way is invisible to it. Either parse the block's `execute format(...)` targets, or — better — assert the *intent* separately, as Job 1's standing "expect zero rows" query does. Several older migrations wrap `alter table ... add constraint` in `do` blocks for idempotency, so this overlaps the constraint row above |
 | **Data backfills** | 116 `update public.x set ...` | **Probably not worth automating.** The end state is data-dependent, and on a near-empty members table a row that was never updated is indistinguishable from a row that never existed. Read them once by hand and decide if any carry a durable invariant worth asserting |
 
 Suggested order: triggers (smallest, and the known-dangerous one), then

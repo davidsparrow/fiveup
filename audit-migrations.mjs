@@ -20,6 +20,14 @@
 //                (function, role) pair and compared to pg_proc.proacl
 //   seeds        plan_feature_gates rows, which decide every cap in the product
 //
+// IMPORTANT BLIND SPOT: "CLEAN" does not mean "every migration is applied".
+// It means every statement of a shape this script parses has its end state
+// live. Statements inside a `do $$ ... $$` block are not parsed at all, and
+// neither are table-level grants — so
+// 20261109120000_revoke_truncate_from_client_roles.sql is currently unapplied
+// and invisible here. Closing that is Job 1 and Job 3 in
+// docs/supabase-schema-audit-handoff.md.
+//
 // What it CANNOT check, and nothing else here can either:
 //   • backfills (`update public.x set ...`) — the end state is data-dependent
 //     and usually indistinguishable from a row that was simply never there
