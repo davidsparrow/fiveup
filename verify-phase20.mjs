@@ -282,10 +282,23 @@ try {
 
   console.log('\n[the bot’s lookups]');
   {
+    // Refused twice over, and the ACL gets there first as of phase 23.
+    //
+    // D1 shipped this with `revoke all ... from public` only, which — per the
+    // gotcha that cost phase 22 real time — leaves Supabase's by-name grant
+    // to `authenticated` untouched. So a member could execute the function
+    // and the body's auth.role() check was the only thing refusing them.
+    // That check is correct, but it was the same shape as the
+    // match_candidates_for hole: one guard deep, inside a function that
+    // reads other members' identities. 20261106120000 revokes EXECUTE from
+    // anon and authenticated by name, so the refusal now arrives as
+    // "permission denied for function" instead. Either message is a pass;
+    // succeeding is the only failure.
     const { error } = await a.client.rpc('member_for_external_identity', {
       p_provider: 'discord', p_external_id: snowA,
     });
-    expect('a member cannot look up an identity', !!error && /bot only/i.test(error.message),
+    expect('a member cannot look up an identity',
+      !!error && /bot only|permission denied/i.test(error.message),
       error?.message ?? 'succeeded');
 
     const { data, error: svcErr } = await admin.rpc('member_for_external_identity', {
@@ -437,7 +450,7 @@ try {
     expect('deferred work runs after the response', route.includes('after(async () =>'));
 
     const definitions = readFileSync('src/lib/discord/commands/definitions.js', 'utf8');
-    expect('only /link is registered at D1',
+    expect('/link is registered, and no points-phase command is',
       definitions.includes('name: "link"') && !/name: "(assist|claim|points|board)"/.test(definitions));
 
     const data = readFileSync('src/lib/fivestarz/data.js', 'utf8');

@@ -20,18 +20,22 @@ direct writes on `user_profiles`; don't loosen that.
 
 ## Start here
 
-**`docs/fiveup-continuation-phase23.md` is the current handoff.** It carries
+**`docs/fiveup-continuation-phase24.md` is the current handoff.** It carries
 what last shipped, what is unfinished, the schema constraints that bite, and
 the traps that cost real time. Read it before planning anything. Phase 22's
-doc holds the locked product decisions and is still current — phase 23 adds to
-that list rather than replacing it. Phase 19's still holds the points-economy
-spec verbatim.
+and phase 23's docs hold the locked product decisions and are still current —
+each later phase adds to that list rather than replacing it. Phase 19's still
+holds the points-economy spec verbatim.
 
 The Discord side is being built as D1–D6. D1 (identity linking), D2a (plan
-grants), the pricing lander and **D2 (groups and caps) have shipped; D3,
-groups in Discord, is next.** D3 needs the Discord portal set up — the steps
-are in `docs/discord-setup.md`, and `app.proofsignals.net` is live, so all of
-them are unblocked.
+grants), the pricing lander, D2 (groups and caps) and **D3 (groups in
+Discord) have shipped; D4, pairing and feedback in Discord, is next.**
+
+D3's code is complete and verified against the live database, but it is **not
+yet live in Discord**: the portal steps in `docs/discord-setup.md` are still
+outstanding, and until step 7 runs the commands exist in this repo and not in
+the server. `node src/lib/discord/register.mjs --dry-run` validates the
+command surface with no credentials, which is how D3 was checked without it.
 
 **Groups:** `groups` + `group_members` cover feedback groups now and challenge
 cohorts from D5. Both tables take **no direct writes** from `anon` or
@@ -40,6 +44,16 @@ takes an optional `p_acting_user_id` honoured only for the service role, which
 is how the bot calls them. A pairing inside a group is a `matches` row with
 `in_group_id` set and `source = 'group'`, exempt from monthly quota and from
 `max_concurrent_matchups`.
+
+**`open` is a visibility, not a status.** `groups.status` is
+`forming | active | closed`; `groups.visibility` is `private | listed | open`.
+A filter written as `status === 'open'` matches nothing and fails silently —
+it shipped in D3's first draft and made `/group invite` and `/group close`
+answer "you do not own any open groups" for every group. Use
+`isGroupLive()` from `community/rules/groups.js`. Also note `my_groups` carries
+only `active | invited | requested` seats, and `discoverable_groups` omits any
+room the caller already has a row in — so "not found" and "already in it" are
+indistinguishable unless a caller checks both.
 
 The live design docs are **Claude Docs, not files in this repo**. Read them
 with the Claude Docs connector (`read` project id → file id → node id);
@@ -98,6 +112,22 @@ profile), sign them in with the anon client so RPCs get an `auth.uid()`,
 exercise the behaviour, assert, and delete the users. Run with
 `node verify-phaseNN.mjs`. Re-run the recent ones after schema changes.
 
+**Never pipe a verify run through `head`.** SIGPIPE kills Node before the
+`finally` block, which is where the fixtures are deleted — that is how three
+test users and two groups ended up living in the production database. Use
+`node verify-phaseNN.mjs > /tmp/out.txt 2>&1` and read the file.
+
+**Fixture identifiers must be unique per run,** not a fixed base plus a
+counter. Any run that dies before cleanup leaves rows behind, and a
+deterministic sequence then collides with them on every later run — a unique
+index turns one interrupted run into a permanently broken suite.
+
+From D3: `verify-phase23.mjs` registers a `module.registerHooks` resolver for
+the `@/` alias, so a verify script can import the real route handlers rather
+than only the alias-free leaves. It also stubs `globalThis.fetch` for
+`discord.com` only — passing Supabase's own fetch straight through — which is
+how the thread-creation path is proved with no Discord app registered.
+
 ## Branching
 
 One branch per phase, `claude-phase-NN`, stacked on the previous one, merged
@@ -115,9 +145,17 @@ real rather than aspirational:
   Supabase exists, and `rules/*` imports no backend at all.
 
 Route handlers are the composition roots and the only files allowed to import
-both sides. `verify-phase20.mjs` and `verify-phase22.mjs` check both rules by
-grepping imports — if you need to break one, the honest move is to add a
-composition root, not to loosen the check.
+both sides. `verify-phase20.mjs`, `verify-phase22.mjs` and
+`verify-phase23.mjs` check both rules by grepping imports — if you need to
+break one, the honest move is to add a composition root, not to loosen the
+check.
+
+**The adapter is a second place every RPC field has to be named.** Adding a
+key to an RPC's returned `jsonb` does nothing until `adapter.js` maps it: D3
+added `track` to `member_for_external_identity`, documented it in `port.js`
+and read it in the handler, and every Discord-created group would still have
+had `track = null`, because the adapter's `resolveMember` dropped it. Nothing
+errors — the field is simply `undefined`. Assert the value, not the call.
 
 ## Naming
 

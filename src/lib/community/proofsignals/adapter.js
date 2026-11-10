@@ -60,6 +60,10 @@ export function createProofSignalsPort(client = null) {
         publicUsername: data.public_username ?? null,
         planCode: data.plan_code ?? null,
         accountStatus: data.account_status ?? null,
+        // D3. /group create inherits this, so a dropped key here is a whole
+        // server's worth of groups with no track and a recommender with
+        // nothing to filter on.
+        track: data.track ?? null,
         isDemo: Boolean(data.is_demo),
         roleGrantedAt: data.role_granted_at ?? null,
       };
@@ -231,6 +235,128 @@ export function createProofSignalsPort(client = null) {
       );
 
       return { status: data.status ?? "failed", groupId };
+    },
+
+    // ── D3 · what a chat surface needs that a web page gets for free ───────
+
+    // Discord has no dropdown. It asks for the list and decides in the
+    // handler; the criteria here are my_pairable_assets', which are
+    // assert_pairable_asset's, so the bot never offers an asset the write
+    // RPC will then refuse.
+    async listPairableAssets({ userId }) {
+      const { data, error } = await supabase.rpc("my_pairable_assets", {
+        p_acting_user_id: userId,
+      });
+
+      if (error) {
+        throw new Error(`my_pairable_assets: ${error.message}`);
+      }
+
+      return (data ?? []).map((row) => ({
+        assetId: row.asset_id,
+        name: row.name,
+        assetType: row.asset_type ?? null,
+        createdAt: row.created_at ?? null,
+      }));
+    },
+
+    // Everything /me says, in one round trip. The cap helpers behind this are
+    // revoked from authenticated, so there is no way to assemble it caller-side.
+    async memberOverview({ userId }) {
+      const data = unwrap(
+        "member_overview",
+        await supabase.rpc("member_overview", { p_acting_user_id: userId }),
+      );
+
+      const caps = data.caps ?? {};
+      const usage = data.usage ?? {};
+
+      return {
+        userId: data.user_id ?? userId,
+        displayName: data.display_name ?? null,
+        publicUsername: data.public_username ?? null,
+        planCode: data.plan_code ?? null,
+        accountStatus: data.account_status ?? null,
+        track: data.track ?? null,
+        isDemo: Boolean(data.is_demo),
+        matchSurface: data.match_surface ?? "web",
+        caps: {
+          // ?? null, not ?? 0: a cap of 0 is "none allowed" and a cap of null
+          // is "no gate row". The formatter renders them differently on purpose.
+          maxConcurrentGroups: caps.max_concurrent_groups ?? null,
+          feedbackGroupsPerMonth: caps.feedback_groups_per_month ?? null,
+          maxConcurrentMatchups: caps.max_concurrent_matchups ?? null,
+        },
+        usage: {
+          openGroups: usage.open_groups ?? 0,
+          groupsJoinedThisMonth: usage.groups_joined_this_month ?? 0,
+          concurrentMatchups: usage.concurrent_matchups ?? 0,
+        },
+        pairableAssetCount: data.pairable_asset_count ?? 0,
+      };
+    },
+
+    // canJoin and blockedReason are the backend's to compute: the caps that
+    // decide them are not readable by a member, which is why this reader
+    // exists rather than the handler filtering a plain list.
+    async discoverGroups({ userId, limit = 30 }) {
+      const { data, error } = await supabase.rpc("discoverable_groups", {
+        p_limit: limit,
+        p_acting_user_id: userId,
+      });
+
+      if (error) {
+        throw new Error(`discoverable_groups: ${error.message}`);
+      }
+
+      return (data ?? []).map((row) => ({
+        groupId: row.group_id,
+        kind: row.kind,
+        name: row.name,
+        track: row.track ?? null,
+        visibility: row.visibility,
+        status: row.status,
+        maxMembers: row.max_members,
+        activeMemberCount: row.active_member_count ?? 0,
+        ownerDisplayName: row.owner_display_name ?? null,
+        joinsByRequest: Boolean(row.joins_by_request),
+        canJoin: Boolean(row.can_join),
+        blockedReason: row.blocked_reason ?? null,
+      }));
+    },
+
+    async respondToInvite({ userId, groupId, accept, assetId = null }) {
+      const data = unwrap(
+        "respond_to_group_invite",
+        await supabase.rpc("respond_to_group_invite", {
+          p_group_id: groupId,
+          p_accept: accept,
+          p_asset_id: assetId,
+          p_acting_user_id: userId,
+        }),
+      );
+
+      return { status: data.status ?? "failed", groupId, role: data.role ?? null };
+    },
+
+    // leave_group reports what happened to the room, not just to the seat:
+    // the longest-standing member may have inherited it, or it may have
+    // closed because nobody was left. Both change what the member is told.
+    async leaveGroup({ userId, groupId }) {
+      const data = unwrap(
+        "leave_group",
+        await supabase.rpc("leave_group", {
+          p_group_id: groupId,
+          p_acting_user_id: userId,
+        }),
+      );
+
+      return {
+        status: data.status ?? "failed",
+        groupId,
+        newOwnerUserId: data.new_owner_user_id ?? null,
+        groupClosed: Boolean(data.group_closed),
+      };
     },
   });
 }
