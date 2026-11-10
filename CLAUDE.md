@@ -98,12 +98,40 @@ reconstructs the expected end state from the migration files in chronological
 order and compares it against live introspection — objects, policies,
 indexes, triggers, constraints, RLS, every grant/revoke resolved to a final
 intent per (function, role), function bodies against `pg_proc.prosrc`, and the
-`plan_feature_gates` seeds. 910 checks, currently clean. It does **not** cover
-data backfills. Two traps it was written around, both of which produced wrong
-answers first: matching only the first column of a multi-column `ALTER TABLE`
-skipped 22 of 43 `add column` statements, and comparing a comment-stripped
-file body against `prosrc` (which keeps comments) reported 27 healthy
-functions as stale.
+`plan_feature_gates` seeds. Sections 6–8 go past existence: a standing
+TRUNCATE invariant, all 24 trigger definitions compared field by field
+(timing, events, row-vs-statement, function, `WHEN`), and all 72 policy
+`USING` / `WITH CHECK` clauses compared exactly. **1204 checks, currently
+clean.** It does **not** cover data backfills, nor the definitions of CHECK
+constraints, indexes, table-level grants, `alter column` or `comment on` —
+those are still existence-only.
+
+**`node audit-selftest.mjs` proves the audit catches things.** Sixteen
+expectations across five cases, each introducing one defect into a migration
+file — a `FOR EACH STATEMENT` trigger, a trigger on the wrong function, a
+narrowed event list, a swapped enum literal, an unparseable column, a policy
+on the wrong role and command, a dropped `WITH CHECK`, and an AND/OR
+regrouping whose token sequence is byte-identical to the original. It patches
+files only, never the database, and asserts the tree is clean again at the
+end. Extend it whenever you extend the audit: a validator that only ever
+reports CLEAN is indistinguishable from no validator.
+
+Three traps these were written around, all of which produced wrong answers
+first: matching only the first column of a multi-column `ALTER TABLE` skipped
+22 of 43 `add column` statements; comparing a comment-stripped file body
+against `prosrc` (which keeps comments) reported 27 healthy functions as
+stale; and **`pg_get_expr` does not return the text anyone wrote** — it
+deparses the parse tree, so normalising a policy clause by hand means guessing
+at the deparser, and guessing leniently gives a comparison that passes
+everything. Section 8 instead hands the file's clause to the same deparser
+(`create temporary view ... where (<clause>)`, then `pg_get_viewdef(v,
+false)`) and compares two canonical strings. Read-only, no heuristics, and a
+clause that no longer type-checks fails loudly instead of being normalised
+into agreement.
+
+**The Management API throttles.** Section 8 makes many more calls than the
+rest; un-retried 429s arrive as per-clause errors that read exactly like real
+findings. `sql()` backs off, and the probes are batched 12 to a request.
 
 ## SQL gotchas that have each caused a real bug here
 
@@ -111,6 +139,15 @@ functions as stale.
   `EXECUTE` to `anon` and `authenticated` **by name** through default
   privileges, so revoking the `PUBLIC` pseudo-role leaves them. Revoke by role
   name for anything internal, and assert the ACL in the verify script.
+- **`revoke insert, update, delete` is three quarters of a revoke.**
+  PostgreSQL does not apply RLS to `TRUNCATE` at all, so for that one verb the
+  grant is the only gate — and Supabase's default `grant all on all tables in
+  schema public` hands it to `anon` and `authenticated` on every new table.
+  29 of 31 tables were in that state until `20261109120000`. Spell the fourth
+  word, and note that `alter default privileges` binds to the **granting**
+  role: `supabase_admin` still holds a default ACL that grants TRUNCATE and
+  `postgres` cannot change it, which is why `audit-migrations.mjs` section 6
+  asserts the end state on every run instead of trusting the migration.
 - **`PERFORM` resets `FOUND`.** Capture `found` into a local boolean right
   after the `SELECT INTO` if anything runs before you branch on it.
 - **`if not (A or B or C) then raise` opens up when any operand is null.**
