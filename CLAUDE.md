@@ -83,6 +83,28 @@ Empty `[]` means success. The whole body runs in one transaction, so a
 failure rolls everything back. `alter type ... add value` must go in its own
 request before anything references the new value.
 
+**There is no migration-history table.** The live database has no
+`supabase_migrations.schema_migrations`, so the CLI has never managed it and
+`supabase migration list` reports all 41 migrations as unapplied — a
+bookkeeping gap, not a schema gap. **Never run `supabase db push` here:** with
+no history it would replay all 41 against a database that already has them,
+and the non-idempotent ones (`create type`, `add constraint`, phase 19's
+rename block) would fail or misbehave inside a single transaction. If the CLI
+is ever wanted, `supabase migration repair --status applied <version>` stamps
+history without executing SQL.
+
+**`node audit-migrations.mjs` answers "what has not been applied?"** It
+reconstructs the expected end state from the migration files in chronological
+order and compares it against live introspection — objects, policies,
+indexes, triggers, constraints, RLS, every grant/revoke resolved to a final
+intent per (function, role), function bodies against `pg_proc.prosrc`, and the
+`plan_feature_gates` seeds. 910 checks, currently clean. It does **not** cover
+data backfills. Two traps it was written around, both of which produced wrong
+answers first: matching only the first column of a multi-column `ALTER TABLE`
+skipped 22 of 43 `add column` statements, and comparing a comment-stripped
+file body against `prosrc` (which keeps comments) reported 27 healthy
+functions as stale.
+
 ## SQL gotchas that have each caused a real bug here
 
 - **`revoke all on function ... from public` is not enough.** Supabase grants
