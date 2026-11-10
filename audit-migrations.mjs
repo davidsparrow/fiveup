@@ -28,13 +28,16 @@
 //   • function BODIES. A function can exist with stale source. Only
 //     `supabase db diff --linked` catches that, and it needs Docker.
 //
-//   node audit-migrations.mjs            # summary
-//   node audit-migrations.mjs --verbose  # every checked item
+//   node audit-migrations.mjs
+//
+// Every finding is printed in full; the per-class lines carry the counts. If
+// you extend this, extend the self-test described in
+// docs/supabase-schema-audit-handoff.md too — a validator that only ever
+// reports clean is indistinguishable from no validator.
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const VERBOSE = process.argv.includes('--verbose');
 const MIG_DIR = 'supabase/migrations';
 
 const env = Object.fromEntries(
@@ -105,9 +108,9 @@ function normSig(name, argString) {
   return `${String(name).toLowerCase().replace(/^public\./, '')}(${parts.join(', ')})`;
 }
 
-let pass = 0, fail = 0;
+let pass = 0;
 const findings = [];
-const note = (cls, detail, mig) => { fail++; findings.push({ cls, detail, mig }); };
+const note = (cls, detail, mig) => { findings.push({ cls, detail, mig }); };
 const okItem = () => { pass++; };
 
 // ═══ 1 · Objects ════════════════════════════════════════════════════════════
