@@ -515,6 +515,24 @@ if (defBad === 0) okItem();
 console.log(`  default privileges     ${String(defAcls.length).padStart(3)} default ACLs on tables · ${defBad} granting TRUNCATE to a client role` +
   (defResidue ? ` · ${defResidue} unchangeable supabase_admin residue (see comment)` : ''));
 
+// The asset-screenshots bucket, asserted rather than parsed. 20260308130000
+// is now a `do` block — guarded on `storage.buckets` existing, so that the
+// migration set can replay into the CLI's shadow database, which has no
+// Storage service — and the parser reads no statement inside a procedural
+// block. Its two policies are still visible to sections 2 and 8, because
+// PL/pgSQL binds lazily and the DDL in there is plain rather than dynamic, so
+// a `create policy` regex still finds it in the file. The bucket row is not,
+// and a private bucket turning public is exactly the kind of change nobody
+// would notice.
+const bucket = await sql(`
+  select id, public from storage.buckets where id = 'asset-screenshots'`);
+if (bucket.length === 0) {
+  note('invariant', 'storage bucket asset-screenshots does not exist', '20260308130000_asset_screenshots_storage_bucket.sql');
+} else if (bucket[0].public !== false) {
+  note('invariant', 'storage bucket asset-screenshots is PUBLIC — it holds member screenshots and must be private', '20260308130000_asset_screenshots_storage_bucket.sql');
+} else okItem();
+console.log(`  asset-screenshots      ${bucket.length === 0 ? 'ABSENT' : `present · public = ${bucket[0].public}`}`);
+
 // ── Statement scanning, for the two sections below ──────────────────────────
 //
 // Sections 1–3 can get away with regexes because they only need an object

@@ -68,9 +68,12 @@ never WebFetch an artifact URL.
 
 ## Migrations
 
-The repo is **not** linked to the Supabase CLI. Migrations in
-`supabase/migrations/` are authored as idempotent SQL and applied live via the
-Supabase Management API:
+The repo is **deliberately not linked** to the Supabase CLI — `supabase/.temp`
+is absent, so no CLI command can target the project until someone runs
+`supabase link` again. That is the guard that keeps `db push` from being one
+typo away; `supabase/config.toml` is committed so a re-link is cheap when you
+want the cross-check below. Migrations in `supabase/migrations/` are authored
+as idempotent SQL and applied live via the Supabase Management API:
 
 ```
 POST https://api.supabase.com/v1/projects/<ref>/database/query
@@ -101,10 +104,21 @@ intent per (function, role), function bodies against `pg_proc.prosrc`, and the
 `plan_feature_gates` seeds. Sections 6–8 go past existence: a standing
 TRUNCATE invariant, all 24 trigger definitions compared field by field
 (timing, events, row-vs-statement, function, `WHEN`), and all 72 policy
-`USING` / `WITH CHECK` clauses compared exactly. **1204 checks, currently
+`USING` / `WITH CHECK` clauses compared exactly. **1205 checks, currently
 clean.** It does **not** cover data backfills, nor the definitions of CHECK
 constraints, indexes, table-level grants, `alter column` or `comment on` —
 those are still existence-only.
+
+**The independent cross-check passes.** `supabase db diff --linked --schema
+public` replays all 42 migrations into a throwaway Postgres and diffs the
+result against live with `migra`: **no schema changes found**, which is the
+one direction `audit-migrations.mjs` structurally cannot check — an object
+present live that no migration describes would show up there as a `DROP`.
+To redo it, add `SUPABASE_DB_PASSWORD` to `.env.local`, start Docker, then
+`supabase link --project-ref srszeppvzwbrqcfzwexl` and the diff. **Unlink
+afterwards** (`rm -rf supabase/.temp`). A `storage`-schema diff is not
+possible and never will be: the CLI builds its shadow without the Storage
+service, so `storage.buckets` and `storage.objects` do not exist there.
 
 **`node audit-selftest.mjs` proves the audit catches things.** Sixteen
 expectations across five cases, each introducing one defect into a migration
@@ -157,6 +171,16 @@ findings. `sql()` backs off, and the probes are batched 12 to a request.
 - **A `RESTRICT` foreign key on a column that cascades from the same parent
   row is a coin flip,** decided by cascade-trigger order. If deleting an
   account could reach it, use `SET NULL` and keep the rule in the RPC.
+- **A migration that touches the `storage` schema cannot replay anywhere
+  without the Storage service.** `20260308130000` is the only one that does,
+  and its bare `insert into storage.buckets` stopped `supabase db diff` at
+  migration 8 of 42 — the shadow has an empty `storage` schema owned by
+  `supabase_storage_admin`, and the migrating role can neither create tables
+  in it nor `set role` to the owner. It is now guarded on
+  `to_regclass('storage.buckets')`. Keep the DDL inside such a block **plain,
+  not dynamic `execute`**: PL/pgSQL binds SQL lazily, so an unreached branch
+  is never parsed against the missing tables, and `audit-migrations.mjs` can
+  still read the `create policy` statements straight out of the file.
 - **Append-only or audit triggers must be `FOR EACH ROW`,** and anything that
   can run inside account deletion must not raise. A statement-level trigger
   fires even when the `UPDATE` matched no rows, which is how Phase 21 broke

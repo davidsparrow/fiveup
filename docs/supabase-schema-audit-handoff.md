@@ -9,10 +9,9 @@ Read `CLAUDE.md` first, especially **Migrations** and **SQL gotchas**. The
 current product handoff is `docs/fiveup-continuation-phase24.md` (D4); this
 document is orthogonal to it and can be done before, after or alongside.
 
-**Status as of 2026-11-09.** Job 1 is applied and verified. Job 3 is half
-done: triggers and policies are closed, five classes remain. **Job 2 is the
-only thing still outstanding, and it is blocked on one thing — the Postgres
-password.**
+**Status as of 2026-11-10.** Jobs 1 and 2 are done. Job 3 is half done:
+triggers and policies are closed, five classes remain and are the only
+outstanding work in this document.
 
 ## Ground rules, from the project owner
 
@@ -23,8 +22,17 @@ password.**
   migrations against a database that already has them, and the non-idempotent
   ones (`create type`, `add constraint`, phase 19's rename block) would fail or
   misbehave inside a single transaction.
-- **`supabase link` and Docker are approved** for read-only work —
-  `supabase db diff --linked` and `supabase db dump`.
+- **`supabase link` and Docker are approved** for `supabase db diff --linked`
+  and `supabase db dump`, which read and do not write. On `link` itself:
+  earlier versions of this document said "linking alone changes nothing on the
+  server", which is right in effect but worth not taking on faith — the
+  command prints `Initialising cli_login_postgres role...` before it connects.
+  **`pg_roles` was checked after both a failed link and a successful one, and
+  no `cli_login%` role exists either way**, so with password auth it really
+  does leave nothing behind. The message is about a role the CLI provisions
+  for its dashboard-SSO login path, not for this one. What `link` *does* leave
+  is local: `supabase/.temp/project-ref`, which is what gives `db push` a
+  target — delete it when you are finished.
 - Migrations are applied via the Management API (`POST
   /v1/projects/<ref>/database/query`, `User-Agent: curl/8.4.0`, empty `[]`
   means success), or by the owner pasting SQL into the web editor. Either is
@@ -37,19 +45,12 @@ password.**
 Project ref: `srszeppvzwbrqcfzwexl`. Credentials are in `.env.local`
 (`SUPABASE_PERSONAL_ACCESS_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`).
 
-**Correction to an earlier claim in this document:** "linking alone changes
-nothing on the server" is not quite right. `supabase link` prints
-`Initialising cli_login_postgres role...` and attempts to create that role
-before it connects. A link that fails on the password creates nothing —
-checked, `pg_roles` has no `cli_login%` — but a successful link does leave a
-role behind. Not a problem, just not a no-op.
-
 ## What is already verified — do not redo this
 
 `node audit-migrations.mjs` is committed at the repo root. It reconstructs the
 expected end state from the 42 migration files in chronological order and
-compares it against live introspection. **1204 checks, clean** as of
-2026-11-09 (910 before sections 6–8).
+compares it against live introspection. **1205 checks, clean** as of
+2026-11-10 (910 before sections 6–8).
 
 | § | Class | Covered | Result |
 | --- | --- | --- | --- |
@@ -58,7 +59,7 @@ compares it against live introspection. **1204 checks, clean** as of
 | 3 | privileges **on functions** | 297 statements → 276 final `(function, role)` intents | 0 mismatched |
 | 4 | function bodies vs `pg_proc.prosrc` | 129 definitions | 0 stale |
 | 5 | `plan_feature_gates` seeds | 60 `(plan, feature_key)` pairs | 0 missing |
-| 6 | **standing invariants** — TRUNCATE grant and default ACL | 31 tables, 2 default ACLs | 0 granted to a client role |
+| 6 | **standing invariants** — TRUNCATE grant, default ACLs, the private bucket | 31 tables, 2 default ACLs, 1 bucket | 0 granted to a client role |
 | 7 | **trigger definitions** — timing, events, level, function, `WHEN` | 24 definitions | 0 mismatched |
 | 8 | **policy expressions** — every `USING` / `WITH CHECK` | 58 definitions, 72 clauses | 0 mismatched |
 
@@ -189,56 +190,69 @@ something no migration can address.
 
 CLAUDE.md's SQL-gotchas list now carries the rule.
 
-## Job 2 — the Docker cross-check · THE ONE THING LEFT
+## Job 2 — the Docker cross-check · DONE, 2026-11-10
 
-Everything above is this project's parser agreeing with this project's
-introspection queries. `supabase db diff` is an **independent** second
-opinion: it replays the migrations into a throwaway Postgres and diffs the
-result against the live schema using `migra`.
+**`supabase db diff --linked --schema public` → "No schema changes found."**
 
-**State: Docker runs, the CLI is installed (v2.33.7), the access token works.
-The blocker is the Postgres password**, which is not in `.env.local` and which
-`supabase link` needs. Add `SUPABASE_DB_PASSWORD=...` to `.env.local` (already
-covered by `.gitignore`'s `.env*`) and then:
+This is the one direction `audit-migrations.mjs` structurally cannot check.
+The audit reads files and asks "is this live?"; `migra` diffs a full replay
+against the live schema, so an object present live that **no migration
+describes** would appear in the diff as a `DROP`. Nothing did. All 42
+migrations also replayed cleanly into a bare Postgres, which is its own
+result: the migration set is self-contained.
+
+To redo it: `SUPABASE_DB_PASSWORD` in `.env.local`, Docker running, then
 
 ```
-open -a Docker && docker info                     # wait for this to succeed
 export SUPABASE_ACCESS_TOKEN=$(grep -oE '^SUPABASE_PERSONAL_ACCESS_TOKEN=.*' .env.local | cut -d= -f2-)
 export SUPABASE_DB_PASSWORD=$(grep -oE '^SUPABASE_DB_PASSWORD=.*' .env.local | cut -d= -f2-)
 supabase link --project-ref srszeppvzwbrqcfzwexl
-supabase db diff --linked --schema public  > /tmp/diff-public.sql
-supabase db diff --linked --schema storage > /tmp/diff-storage.sql
+supabase db diff --linked --schema public
+rm -rf supabase/.temp          # unlink again — see below
 ```
 
-**An empty diff is the pass.** Any output is a statement whose effect is not
-live, or a live object the migrations do not describe — both worth reading.
+**Unlink when you are done.** `supabase/.temp/project-ref` is the whole of the
+link, and while it exists `supabase db push` has a target. CLAUDE.md bans that
+command because with no migration history it would replay all 42 against a
+database that already has them. Removing `.temp` makes the ban structural
+rather than a note someone has to remember. `supabase/config.toml` is
+committed (generated by `supabase init`) so a re-link costs one command.
 
-Three things to expect, so they are not mistaken for findings:
+### Three things that had to be solved to get this to run
 
-1. **Drift the migrations deliberately created.** Phase 19's rename means the
-   live `external_review_reports` has no `create table` of its own. The shadow
-   replays the rename too, so this may not surface at all — but if `migra`
-   proposes recreating the table, that is a diff, not a defect.
-2. **Supabase-managed objects.** Anything in `auth`, `storage`, `realtime`,
-   `extensions`, `graphql` is not ours. Diff `public` and `storage` only, and
-   ignore storage rows the storage extension owns.
-3. **Grants.** `migra`'s privilege coverage is partial. `audit-migrations.mjs`
-   sections 3 and 6 are the authority on function ACLs and the TRUNCATE
-   invariant; treat a disagreement as a question, not a verdict, and resolve it
-   by querying `pg_proc.proacl` / `has_table_privilege`.
+1. **No `config.toml` existed.** `supabase link` works without one, but
+   `db diff` needs it. `supabase init` generates it; it is now committed.
+2. **The migration set could not replay.** `20260308130000` does
+   `insert into storage.buckets`, and the CLI builds its shadow **without the
+   Storage service** — the shadow has an empty `storage` schema owned by
+   `supabase_storage_admin`, with no `buckets` and no `objects`. The replay
+   died at migration 8 of 42. Neither creating the tables as `postgres`
+   (`permission denied for schema storage`) nor `set role
+   supabase_storage_admin` (`permission denied to set role`) works, so there
+   is no way to stub it from inside a migration.
+   **Fixed at the source:** that migration is now guarded on
+   `to_regclass('storage.buckets') is null → raise notice; return`, applied
+   live, and verified to leave the bucket and both policies byte-identical
+   (`pg_get_expr` compared before and after). The whole set now replays with
+   no workaround.
+   The DDL inside the guard is deliberately **plain, not dynamic `execute`**:
+   PL/pgSQL binds SQL statements lazily, so the branch that is never taken is
+   never parsed against the missing tables, *and* the audit's `create policy`
+   parser still reads both policies straight out of the file. Confirmed — the
+   policy counts did not move after the rewrite (64 expected, 58 definitions,
+   72 clauses). The bucket row itself is no longer parseable, so section 6
+   asserts it instead: present, and `public = false`.
+3. **A `--schema storage` diff is impossible** and always will be, for the
+   same reason the replay failed: the shadow has no storage tables to diff
+   against. The storage side is covered instead by section 8 (both policies
+   compared exactly) and section 6 (the bucket exists and is private).
 
-**If Docker misbehaves,** one route needs neither it nor the CLI: a throwaway
-second Supabase project as the shadow, with all 42 migrations applied fresh
-through the Management API, then compare the two projects' introspection with
-the same queries `audit-migrations.mjs` uses. Costs a project slot; needs no
-local tooling.
+### What an empty diff does and does not prove
 
-A **local Postgres 17** shadow is listed in earlier versions of this document
-and is weaker than it sounds: migrations reference `auth.uid()`, `auth.users`
-and the Supabase roles, none of which exist in a bare `createdb`, so the
-replay failures would be dominated by missing scaffolding rather than by real
-problems. The CLI's shadow has that scaffolding, which is the whole reason to
-want Docker.
+`migra`'s privilege coverage is partial. Sections 3 and 6 are the authority on
+function ACLs and the TRUNCATE invariant; if `migra` ever disagrees, treat it
+as a question and resolve it with `pg_proc.proacl` / `has_table_privilege`,
+not as a verdict. An empty diff is about schema **shape**.
 
 ## Job 3 — the classes still unverified
 
