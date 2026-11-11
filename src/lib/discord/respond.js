@@ -80,3 +80,54 @@ export function interactionUser(interaction) {
     handle: user.username ?? user.global_name ?? null,
   };
 }
+
+// ── Reading a subcommand's options ──────────────────────────────────────────
+//
+// A subcommand interaction nests one level: data.options is a single entry of
+// type 1 whose own options carry the values. These helpers flatten that, so a
+// handler asks for `options.group` without caring how /group was shaped.
+
+const OPTION_TYPE_SUB_COMMAND = 1;
+const OPTION_TYPE_SUB_COMMAND_GROUP = 2;
+
+export function subcommandOf(interaction) {
+  const first = interaction?.data?.options?.[0];
+  if (!first) return null;
+  if (first.type === OPTION_TYPE_SUB_COMMAND || first.type === OPTION_TYPE_SUB_COMMAND_GROUP) {
+    return first.name ?? null;
+  }
+  return null;
+}
+
+// name → value, from the subcommand level when there is one. Returns a plain
+// object rather than a lookup function so a handler can destructure it.
+export function optionsOf(interaction) {
+  const top = interaction?.data?.options ?? [];
+  const first = top[0];
+  const list =
+    first?.type === OPTION_TYPE_SUB_COMMAND || first?.type === OPTION_TYPE_SUB_COMMAND_GROUP
+      ? (first.options ?? [])
+      : top;
+
+  const out = {};
+  for (const option of list) {
+    if (option?.name === undefined) continue;
+    out[option.name] = option.value;
+  }
+  return out;
+}
+
+// A user-type option resolves to a snowflake; the user object itself arrives
+// separately under data.resolved. Returns the same shape as interactionUser()
+// so a handler can treat "me" and "them" alike.
+export function resolvedUser(interaction, userId) {
+  if (!userId) return null;
+  const user = interaction?.data?.resolved?.users?.[String(userId)];
+  if (!user?.id) return { id: String(userId), handle: null, displayName: null };
+
+  return {
+    id: String(user.id),
+    handle: user.username ?? user.global_name ?? null,
+    displayName: user.global_name ?? user.username ?? null,
+  };
+}

@@ -126,14 +126,52 @@ signature and expects a `401` — which the route returns.
 up in the server and fails.
 
 ```
+node src/lib/discord/register.mjs --dry-run  # validate, send nothing
 node src/lib/discord/register.mjs            # guild-scoped, appears instantly
 node src/lib/discord/register.mjs --global   # global, up to an hour
 ```
 
-Guild-scoped first, always. Command names are not settled until D3, and a
-typo in a global registration costs an hour.
+Run `--dry-run` first. It needs no credentials and checks the definitions
+against Discord's documented limits locally — name shape, description length,
+option counts, and required-before-optional ordering. Discord rejects the
+whole payload on one bad field and the error names a JSON path rather than a
+command, so a local failure is much cheaper to read.
 
-## 8 · The environment variables
+Guild-scoped first, always: a typo in a global registration costs an hour.
+
+As of D3 there are three commands:
+
+| Command | What it does |
+| --- | --- |
+| `/link` | Identity linking, road 2 |
+| `/me` | Plan, track, caps and usage |
+| `/group` | `create`, `list`, `discover`, `join`, `accept`, `decline`, `invite`, `members`, `recommend`, `leave`, `close` |
+
+## 8 · The groups channel — D3's one new piece of setup
+
+Group rooms are **private threads off one channel**, rather than a thread
+wherever `/group create` happened. That keeps rooms findable and moderatable,
+and it lets `/group create` work in a DM with the bot, where there is no
+parent channel to thread from.
+
+1. Make a channel — `#groups` is the obvious name. Members do not need to
+   post in it; it is a container.
+2. Give the bot **View Channel**, **Send Messages**, **Create Private
+   Threads** and **Send Messages in Threads** on it. Missing permissions
+   surface as a specific sentence rather than a silent failure: "the bot needs
+   Create Private Threads and Send Messages in the groups channel."
+3. Right-click the channel → **Copy Channel ID** → set
+   `DISCORD_GROUPS_CHANNEL_ID`.
+
+**This step is optional.** With it unset, every `/group` subcommand still
+works and the groups still exist — they just have no Discord room, and the
+site's Groups tab remains the whole surface. That is deliberate: a room is a
+view of a group's membership, never the record of it.
+
+Threads are **archived, not deleted**, when a group closes. The feedback in a
+room is the room's record of itself.
+
+## 9 · The environment variables
 
 | Variable | Where it comes from | Needed for |
 | --- | --- | --- |
@@ -142,6 +180,7 @@ typo in a global registration costs an hour.
 | `DISCORD_BOT_TOKEN` | Bot tab | Role grants |
 | `DISCORD_GUILD_ID` | Right-click the server | Role grants |
 | `DISCORD_MEMBER_ROLE_ID` | Right-click the Member role | Role grants |
+| `DISCORD_GROUPS_CHANNEL_ID` | Right-click `#groups` (step 8) | Group rooms. Optional — unset means no threads, and every command still works |
 | `NEXT_PUBLIC_DISCORD_INVITE_URL` | A server invite | The "join the server" line, and the Phase A surface gate |
 | `NEXT_PUBLIC_DISCORD_OAUTH_ENABLED` | `true` once step 5 is done | Showing the one-click button |
 | `NEXT_PUBLIC_SITE_URL` | `https://app.proofsignals.net` | Canonicals, OG images, the sitemap, every link the bot posts |
@@ -153,8 +192,31 @@ available, and the endpoint returns 503.
 
 ## What "done" looks like
 
-The build spec's D1 gate: **five testers link both ways and the Member role
-appears in the server.**
+### D3's gate — five testers run every command and the rows match the site
+
+Worth doing in this order, because each step sets up the next:
+
+1. `/me` before linking → sent to `/link`. After linking → plan, track, caps.
+2. `/group create name:"<something>"` → confirms the first seat, and a thread
+   appears in `#groups` if step 8 is done. Check the Groups tab on the
+   dashboard shows the same group.
+3. A tester with two or more assets runs `/group create` with no `asset:` →
+   should be *asked which one*, not given a guess, and no group should be
+   created. This is the one piece of judgement D3 added.
+4. `/group invite group:<name> member:@someone` → they run `/group accept`
+   → `/group members` lists both, with what each brought.
+5. Invite someone who has never run `/link` → "ask them to run /link first".
+6. A free (sprout) tester creates a second group → refused with "which is the
+   limit on your plan". The cap is the database's, not the bot's.
+7. `/group leave` as a member, `/group close` as the owner. The thread
+   archives; it does not vanish.
+
+`verify-phase23.mjs` already asserts all seven against the live database by
+driving the real handlers with synthetic interactions — 126 checks. What the
+testers add is whether Discord accepts the definitions and whether the bot
+actually has the guild permissions. Nothing else.
+
+### D1's gate — five testers link both ways and the Member role appears
 
 - Road 1: signed in on the site → `/account` → **Connect with Discord** →
   back to `/account` saying "Discord connected as <handle>. Member role
